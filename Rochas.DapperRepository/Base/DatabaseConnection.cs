@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Data.SQLite;
 using System.Threading.Tasks;
 using Dapper;
 using MySqlConnector;
 using Rochas.DapperRepository.Helpers.SQL;
 using Rochas.DapperRepository.Exceptions;
 using Rochas.DapperRepository.Specification.Enums;
-using System.Data.SQLite;
+using Npgsql;
 
 namespace Rochas.DapperRepository.Base
 {
@@ -31,6 +32,15 @@ namespace Rochas.DapperRepository.Base
         public DataBaseConnection(DatabaseEngine databaseEngine, string connectionString, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(connectionString, logPath, replicaConnStrings)
         {
             engine = databaseEngine;
+
+            keepConnection = keepConnected;
+            if (keepConnection) Connect();
+        }
+
+        public DataBaseConnection(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(dbConnection.ConnectionString, logPath, replicaConnStrings)
+        {
+            engine = DatabaseEngine.SQLServer;
+            connection = dbConnection;
 
             keepConnection = keepConnected;
             if (keepConnection) Connect();
@@ -88,18 +98,22 @@ namespace Rochas.DapperRepository.Base
         {
             if (!string.IsNullOrEmpty(_connString) || !string.IsNullOrEmpty(optionalConnConfig))
             {
-                switch (engine)
-                {
-                    case DatabaseEngine.MySQL:
-                        connection = new MySqlConnection();
-                        break;
-                    case DatabaseEngine.SQLServer:
-                        connection = new SqlConnection();
-                        break;
-                    case DatabaseEngine.SQLite:
-                        connection = new SQLiteConnection();
-                        break;
-                }
+                if (connection == null)
+                    switch (engine)
+                    {
+                        case DatabaseEngine.MySQL:
+                            connection = new MySqlConnection();
+                            break;
+                        case DatabaseEngine.SQLServer:
+                            connection = new SqlConnection();
+                            break;
+                        case DatabaseEngine.PostgreSQL:
+                            connection = new NpgsqlConnection();
+                            break;
+                        case DatabaseEngine.SQLite:
+                            connection = new SQLiteConnection();
+                            break;
+                    }
 
                 if ((connection.State != ConnectionState.Open) && (connection.State != ConnectionState.Connecting))
                 {
@@ -205,8 +219,7 @@ namespace Rochas.DapperRepository.Base
                             sqlCommand.CommandText = SQLStatements.SQL_Action_GetLastId;
                     }
 
-                    int scalarReturn;
-                    int.TryParse(sqlCommand.ExecuteScalar().ToString(), out scalarReturn);
+                    int.TryParse(sqlCommand.ExecuteScalar().ToString(), out int scalarReturn);
                     executionReturn = scalarReturn;
                 }
                 else
@@ -221,10 +234,8 @@ namespace Rochas.DapperRepository.Base
             if (connection.State != ConnectionState.Open)
                 Connect();
 
-            using (var bulkCmd = new SqlBulkCopy(_connString))
-            {
-                bulkCmd.WriteToServer(entitiesTable);
-            }
+            using var bulkCmd = new SqlBulkCopy(_connString);
+            bulkCmd.WriteToServer(entitiesTable);
         }
 
         protected async Task ExecuteBulkCommandAsync(DataTable entitiesTable)
@@ -232,10 +243,8 @@ namespace Rochas.DapperRepository.Base
             if (connection.State != ConnectionState.Open)
                 Connect();
 
-            using (var bulkCmd = new SqlBulkCopy(_connString))
-            {
-                await bulkCmd.WriteToServerAsync(entitiesTable);
-            }
+            using var bulkCmd = new SqlBulkCopy(_connString);
+            await bulkCmd.WriteToServerAsync(entitiesTable);
         }
 
         private IDbCommand CompositeCommand(string sqlInstruction, Dictionary<object, object> parameters = null)

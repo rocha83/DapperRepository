@@ -58,21 +58,24 @@ namespace Rochas.DapperRepository.Helpers
                 sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, persistenceAction, filterEntity, 
                                                    recordLimit, displayAttributes, rangeValues, groupAttributes, readUncommited);
 
-                sqlInstruction = string.Format(sqlInstruction, ((engine != DatabaseEngine.SQLServer) && (recordLimit > 0))
-                               ? string.Format(SQLStatements.SQL_Action_LimitResult_MySQL, recordLimit)
-                               : string.Empty, "{0}", "{1}");
+                if (persistenceAction != PersistenceAction.Create)
+                {
+                    sqlInstruction = string.Format(sqlInstruction, ((engine != DatabaseEngine.SQLServer) && (recordLimit > 0))
+                                   ? string.Format(SQLStatements.SQL_Action_LimitResult_MySQL, recordLimit)
+                                   : string.Empty, "{0}", "{1}");
 
-                attributeColumnRelation = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, persistenceAction);
+                    attributeColumnRelation = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, persistenceAction);
 
-                if (!string.IsNullOrEmpty(groupAttributes))
-                    ParseGroupingAttributes(attributeColumnRelation, groupAttributes, ref sqlInstruction);
-                else
-                    sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}");
+                    if (!string.IsNullOrEmpty(groupAttributes))
+                        ParseGroupingAttributes(attributeColumnRelation, groupAttributes, ref sqlInstruction);
+                    else
+                        sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}");
 
-                if (!string.IsNullOrEmpty(orderAttributes))
-                    ParseOrdinationAttributes(attributeColumnRelation, orderAttributes, orderDescending, ref sqlInstruction);
-                else
-                    sqlInstruction = string.Format(sqlInstruction, string.Empty);
+                    if (!string.IsNullOrEmpty(orderAttributes))
+                        ParseOrdinationAttributes(attributeColumnRelation, orderAttributes, orderDescending, ref sqlInstruction);
+                    else
+                        sqlInstruction = string.Format(sqlInstruction, string.Empty);
+                }
 
                 return sqlInstruction;
             }
@@ -215,14 +218,13 @@ namespace Rochas.DapperRepository.Helpers
             if (entitySqlData != null)
                 foreach (var item in entitySqlData)
                 {
-                    KeyValuePair<object, object> itemChildKeyPair;
+                    var itemChildKeyPair = new KeyValuePair<object, object>();
 
                     // Grouping predicate
                     if (!item.Key.Equals("TableName"))
                     {
-                        itemChildKeyPair = (KeyValuePair<object, object>)item.Value;
-
                         entityAttributeName = item.Key.ToString();
+                        itemChildKeyPair = (KeyValuePair<object, object>)item.Value;
                         entityColumnName = ((KeyValuePair<object, object>)item.Value).Key.ToString();
 
                         if (!string.IsNullOrWhiteSpace(groupAttributes) && groupAttributes.Contains(entityAttributeName))

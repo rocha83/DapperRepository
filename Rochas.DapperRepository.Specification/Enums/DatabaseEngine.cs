@@ -8,6 +8,7 @@ namespace Rochas.DapperRepository.Specification.Enums
     {
         MySQL = 1,
         SQLServer = 2,
-        SQLite = 3
+        PostgreSQL = 3,
+        SQLite = 4
     }
 }

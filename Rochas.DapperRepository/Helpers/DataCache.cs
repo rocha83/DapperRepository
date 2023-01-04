@@ -2,10 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Configuration;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace Rochas.DapperRepository.Helpers
 {
@@ -33,7 +30,7 @@ namespace Rochas.DapperRepository.Helpers
 
             if (cacheKey != null)
             {
-                var serialKey = JsonConvert.SerializeObject(cacheKey);
+                var serialKey = JsonSerializer.Serialize(cacheKey);
                 var serialCacheKey = new KeyValuePair<int, string>(cacheKey.GetType().GetHashCode(), serialKey);
                 if (cacheItems.ContainsKey(serialCacheKey))
                     result = cacheItems[serialCacheKey];
@@ -55,7 +52,7 @@ namespace Rochas.DapperRepository.Helpers
                 {
                     CheckMemoryUsage();
 
-                    var serialKey = JsonConvert.SerializeObject(cacheKey);
+                    var serialKey = JsonSerializer.Serialize(cacheKey);
                     var serialCacheKey = new KeyValuePair<int, string>(cacheKey.GetType().GetHashCode(), serialKey);
 
                     if (!cacheItems.ContainsKey(serialCacheKey))
@@ -74,7 +71,7 @@ namespace Rochas.DapperRepository.Helpers
         {
             if (cacheKey != null)
             {
-                var serialKey = JsonConvert.SerializeObject(cacheKey);
+                var serialKey = JsonSerializer.Serialize(cacheKey);
                 var serialCacheKey = new KeyValuePair<int, string>(cacheKey.GetType().GetHashCode(), serialKey);
                 if (cacheItems.ContainsKey(serialCacheKey))
                     cacheItems.Remove(serialCacheKey);

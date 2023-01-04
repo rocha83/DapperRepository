@@ -7,6 +7,7 @@ using Rochas.DapperRepository.Specification.Enums;
 
 namespace Rochas.DapperRepository.Test
 {
+    [TestCaseOrderer("Rochas.DapperRepository.Test.AlphabeticalOrderer", "Rochas.DapperRepository.Test")]
     public class GenericRepositoryTest
     {
         private string databaseFileName = "MockDatabase.sqlite";
@@ -44,7 +45,7 @@ namespace Rochas.DapperRepository.Test
             };
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.Create(sampleEntity);
+                result = repos.CreateSync(sampleEntity);
             }
 
             Assert.True(result > 0);
@@ -58,7 +59,7 @@ namespace Rochas.DapperRepository.Test
             var key = 12345;
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.Get(key);
+                result = repos.GetSync(key);
             }
 
             Assert.NotNull(result);
@@ -73,7 +74,7 @@ namespace Rochas.DapperRepository.Test
             var filter = new SampleEntity() { Name = "Roberto Torres" };
             using(var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.Get(filter);
+                result = repos.GetSync(filter);
             }
 
             Assert.NotNull(result);
@@ -89,7 +90,7 @@ namespace Rochas.DapperRepository.Test
             
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.List(filter);
+                result = repos.ListSync(filter);
             }
 
             Assert.NotNull(result);
@@ -105,7 +106,7 @@ namespace Rochas.DapperRepository.Test
 
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.List(filter, recordsLimit: 5);
+                result = repos.ListSync(filter, recordsLimit: 5);
             }
 
             Assert.NotNull(result);
@@ -122,7 +123,7 @@ namespace Rochas.DapperRepository.Test
 
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.Search(filter);
+                result = repos.SearchSync(filter);
             }
 
             Assert.NotNull(result);
@@ -137,7 +138,7 @@ namespace Rochas.DapperRepository.Test
 
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.Count(filter);
+                result = repos.CountSync(filter);
             }
 
             Assert.True(result > 0);
@@ -150,11 +151,11 @@ namespace Rochas.DapperRepository.Test
             var filter = new SampleEntity() { DocNumber = 12345 };
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                var item = repos.Get(filter);
+                var item = repos.GetSync(filter);
                 if (item != null)
                 {
                     item.Age = 37;
-                    result = repos.Edit(item, filter);
+                    result = repos.EditSync(item, filter);
                 }
             }
 
@@ -168,7 +169,7 @@ namespace Rochas.DapperRepository.Test
             var filter = new SampleEntity() { DocNumber = 12345 };
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.Delete(filter);
+                result = repos.DeleteSync(filter);
             }
 
             Assert.True(result > 0);
