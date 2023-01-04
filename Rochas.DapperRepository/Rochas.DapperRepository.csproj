@@ -7,7 +7,7 @@
     <Company></Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RepositoryType>Git</RepositoryType>
-    <RepositoryUrl>https://github.com/rocha83br/DapperRepository</RepositoryUrl>
+    <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable persistence parser crud poco orm cqrs</PackageTags>
     <Version>1.0.6.5</Version>

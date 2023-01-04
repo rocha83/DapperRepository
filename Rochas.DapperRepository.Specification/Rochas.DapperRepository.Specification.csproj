@@ -8,8 +8,8 @@
     <Description>A specification library for Rochas.DapperRepository implementation</Description>
     <Copyright>Renato Rocha</Copyright>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
-    <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql sqlite cacheable persistence parser crud poco orm cqrs</PackageTags>
-    <RepositoryUrl>https://github.com/rocha83br/DapperRepository</RepositoryUrl>
+    <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cacheable persistence parser crud poco orm cqrs</PackageTags>
+    <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <Version>1.0.3</Version>
