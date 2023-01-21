@@ -25,21 +25,24 @@ namespace Rochas.DapperRepository
         static readonly Type entityType = typeof(T);
         static readonly PropertyInfo[] entityProps = entityType.GetProperties();
         bool _readUncommited;
+        bool _useCache;
 
         #endregion
 
         #region Constructors
 
-        public GenericRepository(DatabaseEngine engine, string connectionString, string logPath = null, bool keepConnected = false, bool readUncommited = false, params string[] replicaConnStrings)
+        public GenericRepository(DatabaseEngine engine, string connectionString, string logPath = null, bool keepConnected = false, bool readUncommited = false, bool useCache = true, params string[] replicaConnStrings)
             : base(engine, connectionString, logPath, keepConnected, replicaConnStrings)
         {
             _readUncommited = readUncommited;
+            _useCache = useCache;
         }
 
-        public GenericRepository(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, bool readUncommited = false, params string[] replicaConnStrings)
+        public GenericRepository(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, bool readUncommited = false, bool useCache = true, params string[] replicaConnStrings)
             : base(dbConnection, logPath, keepConnected, replicaConnStrings)
         {
             _readUncommited = readUncommited;
+            _useCache = useCache;
         }
 
         #endregion
@@ -77,12 +80,12 @@ namespace Rochas.DapperRepository
 
         public async Task<T> Get(T filter, bool loadComposition = false)
         {
-            return await GetObjectAsync(filter, loadComposition) as T;
+            return await GetObject(filter, loadComposition) as T;
         }
 
         public T GetSync(T filter, bool loadComposition = false)
         {
-            return GetObject(filter, loadComposition) as T;
+            return GetObjectSync(filter, loadComposition) as T;
         }
 
         public async Task<ICollection<T>> Search(object criteria, bool loadComposition = false, int recordsLimit = 0, string orderAttributes = null, bool orderDescending = false)
@@ -219,37 +222,48 @@ namespace Rochas.DapperRepository
 
         #region Helper Methods
 
-        private object GetObject(object filter, bool loadComposition = false)
-        {
-            return ListObjectsSync(filter, PersistenceAction.Get, loadComposition)?.FirstOrDefault();
-        }
-
-        private async Task<object> GetObjectAsync(object filter, bool loadComposition = false)
+        private async Task<object> GetObject(object filter, bool loadComposition = false)
         {
             var queryResult = await ListObjects(filter, PersistenceAction.Get, loadComposition);
             return queryResult?.FirstOrDefault();
+        }
+
+        private object GetObjectSync(object filter, bool loadComposition = false)
+        {
+            return ListObjectsSync(filter, PersistenceAction.Get, loadComposition)?.FirstOrDefault();
         }
 
         private async Task<IEnumerable<object>> ListObjects(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool onlyListableAttributes = false, string showAttributes = null, Dictionary<string, double[]> rangeValues = null, string groupAttributes = null, string orderAttributes = null, bool orderDescending = false)
         {
             IEnumerable<object> returnList = null;
 
-            var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, onlyListableAttributes, showAttributes, rangeValues, groupAttributes, orderAttributes, orderDescending, _readUncommited);
+            // Verifica a existência da(s) entidade(s) no cache antes de realizar a consulta em banco de dados
+            if (IsCacheable(filterEntity))
+                returnList = DataCache.Get(filterEntity) as IEnumerable<object>;
 
-            if (keepConnection || base.Connect())
+            if (returnList == null)
             {
-                // Getting database return using Dapper
-                returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction);
-            }
+                var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, onlyListableAttributes, showAttributes, rangeValues, groupAttributes, orderAttributes, orderDescending, _readUncommited);
 
-            if (!keepConnection) base.Disconnect();
+                if (keepConnection || base.Connect())
+                {
+                    // Getting database return using Dapper
+                    returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction);
+                }
 
-            // Perform the composition data load when exists (Eager Loading)
-            if (loadComposition && (returnList != null) && returnList.Any())
-            {
-                var itemProps = returnList.First().GetType().GetProperties();
-                foreach (var item in returnList)
-                    FillComposition(item, itemProps);
+                if (!keepConnection) base.Disconnect();
+
+                // Perform the composition data load when exists (Eager Loading)
+                if (loadComposition && (returnList != null) && returnList.Any())
+                {
+                    var itemProps = returnList.First().GetType().GetProperties();
+                    foreach (var item in returnList)
+                        FillComposition(item, itemProps);
+                }
+
+                // Caso seja uma entidade elegível, adiciona a mesma ao cache
+                if ((returnList != null) && IsCacheable(filterEntity))
+                    DataCache.Put(filterEntity, returnList);
             }
 
             return returnList;
@@ -779,11 +793,7 @@ namespace Rochas.DapperRepository
 
                 if (!keepConnection) base.Disconnect();
 
-                // Efetua a limpeza do cache para a entidade em questão
-                var isCacheable = (entity.GetType().GetCustomAttribute(typeof(CacheableAttribute)) != null);
-                if (isCacheable)
-                    DataCache.Del(entity, true);
-
+                CleanCacheableData(entity);
             }
             catch (Exception)
             {
@@ -832,6 +842,12 @@ namespace Rochas.DapperRepository
             {
                 RegisterException("PersistReplicas", ex, param);
             }
+        }
+
+        private bool IsCacheable(object entity)
+        {
+            var hasCacheAttrib = (entity.GetType().GetCustomAttribute(typeof(CacheableAttribute)) != null);
+            return (hasCacheAttrib && _useCache);
         }
 
         private void CleanCacheableData(object entity)
