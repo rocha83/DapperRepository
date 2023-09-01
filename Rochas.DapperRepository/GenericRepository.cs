@@ -313,7 +313,11 @@ namespace Rochas.DapperRepository
                 lastInsertedId = await ExecuteCommandAsync(sqlInstruction);
 
                 if (persistComposition)
+                {
+                    var entityKeyProp = EntityReflector.GetKeyColumn(entityProps);
+                    entityKeyProp.SetValue(entity, lastInsertedId);
                     PersistComposition(entity, PersistenceAction.Create);
+                }
                 else
                     if (!keepConnection) base.Disconnect();
             }
@@ -345,7 +349,11 @@ namespace Rochas.DapperRepository
                 lastInsertedId = ExecuteCommand(sqlInstruction);
 
                 if (persistComposition)
+                {
+                    var entityKeyProp = EntityReflector.GetKeyColumn(entityProps);
+                    entityKeyProp.SetValue(entity, lastInsertedId);
                     PersistComposition(entity, PersistenceAction.Create);
+                }
                 else
                     if (!keepConnection) base.Disconnect();
             }
@@ -573,7 +581,7 @@ namespace Rochas.DapperRepository
 
                             if (attributeInstance != null)
                             {
-                                SetEntityForeignKey(loadedEntity, attributeInstance);
+                                SetForeignKeyValue(loadedEntity, attributeInstance, entityProps, relationConfig.ForeignKeyAttribute);
 
                                 var manyToRelations = ListObjectsSync(attributeInstance, PersistenceAction.List, true);
 
@@ -613,34 +621,34 @@ namespace Rochas.DapperRepository
             List<string> result = new List<string>();
             object childEntityInstance = null;
 
-            var entityType = entity.GetType();
             IEnumerable<PropertyInfo> childEntities = entityType.GetProperties().Where(prp => prp.GetCustomAttributes(true)
                                                                                 .Any(atb => atb.GetType().Name.Equals("RelatedEntity")));
 
             foreach (PropertyInfo child in childEntities)
             {
+                object childEntityFilter = null;
+
                 var relationAttrib = child.GetCustomAttributes(true)
                                           .FirstOrDefault(atb => atb.GetType().Name.Equals("RelatedEntity")) as RelatedEntity;
 
                 childEntityInstance = child.GetValue(entity, null);
-                object childEntityFilter = null;
-
                 var entityParent = (action != PersistenceAction.Edit) ? entity : filterEntity;
 
                 if (childEntityInstance != null)
                 {
                     var childEntityType = childEntityInstance.GetType();
-
                     if (!childEntityType.Name.Contains("List"))
                     {
                         var childProps = childEntityType.GetProperties();
                         action = EntitySqlParser.SetPersistenceAction(childEntityInstance, EntityReflector.GetKeyColumn(childProps));
-                        childEntityFilter = Activator.CreateInstance(childEntityInstance.GetType());
 
                         if (action == PersistenceAction.Edit)
-                            EntityReflector.MigrateEntityPrimaryKey(childEntityInstance, childProps, childEntityFilter);
+                        {
+                            childEntityFilter = Activator.CreateInstance(childEntityInstance.GetType());
+                            EntityReflector.SetFilterPrimaryKey(childEntityInstance, childProps, childEntityFilter);
+                        }
 
-                        SetEntityForeignKey(entityParent, child);
+                        SetForeignKeyValue(entityParent, childEntityInstance, childProps, relationAttrib.ForeignKeyAttribute);
 
                         result.Add(EntitySqlParser.ParseEntity(childEntityInstance, engine, action));
                     }
@@ -653,21 +661,23 @@ namespace Rochas.DapperRepository
                         {
                             foreach (var listItem in childListInstance)
                             {
+                                var listItemType = listItem.GetType();
+                                var listItemProps = listItemType.GetProperties();
+
                                 if (relationAttrib.Cardinality == RelationCardinality.OneToMany)
                                 {
-                                    var listItemType = listItem.GetType();
                                     childEntityFilter = Activator.CreateInstance(listItemType);
 
-                                    var listItemProps = listItemType.GetProperties();
+                                    
                                     action = EntitySqlParser.SetPersistenceAction(listItem, EntityReflector.GetKeyColumn(listItemProps));
 
                                     if (action == PersistenceAction.Edit)
                                     {
-                                        EntityReflector.MigrateEntityPrimaryKey(listItem, listItemProps, childEntityFilter);
+                                        EntityReflector.SetFilterPrimaryKey(listItem, listItemProps, childEntityFilter);
                                         childFiltersList.Add(childEntityFilter);
                                     }
 
-                                    SetEntityForeignKey(entityParent, listItem);
+                                    SetForeignKeyValue(entityParent, listItem, listItemProps, relationAttrib.ForeignKeyAttribute);
 
                                     result.Add(EntitySqlParser.ParseEntity(listItem, engine, action));
                                 }
@@ -675,7 +685,7 @@ namespace Rochas.DapperRepository
                                 {
                                     var manyToEntity = EntitySqlParser.ParseManyToRelation(listItem, relationAttrib);
 
-                                    SetEntityForeignKey(entityParent, manyToEntity);
+                                    SetForeignKeyValue(entityParent, manyToEntity, listItemProps, relationAttrib.ForeignKeyAttribute);
 
                                     var existRelation = this.GetObject(manyToEntity);
 
@@ -688,7 +698,7 @@ namespace Rochas.DapperRepository
                                     if (action == PersistenceAction.Edit)
                                     {
                                         existFilter = Activator.CreateInstance(manyToEntity.GetType());
-                                        EntityReflector.MigrateEntityPrimaryKey(manyToEntity, manyToEntityProps, existFilter);
+                                        EntityReflector.SetFilterPrimaryKey(manyToEntity, manyToEntityProps, existFilter);
                                         childFiltersList.Add(existFilter);
                                     }
 
@@ -706,7 +716,7 @@ namespace Rochas.DapperRepository
                             else
                                 childEntity = childInstance;
 
-                            SetEntityForeignKey(entityParent, childEntity);
+                            SetForeignKeyValue(entityParent, childEntity, entityProps, relationAttrib.ForeignKeyAttribute);
 
                             childFiltersList.Add(childEntity);
                         }
@@ -767,13 +777,10 @@ namespace Rochas.DapperRepository
             Parallelizer.StartNewProcess(replicationParallelDelegate, parallelParam);
         }
 
-        private void SetEntityForeignKey(object parentEntity, object childEntity)
+        private void SetForeignKeyValue(object parentEntity, object childEntity, PropertyInfo[] childProps, string foreignKeyPropName)
         {
-            var parentProps = parentEntity.GetType().GetProperties();
-            var parentKey = EntityReflector.GetKeyColumn(parentProps);
-
-            var childProps = childEntity.GetType().GetProperties();
-            var childForeignKey = EntityReflector.GetForeignKeyColumn(childProps);
+            var parentKey = EntityReflector.GetKeyColumn(entityProps);
+            var childForeignKey = childProps?.FirstOrDefault(prp => prp.Name.Equals(foreignKeyPropName));
 
             if ((parentKey != null) && (childForeignKey != null))
                 childForeignKey.SetValue(childEntity, parentKey.GetValue(parentEntity, null), null);

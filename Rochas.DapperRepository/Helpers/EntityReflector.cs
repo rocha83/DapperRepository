@@ -188,12 +188,7 @@ namespace Rochas.DapperRepository.Helpers
             return entity;
         }
 
-        public static PropertyInfo GetForeignKeyColumn(PropertyInfo[] entityProps)
-        {
-            return entityProps?.FirstOrDefault(prp => prp.GetCustomAttributes().Any(atb => atb is ForeignKeyAttribute));
-        }
-
-        public static void MigrateEntityPrimaryKey(object entity, PropertyInfo[] entityProps, object filterEntity)
+        public static void SetFilterPrimaryKey(object entity, PropertyInfo[] entityProps, object filterEntity)
         {
             var entityKeyColumn = GetKeyColumn(entityProps);
 

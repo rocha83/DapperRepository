@@ -19,7 +19,7 @@ namespace Rochas.DapperRepository.Test
 
             Assert.NotNull(result);
             Assert.StartsWith("SELECT", result);
-            Assert.EndsWith(string.Format("WHERE {0}.{1} = 12345", "sample_entity", "doc_number"), result);
+            Assert.EndsWith(string.Format("WHERE {0}.{1} = 12345", "sample_entity", "id"), result);
         }
 
         [Fact]

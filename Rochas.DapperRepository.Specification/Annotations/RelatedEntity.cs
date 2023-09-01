@@ -8,9 +8,8 @@ namespace Rochas.DapperRepository.Specification.Annotations
     {
         public RelationCardinality Cardinality;
         public string ForeignKeyAttribute;
-        public Type IntermediaryEntity;
-        public string IntermediaryKeyAttribute;
-        public bool RecordableComposition = false;
+        public Type IntermediaryEntity = null;
+        public string IntermediaryKeyAttribute = null;
 
         public RelationCardinality GetRelationCardinality()
         {
