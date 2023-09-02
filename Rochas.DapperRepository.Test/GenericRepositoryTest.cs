@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Xunit;
 using Rochas.DapperRepository.Specification.Enums;
@@ -212,7 +211,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test12_CompositeGetByKey()
+        public void Test12_GetCompositionByKey()
         {
             SampleEntity result;
 
@@ -226,6 +225,24 @@ namespace Rochas.DapperRepository.Test
             Assert.Equal(key, result.Id);
 
             Assert.NotNull(result.ForeignEntity);
+        }
+
+        [Fact]
+        public void Test13_ListComposition()
+        {
+            ICollection<SampleEntity> result;
+
+            var filter = new SampleEntity() { Name = "alberto" };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.ListSync(filter, true);
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Any());
+
+            Assert.NotNull(result.First().ForeignEntity);
         }
 
         #endregion
