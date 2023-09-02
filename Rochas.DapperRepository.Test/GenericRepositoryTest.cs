@@ -211,6 +211,23 @@ namespace Rochas.DapperRepository.Test
             Assert.True(result > 0);
         }
 
+        [Fact]
+        public void Test12_CompositeGetByKey()
+        {
+            SampleEntity result;
+
+            var key = 1;
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.GetSync(key, true);
+            }
+
+            Assert.NotNull(result);
+            Assert.Equal(key, result.Id);
+
+            Assert.NotNull(result.ForeignEntity);
+        }
+
         #endregion
     }
 }

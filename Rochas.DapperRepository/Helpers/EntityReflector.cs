@@ -200,6 +200,18 @@ namespace Rochas.DapperRepository.Helpers
             }
         }
 
+        public static IEnumerable<PropertyInfo> GetRelatedEntities(PropertyInfo[] entityProperties)
+        {
+             return entityProperties.Where(prp => prp.GetCustomAttributes(true)
+                                    .Any(atb => atb.GetType().Name.Equals("RelatedEntity")));
+        }
+
+        public static RelatedEntity GetRelatedEntityAttribute(PropertyInfo relatedEntity)
+        {
+            return relatedEntity.GetCustomAttributes(true)
+                                .FirstOrDefault(atb => atb.GetType().Name.Equals("RelatedEntity")) as RelatedEntity;
+        }
+
         public static bool MatchKeys(object sourceEntity, PropertyInfo[] entityProps, object destinEntity)
         {
             var entityKey = GetKeyColumn(entityProps);
