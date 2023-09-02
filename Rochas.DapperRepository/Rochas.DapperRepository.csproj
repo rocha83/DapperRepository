@@ -10,7 +10,7 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable persistence parser crud poco orm cqrs</PackageTags>
-    <Version>1.0.6.6</Version>
+    <Version>1.0.6.8</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <AssemblyVersion>1.0.6.6</AssemblyVersion>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
@@ -18,18 +18,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="MySqlConnector" Version="2.2.5" />
-    <PackageReference Include="Npgsql" Version="7.0.1" />
+    <PackageReference Include="Dapper" Version="2.0.151" />
+    <PackageReference Include="MySqlConnector" Version="2.2.7" />
+    <PackageReference Include="Npgsql" Version="7.0.4" />
     <PackageReference Include="System.ComponentModel" Version="4.3.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.117" />
-    <PackageReference Include="System.Text.Json" Version="7.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Rochas.DapperRepository.Specification\Rochas.DapperRepository.Specification.csproj" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.118" />
+    <PackageReference Include="System.Text.Json" Version="7.0.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,6 +33,10 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Rochas.DapperRepository.Specification\Rochas.DapperRepository.Specification.csproj" />
   </ItemGroup>
 
 </Project>
