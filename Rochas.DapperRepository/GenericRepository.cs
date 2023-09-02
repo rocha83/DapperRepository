@@ -545,17 +545,18 @@ namespace Rochas.DapperRepository
 
                         SetForeignKeyValue(loadedEntity, childEntityInstance, childChildProps, relationAttrib.ForeignKeyAttribute);
 
-                        childEntityInstance = GetObjectSync(childEntityInstance);
+                        childEntityInstance = GetObjectSync(childEntityInstance, true);
 
                         break;
                     case RelationCardinality.OneToMany:
 
-                        childEntityInstance = Activator.CreateInstance(child.PropertyType.GetGenericArguments()[0], true);
-                        childChildProps = childEntityInstance.GetType().GetProperties();
+                        var childEntityType = child.PropertyType.GetGenericArguments()[0];
+                        childEntityInstance = Activator.CreateInstance(childEntityType, true);
 
+                        childChildProps = childEntityType.GetProperties();
                         SetForeignKeyValue(loadedEntity, childEntityInstance, childChildProps, relationAttrib.ForeignKeyAttribute);
 
-                        childEntityInstance = ListObjectsSync(childEntityInstance, PersistenceAction.List);
+                        childEntityInstance = ListObjectsSync(childEntityInstance, PersistenceAction.List, true);
 
                         break;
                     case RelationCardinality.ManyToMany:
@@ -568,21 +569,23 @@ namespace Rochas.DapperRepository
 
                             var manyToRelations = ListObjectsSync(childEntityInstance, PersistenceAction.List, true);
 
-                            Type childManyType = child.PropertyType.GetGenericArguments()[0];
-                            Type dynamicManyType = typeof(List<>).MakeGenericType(new Type[] { childManyType });
-                            IList childManyEntities = (IList)Activator.CreateInstance(dynamicManyType, true);
+                            
+                            var childManyEntities = EntityReflector.CreateTypedList(child);
 
-                            foreach (var rel in manyToRelations)
+                            foreach (var relation in manyToRelations)
                             {
-                                var childManyKeyValue = rel.GetType().GetProperty(relationAttrib.IntermediaryKeyAttribute).GetValue(rel, null);
-                                var childFilter = Activator.CreateInstance(childManyType);
+                                var relationType = relation.GetType();
+                                var childManyKeyValue = relationType.GetProperty(relationAttrib.IntermediaryKeyAttribute)
+                                                                    .GetValue(relation, null);
 
+                                var childManyType = relationType.GetGenericArguments()[0];
+                                var childFilter = Activator.CreateInstance(childManyType);
                                 var childFilterProps = childFilter.GetType().GetProperties();
                                 EntityReflector.GetKeyColumn(childFilterProps).SetValue(childFilter, childManyKeyValue, null);
 
-                                var childInstance = GetObjectSync(childFilter);
+                                var childManyInstance = GetObjectSync(childFilter, true);
 
-                                childManyEntities.Add(childInstance);
+                                childManyEntities.Add(childManyInstance);
                             }
 
                             childEntityInstance = childManyEntities;
@@ -594,7 +597,16 @@ namespace Rochas.DapperRepository
                     if (!child.PropertyType.Name.Contains("List"))
                         child.SetValue(loadedEntity, childEntityInstance, null);
                     else
-                        child.SetValue(loadedEntity, (IList)childEntityInstance, null);
+                    {
+                        var childListInstance = (IList)childEntityInstance;
+                        if (childListInstance.Count > 0)
+                        {
+                            var childTypedList = EntityReflector.CreateTypedList(child);
+                            foreach (var listItem in childListInstance)
+                                childTypedList.Add(listItem);
+                            child.SetValue(loadedEntity, childTypedList, null);
+                        }
+                    }
             }
         }
 
@@ -703,9 +715,6 @@ namespace Rochas.DapperRepository
                     }
                 }
             }
-
-            if (result.Any(rst => rst.Contains(SQLStatements.SQL_ReservedWord_INSERT)))
-                result.Reverse();
 
             return result;
         }

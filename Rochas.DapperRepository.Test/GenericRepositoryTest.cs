@@ -27,15 +27,24 @@ namespace Rochas.DapperRepository.Test
 	                                         [weight] [decimal](18, 2) NULL,
 	                                         [active] [bit] NOT NULL)";
 
-            var foreignTableScript = @"CREATE TABLE [sample_foreign_entity] (
-	                                                [parent_id] [int] PRIMARY KEY NOT NULL,
-                                                    [title] [varchar](100) NOT NULL,
-	                                                [description] [varchar](400) NOT NULL)";
+            var oneForeignTableScript = @"CREATE TABLE [sample_one_foreign_entity] (
+	                                                   [parent_id] [int] PRIMARY KEY NOT NULL,
+                                                       [title] [varchar](100) NOT NULL,
+	                                                   [description] [varchar](400) NOT NULL)";
+
+            var manyForeignTableScript = @"CREATE TABLE [sample_many_foreign_entity] (
+	                                                    [id] INTEGER PRIMARY KEY,
+                                                        [parent_id] [int] NOT NULL,
+                                                        [creation_date] [datetime] NOT NULL,
+                                                        [title] [varchar](100) NOT NULL,
+	                                                    [description] [varchar](400) NOT NULL,
+                                                        [active] [bit] NOT NULL)";
 
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 repos.Initialize(tableScript, databaseFileName);
-                repos.Initialize(foreignTableScript);
+                repos.Initialize(oneForeignTableScript);
+                repos.Initialize(manyForeignTableScript);
             }
         }
 
@@ -187,7 +196,7 @@ namespace Rochas.DapperRepository.Test
         #region Composite Entity Tests
 
         [Fact]
-        public void Test11_CompositeCreate()
+        public void Test11_OneCompositionCreate()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -196,9 +205,9 @@ namespace Rochas.DapperRepository.Test
                 CreationDate = DateTime.Now,
                 Name = "Alberto Gomes",
                 Active = true,
-                ForeignEntity = new SampleForeignEntity()
+                OneForeignEntity = new SampleOneForeignEntity()
                 {
-                    Title = "Titulo Teste",
+                    Title = "Titulo Teste Singular",
                     Description = "Descricao Teste Lorem Ipsum Lorem Ipsum"
                 }
             };
@@ -211,7 +220,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test12_GetCompositionByKey()
+        public void Test12_GetOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -224,11 +233,11 @@ namespace Rochas.DapperRepository.Test
             Assert.NotNull(result);
             Assert.Equal(key, result.Id);
 
-            Assert.NotNull(result.ForeignEntity);
+            Assert.NotNull(result.OneForeignEntity);
         }
 
         [Fact]
-        public void Test13_ListComposition()
+        public void Test13_ListOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -242,7 +251,75 @@ namespace Rochas.DapperRepository.Test
             Assert.NotNull(result);
             Assert.True(result.Any());
 
-            Assert.NotNull(result.First().ForeignEntity);
+            Assert.NotNull(result.First().OneForeignEntity);
+        }
+
+        [Fact]
+        public void Test14_ManyCompositionCreate()
+        {
+            int result;
+            var sampleEntity = new SampleEntity()
+            {
+                DocNumber = 13456,
+                CreationDate = DateTime.Now,
+                Name = "Carlos Almeida",
+                Active = true,
+                ManyForeignEntities = new List<SampleManyForeignEntity>()
+            };
+
+            for(var counter = 1; counter < 6; counter++)
+            sampleEntity.ManyForeignEntities.Add(new SampleManyForeignEntity()
+            {
+                CreationDate = sampleEntity.CreationDate,
+                Title = $"Titulo Teste Plural {counter}",
+                Description = $"Descricao Item {counter} Lorem Ipsum Lorem Ipsum",
+                Active = true
+            });
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.CreateSync(sampleEntity, true);
+            }
+
+            Assert.True(result > 0);
+        }
+
+        [Fact]
+        public void Test15_GetManyCompositionByKey()
+        {
+            SampleEntity result;
+
+            var key = 2;
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.GetSync(key, true);
+            }
+
+            Assert.NotNull(result);
+            Assert.Equal(key, result.Id);
+
+            Assert.NotNull(result.ManyForeignEntities);
+            Assert.True(result.ManyForeignEntities.Count == 5);
+        }
+
+        [Fact]
+        public void Test16_ListManyComposition()
+        {
+            ICollection<SampleEntity> result;
+
+            var filter = new SampleEntity() { Name = "carlos" };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.ListSync(filter, true);
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Any());
+
+            var firstItem = result.First();
+            Assert.NotNull(firstItem.ManyForeignEntities);
+            Assert.True(firstItem.ManyForeignEntities.Count == 5);
         }
 
         #endregion

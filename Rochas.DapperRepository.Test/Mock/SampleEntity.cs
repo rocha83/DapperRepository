@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Rochas.DapperRepository.Specification.Annotations;
@@ -44,7 +45,11 @@ namespace Rochas.DapperRepository.Test
 
         [RelatedEntity(Cardinality = RelationCardinality.OneToOne, 
                        ForeignKeyAttribute = "ParentId")]
-        public SampleForeignEntity ForeignEntity { get; set; }
+        public SampleOneForeignEntity OneForeignEntity { get; set; }
+
+        [RelatedEntity(Cardinality = RelationCardinality.OneToMany,
+                       ForeignKeyAttribute = "ParentId")]
+        public IList<SampleManyForeignEntity> ManyForeignEntities { get; set; }
 
         #endregion
     }
