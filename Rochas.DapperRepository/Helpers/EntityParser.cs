@@ -482,22 +482,26 @@ namespace Rochas.DapperRepository.Helpers
             var isDateRange = filter.Key.ToString().ToLower().Contains("date");
 
             if (isNumericRange)
-                comparation = GetNumericRangeComparation(rangeValues, columnNameStr, rangeFrom, rangeTo);
+                comparation = GetNumericRangeComparation(rangeValues, columnNameStr, ref rangeFrom, ref rangeTo);
             else if (isDateRange)
-                comparation = GetDateRangeComparation(rangeValues, columnNameStr, rangeFrom, rangeTo);
+                comparation = GetDateRangeComparation(rangeValues, columnNameStr, ref rangeFrom, ref rangeTo);
             
-            if ((rangeFrom != "'{0}'") || (rangeTo != "'{0}'"))
+            if (!string.IsNullOrWhiteSpace(comparation))
                 columnFilterList += string.Concat(filterColumnName, " ", comparation, SqlOperator.And);
         }
 
         private static string GetNumericRangeComparation(IDictionary<string, object[]> rangeValues,
-                                                         string columnNameStr, string rangeFrom, string rangeTo)
+                                                         string columnNameStr, ref string rangeFrom, 
+                                                         ref string rangeTo)
         {
             var result = string.Empty;
-            var emptyRangeFrom = (double)rangeValues[columnNameStr][0] == double.MinValue;
-            var emptyRangeTo = (double)rangeValues[columnNameStr][1] == double.MinValue;
+            rangeFrom = rangeFrom.Replace("'", string.Empty);
+            rangeTo = rangeTo.Replace("'", string.Empty);
 
-            if (!(emptyRangeFrom && emptyRangeTo))
+            var emptyRangeFrom = double.Parse(rangeValues[columnNameStr][0].ToString()) == 0;
+            var emptyRangeTo = double.Parse(rangeValues[columnNameStr][1].ToString()) == 0;
+
+            if (!emptyRangeFrom && !emptyRangeTo)
             {
                 rangeFrom = string.Format(rangeFrom,
                 rangeValues[columnNameStr][0].ToString());
@@ -525,13 +529,14 @@ namespace Rochas.DapperRepository.Helpers
         }
 
         private static string GetDateRangeComparation(IDictionary<string, object[]> rangeValues, 
-                                                      string columnNameStr, string rangeFrom, string rangeTo)
+                                                      string columnNameStr, ref string rangeFrom, 
+                                                      ref string rangeTo)
         {
             var result = string.Empty;
             var emptyRangeFrom = (DateTime)rangeValues[columnNameStr][0] == DateTime.MinValue;
             var emptyRangeTo = (DateTime)rangeValues[columnNameStr][1] == DateTime.MinValue;
 
-            if (!(emptyRangeFrom && emptyRangeTo))
+            if (!emptyRangeFrom && !emptyRangeTo)
             {
                 rangeFrom = string.Format(rangeFrom,
                 ((DateTime)rangeValues[columnNameStr][0]).ToString(DateTimeFormat.NormalDate));

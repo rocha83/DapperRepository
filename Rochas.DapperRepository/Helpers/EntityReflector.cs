@@ -255,13 +255,15 @@ namespace Rochas.DapperRepository.Helpers
 
         public static Dictionary<string, object[]> GetEntityRangeFilter(object entity, PropertyInfo[] entityProps)
         {
-            var result = new Dictionary<string, object[]>();
+            Dictionary<string, object[]> result = null; 
 
             var rangeFilterProps =  entityProps.Where(prp => prp.GetCustomAttributes(true)
                                                  .Any(atb => atb.GetType().Name.Equals("RangeFilterAttribute")
                                                       && !string.IsNullOrWhiteSpace(((RangeFilterAttribute)atb).LinkedRangeProperty)));
 
             if (rangeFilterProps != null)
+            {
+                result = new Dictionary<string, object[]>();
                 foreach (var prop in rangeFilterProps)
                 {
                     var columnAnnotation = prop.GetCustomAttribute(typeof(ColumnAttribute)) as ColumnAttribute;
@@ -275,16 +277,14 @@ namespace Rochas.DapperRepository.Helpers
                         var lkdRangeProp = entityProps.FirstOrDefault(lkp => lkp.Name.Equals(linkedRangePropName));
                         if (lkdRangeProp != null)
                         {
-                            result = new Dictionary<string, object[]>
-                        {
-                            { columnName, new object[] { prop.GetValue(entity), lkdRangeProp.GetValue(entity) } }
-                        };
+                            result.Add(columnName,
+                                new object[] { prop.GetValue(entity), lkdRangeProp.GetValue(entity) });
                         }
-
                         else
                             throw new Exception("Linked range property not found.");
                     }
                 }
+            }
 
             return result;
         }

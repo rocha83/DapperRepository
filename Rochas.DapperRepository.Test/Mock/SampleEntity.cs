@@ -31,8 +31,16 @@ namespace Rochas.DapperRepository.Test
         [Column("name")]
         public string Name { get; set; }
 
+        [Filterable]
+        [Column("resume")]
+        public string Resume { get; set; }
+
         [Column("age")]
+        [RangeFilter(LinkedRangeProperty = "AgeEnd")]
         public int Age { get; set; }
+
+        [NotMapped]
+        public int AgeEnd { get; set; }
 
         [Column("height")]
         public decimal Height { get; set; }
