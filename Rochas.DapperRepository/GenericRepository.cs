@@ -243,7 +243,7 @@ namespace Rochas.DapperRepository
 
             if (returnList == null)
             {
-                var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, onlyListableAttributes, showAttributes, rangeValues, groupAttributes, orderAttributes, orderDescending, _readUncommited);
+                var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, onlyListableAttributes, showAttributes, groupAttributes, orderAttributes, orderDescending, _readUncommited);
 
                 if (keepConnection || base.Connect())
                 {
@@ -269,12 +269,12 @@ namespace Rochas.DapperRepository
             return returnList;
         }
 
-        private IEnumerable<object> ListObjectsSync(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool onlyListableAttributes = false, string showAttributes = null, Dictionary<string, double[]> rangeValues = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
+        private IEnumerable<object> ListObjectsSync(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
         {
             IEnumerable<object> returnList = null;
 
             // Getting SQL statement from Helper
-            var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, onlyListableAttributes, showAttributes, rangeValues, groupAttributes, sortAttributes, orderDescending, _readUncommited);
+            var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending, _readUncommited);
 
             if (keepConnection || Connect())
             {
@@ -523,7 +523,7 @@ namespace Rochas.DapperRepository
         }
         private void FillComposition(object loadedEntity, PropertyInfo[] entityProps)
         {
-            RelatedEntity relationAttrib = null;
+            RelatedEntityAttribute relationAttrib = null;
 
             var childEntities = EntityReflector.GetRelatedEntities(entityProps);
 

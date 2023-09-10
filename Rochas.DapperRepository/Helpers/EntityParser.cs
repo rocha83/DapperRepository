@@ -30,7 +30,7 @@ namespace Rochas.DapperRepository.Helpers
         /// <param name="orderDescending">Flag to return ordering with descending order</param>
         /// <param name="readUncommited">Flag to return uncommited transaction queries statements (NOLOCK)</param>
         /// <returns></returns>
-        public static string ParseEntity(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int recordLimit = 0, bool onlyListableAttributes = false, string showAttributes = null, IDictionary<string, double[]> rangeValues = null, string groupAttributes = null, string orderAttributes = null, bool orderDescending = false, bool readUncommited = false)
+        public static string ParseEntity(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int recordLimit = 0, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string orderAttributes = null, bool orderDescending = false, bool readUncommited = false)
         {
             try
             {
@@ -55,8 +55,8 @@ namespace Rochas.DapperRepository.Helpers
                 if (onlyListableAttributes)
                     EntityReflector.ValidateListableAttributes(entityProps, showAttributes, out displayAttributes);
 
-                sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, persistenceAction, filterEntity, 
-                                                   recordLimit, displayAttributes, rangeValues, groupAttributes, readUncommited);
+                sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, persistenceAction, filterEntity,
+                                                   recordLimit, displayAttributes, groupAttributes, readUncommited);
 
                 if (persistenceAction != PersistenceAction.Create)
                 {
@@ -79,7 +79,7 @@ namespace Rochas.DapperRepository.Helpers
 
                 return sqlInstruction;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw ex;
             }
@@ -89,21 +89,25 @@ namespace Rochas.DapperRepository.Helpers
 
         #region Helper Methods
 
-        private static string GetSqlInstruction(object entity, Type entityType, PropertyInfo[] entityProps, DatabaseEngine engine, PersistenceAction action, object filterEntity, int recordLimit, string[] showAttributes, IDictionary<string, double[]> rangeValues, string groupAttributes, bool readUncommited = false)
+        private static string GetSqlInstruction(object entity, Type entityType, PropertyInfo[] entityProps, DatabaseEngine engine, PersistenceAction action, object filterEntity, int recordLimit, string[] showAttributes, string groupAttributes, bool readUncommited = false)
         {
             string sqlInstruction;
             Dictionary<object, object> sqlFilterData;
+            Dictionary<string, object[]> rangeValues = null;
             Dictionary<object, object> sqlEntityData = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, action);
 
             if (filterEntity != null)
+            {
                 sqlFilterData = EntityReflector.GetPropertiesValueList(filterEntity, entityType, entityProps, action);
+                rangeValues = EntityReflector.GetEntityRangeFilter(filterEntity, entityProps);
+            }
             else
                 sqlFilterData = null;
 
             var keyColumnName = EntityReflector.GetKeyColumnName(entityProps);
 
             Dictionary<string, string> sqlParameters = GetSqlParameters(sqlEntityData, engine, action, sqlFilterData,
-                                                                        recordLimit, showAttributes, keyColumnName, 
+                                                                        recordLimit, showAttributes, keyColumnName,
                                                                         rangeValues, groupAttributes, readUncommited);
             switch (action)
             {
@@ -146,7 +150,7 @@ namespace Rochas.DapperRepository.Helpers
 
             return sqlInstruction;
         }
-        
+
         private static void ParseGroupingAttributes(Dictionary<object, object> attributeColumnRelation, string groupAttributes, ref string sqlInstruction)
         {
             string columnList = string.Empty;
@@ -201,7 +205,7 @@ namespace Rochas.DapperRepository.Helpers
                                                          orderDescending ? "DESC" : "ASC"));
         }
 
-        private static Dictionary<string, string> GetSqlParameters(Dictionary<object, object> entitySqlData, DatabaseEngine engine, PersistenceAction action, IDictionary<object, object> entitySqlFilter, int recordLimit, string[] showAttributes, string keyColumnName, IDictionary<string, double[]> rangeValues, string groupAttributes, bool readUncommited = false)
+        private static Dictionary<string, string> GetSqlParameters(Dictionary<object, object> entitySqlData, DatabaseEngine engine, PersistenceAction action, IDictionary<object, object> entitySqlFilter, int recordLimit, string[] showAttributes, string keyColumnName, IDictionary<string, object[]> rangeValues, string groupAttributes, bool readUncommited = false)
         {
             var returnDictionary = new Dictionary<string, string>();
 
@@ -246,7 +250,7 @@ namespace Rochas.DapperRepository.Helpers
                     }
                     else
                     {
-                        SetPredicateSqlParameters(itemChildKeyPair, engine, action, tableName, keyColumnName, entityColumnName, entityAttributeName, 
+                        SetPredicateSqlParameters(itemChildKeyPair, engine, action, tableName, keyColumnName, entityColumnName, entityAttributeName,
                                                   recordLimit, showAttributes, ref columnList, ref valueList, ref columnValueList);
                     }
                 }
@@ -259,7 +263,7 @@ namespace Rochas.DapperRepository.Helpers
             return returnDictionary;
         }
 
-        public static object ParseManyToRelation(object childEntity, RelatedEntity relation)
+        public static object ParseManyToRelation(object childEntity, RelatedEntityAttribute relation)
         {
             object result = null;
             var relEntity = relation.IntermediaryEntity;
@@ -390,11 +394,11 @@ namespace Rochas.DapperRepository.Helpers
             }
         }
 
-        private static void SetFilterSqlParameters(IDictionary<object, object> entitySqlFilter, string tableName, PersistenceAction action, IDictionary<string, double[]> rangeValues, ref string columnFilterList)
+        private static void SetFilterSqlParameters(IDictionary<object, object> entitySqlFilter, string tableName, PersistenceAction action, IDictionary<string, object[]> rangeValues, ref string columnFilterList)
         {
             foreach (var filter in entitySqlFilter)
             {
-                if (!filter.Key.Equals("TableName") && !filter.Key.Equals("RelatedEntity"))
+                if (!filter.Key.Equals("TableName") && !filter.Key.Equals("RelatedEntityAttribute"))
                 {
                     object filterColumnName = null;
                     object filterColumnValue = null;
@@ -431,10 +435,9 @@ namespace Rochas.DapperRepository.Helpers
                             && (filterColumnValue.ToString() != SqlDefaultValue.Zero))
                         || rangeFilter)
                     {
-                        long fake;
                         bool compareRule = ((action == PersistenceAction.List)
                                             || (action == PersistenceAction.Count))
-                                         && !long.TryParse(filterColumnValue.ToString(), out fake)
+                                         && !long.TryParse(filterColumnValue.ToString(), out long fake)
                                          && !filterColumnName.ToString().ToLower().Contains("date")
                                          && !filterColumnName.ToString().ToLower().StartsWith("id")
                                          && !filterColumnName.ToString().ToLower().EndsWith("id")
@@ -459,17 +462,100 @@ namespace Rochas.DapperRepository.Helpers
                                     ((compareRule) ? SqlOperator.Or : SqlOperator.And);
                         }
                         else
-                        {
-                            double rangeFrom = rangeValues[columnNameStr][0];
-                            double rangeTo = rangeValues[columnNameStr][1];
-
-                            comparation = string.Format(SqlOperator.Between, rangeFrom, rangeTo);
-
-                            columnFilterList += string.Concat(filterColumnName, " ", comparation, SqlOperator.And);
-                        }
+                            SetRangeFilterSql(filter, rangeValues, columnNameStr, 
+                                              filterColumnName.ToString(), ref columnFilterList);
                     }
                 }
             }
+        }
+
+        private static void SetRangeFilterSql(KeyValuePair<object, object> filter,
+                                            IDictionary<string, object[]> rangeValues, 
+                                            string columnNameStr, string filterColumnName, 
+                                            ref string columnFilterList)
+        {
+            string rangeFrom = "'{0}'";
+            string rangeTo = "'{0}'";
+            string comparation = string.Empty;
+
+            var isNumericRange = double.TryParse(rangeValues[columnNameStr][0].ToString(), out var fake1);
+            var isDateRange = filter.Key.ToString().ToLower().Contains("date");
+
+            if (isNumericRange)
+                comparation = GetNumericRangeComparation(rangeValues, columnNameStr, rangeFrom, rangeTo);
+            else if (isDateRange)
+                comparation = GetDateRangeComparation(rangeValues, columnNameStr, rangeFrom, rangeTo);
+            
+            if ((rangeFrom != "'{0}'") || (rangeTo != "'{0}'"))
+                columnFilterList += string.Concat(filterColumnName, " ", comparation, SqlOperator.And);
+        }
+
+        private static string GetNumericRangeComparation(IDictionary<string, object[]> rangeValues,
+                                                         string columnNameStr, string rangeFrom, string rangeTo)
+        {
+            var result = string.Empty;
+            var emptyRangeFrom = (double)rangeValues[columnNameStr][0] == double.MinValue;
+            var emptyRangeTo = (double)rangeValues[columnNameStr][1] == double.MinValue;
+
+            if (!(emptyRangeFrom && emptyRangeTo))
+            {
+                rangeFrom = string.Format(rangeFrom,
+                rangeValues[columnNameStr][0].ToString());
+                rangeTo = string.Format(rangeTo,
+                rangeValues[columnNameStr][1].ToString());
+
+                result = string.Format(SqlOperator.Between, rangeFrom, rangeTo);
+            }
+            else if (!emptyRangeFrom && emptyRangeTo)
+            {
+                rangeFrom = string.Format(rangeFrom,
+                rangeValues[columnNameStr][0].ToString());
+
+                result = string.Concat(SqlOperator.MajorOrEqual, rangeFrom);
+            }
+            else if (emptyRangeFrom && !emptyRangeTo)
+            {
+                rangeTo = string.Format(rangeTo,
+                rangeValues[columnNameStr][1].ToString());
+
+                result = string.Concat(SqlOperator.LessOrEqual, rangeTo);
+            }
+
+            return result;
+        }
+
+        private static string GetDateRangeComparation(IDictionary<string, object[]> rangeValues, 
+                                                      string columnNameStr, string rangeFrom, string rangeTo)
+        {
+            var result = string.Empty;
+            var emptyRangeFrom = (DateTime)rangeValues[columnNameStr][0] == DateTime.MinValue;
+            var emptyRangeTo = (DateTime)rangeValues[columnNameStr][1] == DateTime.MinValue;
+
+            if (!(emptyRangeFrom && emptyRangeTo))
+            {
+                rangeFrom = string.Format(rangeFrom,
+                ((DateTime)rangeValues[columnNameStr][0]).ToString(DateTimeFormat.NormalDate));
+                rangeTo = string.Format(rangeTo,
+                    ((DateTime)rangeValues[columnNameStr][1]).ToString(DateTimeFormat.NormalDate));
+
+                result = string.Format(SqlOperator.Between, rangeFrom, rangeTo);
+            }
+            else if (!emptyRangeFrom && emptyRangeTo)
+            {
+                rangeFrom = string.Format(rangeFrom,
+                ((DateTime)rangeValues[columnNameStr][0]).ToString(DateTimeFormat.NormalDate));
+
+                result = string.Concat(SqlOperator.MajorOrEqual, rangeFrom);
+            }
+            else if (emptyRangeFrom && !emptyRangeTo)
+            {
+                rangeTo = string.Format(rangeTo,
+                ((DateTime)rangeValues[columnNameStr][1]).ToString(DateTimeFormat.NormalDate));
+
+                result = string.Concat(SqlOperator.LessOrEqual, rangeTo);
+            }
+
+            return result;
         }
 
         private static void SetRelationalSqlParameters(KeyValuePair<object, object> itemChildKeyPair, string tableName, ref string columnList, ref string relationList)

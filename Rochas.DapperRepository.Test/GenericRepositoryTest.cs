@@ -131,7 +131,24 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test07_Search()
+        public void Test07_ListByDateRange()
+        {
+            ICollection<SampleEntity> result;
+
+            var filter = new SampleEntity() { CreationDate = DateTime.Now.Date.AddDays(-1),
+                                              CreationDateEnd = DateTime.Now.Date.AddDays(1) };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.ListSync(filter);
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Any());
+        }
+
+        [Fact]
+        public void Test08_Search()
         {
             ICollection<SampleEntity> result;
 
@@ -147,7 +164,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test08_Count()
+        public void Test09_Count()
         {
             int result = 0;
             var filter = new SampleEntity() { Name = "roberto" };
@@ -161,7 +178,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test09_Edit()
+        public void Test10_Edit()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -179,7 +196,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test10_Delete()
+        public void Test11_Delete()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -196,7 +213,7 @@ namespace Rochas.DapperRepository.Test
         #region Composite Entity Tests
 
         [Fact]
-        public void Test11_OneCompositionCreate()
+        public void Test12_OneCompositionCreate()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -220,7 +237,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test12_GetOneCompositionByKey()
+        public void Test13_GetOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -237,7 +254,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test13_ListOneComposition()
+        public void Test14_ListOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -255,7 +272,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test14_ManyCompositionCreate()
+        public void Test15_ManyCompositionCreate()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -285,7 +302,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test15_GetManyCompositionByKey()
+        public void Test16_GetManyCompositionByKey()
         {
             SampleEntity result;
 
@@ -303,7 +320,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test16_ListManyComposition()
+        public void Test17_ListManyComposition()
         {
             ICollection<SampleEntity> result;
 

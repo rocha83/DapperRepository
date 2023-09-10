@@ -21,7 +21,11 @@ namespace Rochas.DapperRepository.Test
         public long DocNumber { get; set; }
 
         [Column("creation_date")]
+        [RangeFilter(LinkedRangeProperty = "CreationDateEnd")]
         public DateTime CreationDate { get; set; }
+
+        [NotMapped]
+        public DateTime CreationDateEnd { get; set; }
 
         [Filterable]
         [Column("name")]
@@ -43,11 +47,11 @@ namespace Rochas.DapperRepository.Test
 
         #region Navigation Properties
 
-        [RelatedEntity(Cardinality = RelationCardinality.OneToOne, 
+        [RelatedEntityAttribute(Cardinality = RelationCardinality.OneToOne, 
                        ForeignKeyAttribute = "ParentId")]
         public SampleOneForeignEntity OneForeignEntity { get; set; }
 
-        [RelatedEntity(Cardinality = RelationCardinality.OneToMany,
+        [RelatedEntityAttribute(Cardinality = RelationCardinality.OneToMany,
                        ForeignKeyAttribute = "ParentId")]
         public IList<SampleManyForeignEntity> ManyForeignEntities { get; set; }
 

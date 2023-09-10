@@ -4,7 +4,7 @@ using Rochas.DapperRepository.Specification.Interfaces;
 
 namespace Rochas.DapperRepository.Specification.Annotations
 {
-    public class RelatedEntity : Attribute, IRelatedEntity
+    public class RelatedEntityAttribute : Attribute, IRelatedEntity
     {
         public RelationCardinality Cardinality;
         public string ForeignKeyAttribute;
