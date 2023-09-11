@@ -24,5 +24,7 @@ namespace Rochas.DapperRepository.Specification.Interfaces
         ICollection<T> SearchSync(object criteria, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false);
         Task<ICollection<T>> List(T filter, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false);
         ICollection<T> ListSync(T filter, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false);
+
+        void Dispose();
     }
 }
