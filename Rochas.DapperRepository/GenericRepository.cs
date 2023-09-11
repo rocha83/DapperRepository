@@ -222,6 +222,12 @@ namespace Rochas.DapperRepository
 
         #region Helper Methods
 
+        public void Dispose()
+        {
+            base.Dispose();
+            GC.ReRegisterForFinalize(this);
+        }
+
         private async Task<object> GetObject(object filter, bool loadComposition = false)
         {
             var queryResult = await ListObjects(filter, PersistenceAction.Get, loadComposition);
