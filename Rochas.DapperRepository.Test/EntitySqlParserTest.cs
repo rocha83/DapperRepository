@@ -88,7 +88,7 @@ namespace Rochas.DapperRepository.Test
             Assert.NotNull(result);
             Assert.StartsWith("SELECT", result);
             Assert.Contains("FROM", result);
-            Assert.EndsWith(string.Format("WHERE {0}.{1} LIKE '%roberto%'", "sample_entity", "name"), result);
+            Assert.EndsWith(string.Format("WHERE {0}.{1} LIKE '%roberto%'  OR sample_entity.resume LIKE '%roberto%'", "sample_entity", "name"), result);
         }
 
         [Fact]

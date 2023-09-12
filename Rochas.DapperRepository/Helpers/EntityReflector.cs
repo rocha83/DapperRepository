@@ -205,6 +205,26 @@ namespace Rochas.DapperRepository.Helpers
             }
         }
 
+        public static void SetChildForeignKeyValue(object parentEntity, PropertyInfo[] parentProps, object childEntity, 
+                                                   PropertyInfo[] childProps, string foreignKeyPropName)
+        {
+            var parentKey = GetKeyColumn(parentProps);
+            var childForeignKey = childProps?.FirstOrDefault(prp => prp.Name.Equals(foreignKeyPropName));
+
+            if ((parentKey != null) && (childForeignKey != null))
+                childForeignKey.SetValue(childEntity, parentKey.GetValue(parentEntity, null), null);
+        }
+
+        public static void SetParentForeignKeyValue(object parentEntity, PropertyInfo[] parentProps, object childEntity, 
+                                                    PropertyInfo[] childProps, string foreignKeyPropName)
+        {
+            var parentForeignKey = parentProps?.FirstOrDefault(prp => prp.Name.Equals(foreignKeyPropName));
+            var childKey = GetKeyColumn(childProps);
+
+            if ((parentForeignKey != null) && (childKey != null))
+                childKey.SetValue(childEntity, parentForeignKey.GetValue(parentEntity, null), null);
+        }
+
         public static IEnumerable<PropertyInfo> GetRelatedEntities(PropertyInfo[] entityProperties)
         {
              return entityProperties.Where(prp => prp.GetCustomAttributes(true)

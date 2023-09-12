@@ -14,7 +14,7 @@ namespace Rochas.DapperRepository.Test
         public int Id { get; set; }
 
         [Column("parent_id")]
-        public int ParentId { get; set; }
+        public int? ParentId { get; set; }
 
         [Column("creation_date")]
         public DateTime CreationDate { get; set; }

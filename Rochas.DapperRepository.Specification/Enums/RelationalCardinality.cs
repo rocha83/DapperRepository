@@ -6,6 +6,7 @@ namespace Rochas.DapperRepository.Specification.Enums
     {
         OneToOne = 1,
         OneToMany = 2,
-        ManyToMany = 3
+        ManyToOne = 3,
+        ManyToMany = 4
     }
 }

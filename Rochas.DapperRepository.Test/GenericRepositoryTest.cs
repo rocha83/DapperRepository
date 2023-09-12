@@ -19,6 +19,7 @@ namespace Rochas.DapperRepository.Test
         {
             var tableScript = @"CREATE TABLE [sample_entity](
                                              [id] INTEGER PRIMARY KEY,
+                                             [child_id] [int] NULL,
                                              [doc_number] [int] NOT NULL,
 	                                         [creation_date] [datetime] NOT NULL,
 	                                         [name] [varchar](200) NOT NULL,
@@ -35,7 +36,7 @@ namespace Rochas.DapperRepository.Test
 
             var manyForeignTableScript = @"CREATE TABLE [sample_many_foreign_entity] (
 	                                                    [id] INTEGER PRIMARY KEY,
-                                                        [parent_id] [int] NOT NULL,
+                                                        [parent_id] [int] NULL,
                                                         [creation_date] [datetime] NOT NULL,
                                                         [title] [varchar](100) NOT NULL,
 	                                                    [description] [varchar](400) NOT NULL,
@@ -240,7 +241,7 @@ namespace Rochas.DapperRepository.Test
         #region Composite Entity Tests
 
         [Fact]
-        public void Test13_OneCompositionCreate()
+        public void Test13_OneToOneCompositionCreate()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -249,7 +250,7 @@ namespace Rochas.DapperRepository.Test
                 CreationDate = DateTime.Now,
                 Name = "Alberto Gomes",
                 Active = true,
-                OneForeignEntity = new SampleOneForeignEntity()
+                OneToOneForeignEntity = new SampleOneForeignEntity()
                 {
                     Title = "Titulo Teste Singular",
                     Description = "Descricao Teste Lorem Ipsum Lorem Ipsum"
@@ -264,7 +265,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test14_GetOneCompositionByKey()
+        public void Test14_GetOneToOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -277,11 +278,11 @@ namespace Rochas.DapperRepository.Test
             Assert.NotNull(result);
             Assert.Equal(key, result.Id);
 
-            Assert.NotNull(result.OneForeignEntity);
+            Assert.NotNull(result.OneToOneForeignEntity);
         }
 
         [Fact]
-        public void Test15_ListOneComposition()
+        public void Test15_ListOneToOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -295,11 +296,83 @@ namespace Rochas.DapperRepository.Test
             Assert.NotNull(result);
             Assert.True(result.Any());
 
-            Assert.NotNull(result.First().OneForeignEntity);
+            Assert.NotNull(result.First().OneToOneForeignEntity);
         }
 
         [Fact]
-        public void Test16_ManyCompositionCreate()
+        public void Test16_ManyToOneCompositionCreate()
+        {
+            int result;
+
+            var manyToOneForeignEntity = new SampleManyForeignEntity()
+            {
+                CreationDate = DateTime.Now,
+                Title = "Titulo Teste Estrangeira Singular",
+                Description = "Descricao Estrangeira Teste Lorem Ipsum Lorem Ipsum",
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleManyForeignEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.CreateSync(manyToOneForeignEntity, true);
+            }
+
+            var sampleEntity = new SampleEntity()
+            {
+                ChildId = result,
+                DocNumber = 14567,
+                CreationDate = DateTime.Now,
+                Name = "Claudia Oliveira",
+                Active = true
+            };
+
+            result = 0;
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.CreateSync(sampleEntity, true);
+            }
+
+            Assert.True(result > 0);
+        }
+
+        [Fact]
+        public void Test17_GetManyToOneCompositionByKey()
+        {
+            SampleEntity result;
+
+            var key = 1;
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.GetSync(key, true);
+            }
+
+            Assert.NotNull(result);
+            Assert.Equal(key, result.Id);
+
+            Assert.NotNull(result.ManyToOneForeignEntity);
+        }
+
+        [Fact]
+        public void Test18_ListManyToOneComposition()
+        {
+            ICollection<SampleEntity> result;
+
+            var filter = new SampleEntity() { Name = "claudia" };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.ListSync(filter, true);
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Any());
+
+            Assert.NotNull(result.First().ManyToOneForeignEntity);
+        }
+
+        [Fact]
+        public void Test19_OneToManyCompositionCreate()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -308,11 +381,11 @@ namespace Rochas.DapperRepository.Test
                 CreationDate = DateTime.Now,
                 Name = "Carlos Almeida",
                 Active = true,
-                ManyForeignEntities = new List<SampleManyForeignEntity>()
+                OneToManyForeignEntities = new List<SampleManyForeignEntity>()
             };
 
             for(var counter = 1; counter < 6; counter++)
-            sampleEntity.ManyForeignEntities.Add(new SampleManyForeignEntity()
+            sampleEntity.OneToManyForeignEntities.Add(new SampleManyForeignEntity()
             {
                 CreationDate = sampleEntity.CreationDate,
                 Title = $"Titulo Teste Plural {counter}",
@@ -329,11 +402,11 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test17_GetManyCompositionByKey()
+        public void Test20_GetOneToManyCompositionByKey()
         {
             SampleEntity result;
 
-            var key = 2;
+            var key = 3;
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 result = repos.GetSync(key, true);
@@ -342,12 +415,12 @@ namespace Rochas.DapperRepository.Test
             Assert.NotNull(result);
             Assert.Equal(key, result.Id);
 
-            Assert.NotNull(result.ManyForeignEntities);
-            Assert.True(result.ManyForeignEntities.Count == 5);
+            Assert.NotNull(result.OneToManyForeignEntities);
+            Assert.True(result.OneToManyForeignEntities.Count == 5);
         }
 
         [Fact]
-        public void Test18_ListManyComposition()
+        public void Test21_ListOneToManyComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -362,8 +435,8 @@ namespace Rochas.DapperRepository.Test
             Assert.True(result.Any());
 
             var firstItem = result.First();
-            Assert.NotNull(firstItem.ManyForeignEntities);
-            Assert.True(firstItem.ManyForeignEntities.Count == 5);
+            Assert.NotNull(firstItem.OneToManyForeignEntities);
+            Assert.True(firstItem.OneToManyForeignEntities.Count == 5);
         }
 
         #endregion

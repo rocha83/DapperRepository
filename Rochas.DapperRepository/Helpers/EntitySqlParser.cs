@@ -8,6 +8,7 @@ using Rochas.DapperRepository.Specification.Annotations;
 using Rochas.DapperRepository.Specification.Enums;
 using Rochas.DapperRepository.Exceptions;
 using Rochas.DapperRepository.Helpers.SQL;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Rochas.DapperRepository.Helpers
 {
@@ -261,6 +262,20 @@ namespace Rochas.DapperRepository.Helpers
             FillSqlParametersResult(returnDictionary, action, ref columnList, ref valueList, ref columnValueList, ref columnFilterList, ref relationList, readUncommited);
 
             return returnDictionary;
+        }
+
+        public static void ParseOneToManyRelation(object childEntityFilter, object listItem, Type listItemType, PropertyInfo[] listItemProps,
+                                                  PersistenceAction action, List<object> childFiltersList)
+        {
+            childEntityFilter = Activator.CreateInstance(listItemType);
+
+            action = SetPersistenceAction(listItem, EntityReflector.GetKeyColumn(listItemProps));
+
+            if (action == PersistenceAction.Edit)
+            {
+                EntityReflector.SetFilterPrimaryKey(listItem, listItemProps, childEntityFilter);
+                childFiltersList.Add(childEntityFilter);
+            }
         }
 
         public static object ParseManyToRelation(object childEntity, RelatedEntityAttribute relation)
