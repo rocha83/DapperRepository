@@ -529,25 +529,26 @@ namespace Rochas.DapperRepository
         }
         private void FillComposition(object loadedEntity, PropertyInfo[] entityProps)
         {
-            RelatedEntityAttribute relationAttrib = null;
-
             var childEntities = EntityReflector.GetRelatedEntities(entityProps);
 
             foreach (var child in childEntities)
             {
-                object childEntityInstance = null;
-                PropertyInfo[] childProps = null;
+                Type childEntityType = child.PropertyType;
+                bool childEntityIsList = childEntityType.Name.Contains("IList");
+                if (childEntityIsList)
+                    childEntityType = child.PropertyType.GetGenericArguments()[0];
 
-                relationAttrib = EntityReflector.GetRelatedEntityAttribute(child);
+                PropertyInfo[] childProps = childEntityType.GetProperties();
+
+                object childEntityInstance = Activator.CreateInstance(childEntityType, true);
+
+                RelatedEntityAttribute relationAttrib = EntityReflector.GetRelatedEntityAttribute(child);
 
                 var keyColumn = EntityReflector.GetKeyColumn(entityProps);
 
                 switch (relationAttrib.Cardinality)
                 {
                     case RelationCardinality.OneToOne:
-
-                        childEntityInstance = Activator.CreateInstance(child.PropertyType);
-                        childProps = childEntityInstance.GetType().GetProperties();
 
                         EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
                                                            childProps, relationAttrib.ForeignKeyAttribute);
@@ -557,9 +558,6 @@ namespace Rochas.DapperRepository
                         break;
                     case RelationCardinality.ManyToOne:
 
-                        childEntityInstance = Activator.CreateInstance(child.PropertyType);
-                        childProps = childEntityInstance.GetType().GetProperties();
-
                         EntityReflector.SetParentForeignKeyValue(childEntityInstance, childProps, loadedEntity, 
                                                                  entityProps, relationAttrib.ForeignKeyAttribute);
 
@@ -567,9 +565,6 @@ namespace Rochas.DapperRepository
 
                         break;
                     case RelationCardinality.OneToMany:
-
-                        var childEntityType = child.PropertyType.GetGenericArguments()[0];
-                        childEntityInstance = Activator.CreateInstance(childEntityType, true);
 
                         childProps = childEntityType.GetProperties();
                         EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
@@ -580,66 +575,45 @@ namespace Rochas.DapperRepository
                         break;
                     case RelationCardinality.ManyToMany:
 
-                        childEntityInstance = Activator.CreateInstance(relationAttrib.IntermediaryEntity, true);
-                        childProps = childEntityInstance.GetType().GetProperties();
+                        var intermedyEntityInstance = Activator.CreateInstance(relationAttrib.IntermediaryEntity, true);
+                        var intermedyEntityProps = intermedyEntityInstance.GetType().GetProperties();
 
-                        if (childEntityInstance != null)
+                        if (intermedyEntityInstance != null)
                         {
-                            EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
-                                                                    entityProps, relationAttrib.ForeignKeyAttribute);
+                            EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, intermedyEntityInstance,
+                                                                    intermedyEntityProps, relationAttrib.IntermediaryKeyAttribute);
 
-                            var manyToRelations = ListObjectsSync(childEntityInstance, PersistenceAction.List, true);
-
+                            var manyToManyRelations = ListObjectsSync(intermedyEntityInstance, PersistenceAction.Get);
+                            var manyToManyResultList = EntityReflector.CreateTypedList(child);
                             
-                            var childManyEntities = EntityReflector.CreateTypedList(child);
-
-                            foreach (var relation in manyToRelations)
+                            foreach (var relationInstance in manyToManyRelations)
                             {
-                                var relationType = relation.GetType();
-                                var childManyKeyValue = relationType.GetProperty(relationAttrib.IntermediaryKeyAttribute)
-                                                                    .GetValue(relation, null);
+                                EntityReflector.SetParentForeignKeyValue(relationInstance, intermedyEntityProps, 
+                                                                         childEntityInstance, childProps, 
+                                                                         relationAttrib.ForeignKeyAttribute);
 
-                                var childManyType = relationType.GetGenericArguments()[0];
-                                var childFilter = Activator.CreateInstance(childManyType);
-                                var childFilterProps = childFilter.GetType().GetProperties();
-                                EntityReflector.GetKeyColumn(childFilterProps).SetValue(childFilter, childManyKeyValue, null);
-
-                                var childManyInstance = GetObjectSync(childFilter, true);
-
-                                childManyEntities.Add(childManyInstance);
+                                var childRelationInstance = GetObjectSync(childEntityInstance);
+                                manyToManyResultList.Add(childRelationInstance);
                             }
 
-                            childEntityInstance = childManyEntities;
+                            childEntityInstance = manyToManyResultList;
+                            childEntityIsList = false; // Typed list already created
                         }
                         break;
                 }
 
-                if (childEntityInstance != null)
-                    if (!child.PropertyType.Name.Contains("List"))
-                        child.SetValue(loadedEntity, childEntityInstance, null);
-                    else
-                    {
-                        var childListInstance = (IList)childEntityInstance;
-                        if (childListInstance.Count > 0)
-                        {
-                            var childTypedList = EntityReflector.CreateTypedList(child);
-                            foreach (var listItem in childListInstance)
-                                childTypedList.Add(listItem);
-                            child.SetValue(loadedEntity, childTypedList, null);
-                        }
-                    }
+                SetParentChildEntity(loadedEntity, child, childEntityInstance, childEntityIsList);
             }
         }
 
         private List<string> ParseComposition(object entity, PersistenceAction action, object filterEntity)
         {
             List<string> result = new List<string>();
-            object childEntityInstance = null;
-
             var childEntities = EntityReflector.GetRelatedEntities(entityProps);
 
             foreach (PropertyInfo child in childEntities)
             {
+                object childEntityInstance;
                 object childEntityFilter = null;
 
                 var relationAttrib = EntityReflector.GetRelatedEntityAttribute(child);
@@ -720,7 +694,7 @@ namespace Rochas.DapperRepository
                         {
                             var childInstance = Activator.CreateInstance(childListInstance.GetType().GetGenericArguments()[0]);
 
-                            object childEntity = null;
+                            object childEntity;
                             if (relationAttrib.Cardinality == RelationCardinality.ManyToMany)
                                 childEntity = EntitySqlParser.ParseManyToRelation(childInstance, relationAttrib);
                             else
@@ -737,6 +711,24 @@ namespace Rochas.DapperRepository
             }
 
             return result;
+        }
+
+        private void SetParentChildEntity(object loadedEntity, PropertyInfo child, object childEntityInstance, bool childEntityIsList)
+        {
+            if (childEntityInstance != null)
+                if (!childEntityIsList)
+                    child.SetValue(loadedEntity, childEntityInstance, null);
+                else
+                {
+                    var childListInstance = (IList)childEntityInstance;
+                    if (childListInstance.Count > 0)
+                    {
+                        var childTypedList = EntityReflector.CreateTypedList(child);
+                        foreach (var listItem in childListInstance)
+                            childTypedList.Add(listItem);
+                        child.SetValue(loadedEntity, childTypedList, null);
+                    }
+                }
         }
 
         private void CreateReplicas(object entity, PropertyInfo[] entityProps, int lastInsertedId, bool persistComposition)
