@@ -28,5 +28,8 @@ namespace Rochas.DapperRepository.Helpers.SQL
         public static string SQL_Action_SummaryAggregation = "SUM({0}.{1}) AS {2}, ";
         public static string SQL_ReservedWord_INSERT = "INSERT";
         public static string SQL_ReservedWord_COUNT = "COUNT";
+        public static string SQL_TransactionLevel_ReadUncommited = @"SET TRANSACTION 
+                                                                     ISOLATION LEVEL 
+                                                                     READ UNCOMMITED";
     }
 }

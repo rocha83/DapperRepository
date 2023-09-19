@@ -25,11 +25,10 @@ namespace Rochas.DapperRepository.Helpers
         /// <param name="recordLimit">Result records limit</param>
         /// <param name="onlyListableAttributes">Flag to return only attributes marked as listable</param>
         /// <param name="showAttributes">Comma separeted list of custom object attributes to show</param>
-        /// <param name="rangeValues"></param>
         /// <param name="groupAttributes">List of object attributes to group results</param>
         /// <param name="orderAttributes">List of object attributes to sort results</param>
         /// <param name="orderDescending">Flag to return ordering with descending order</param>
-        /// <param name="readUncommited">Flag to return uncommited transaction queries statements (NOLOCK)</param>
+        /// <param name="readUncommited">Flag to set uncommited transaction level queries</param>
         /// <returns></returns>
         public static string ParseEntity(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int recordLimit = 0, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string orderAttributes = null, bool orderDescending = false, bool readUncommited = false)
         {
@@ -325,9 +324,6 @@ namespace Rochas.DapperRepository.Helpers
                     columnList = columnList.Substring(0, columnList.Length - 2);
                     returnDictionary.Add("ColumnList", columnList);
                     returnDictionary.Add("RelationList", relationList);
-
-                    if (readUncommited)
-                        returnDictionary["TableName"] = string.Concat(returnDictionary["TableName"], " (NOLOCK)");
                 }
                 else if (!string.IsNullOrEmpty(columnValueList))
                 {

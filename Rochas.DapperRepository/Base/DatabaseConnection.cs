@@ -39,7 +39,7 @@ namespace Rochas.DapperRepository.Base
 
         public DataBaseConnection(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(dbConnection.ConnectionString, logPath, replicaConnStrings)
         {
-            engine = DatabaseEngine.SQLServer;
+            engine = DatabaseEngine.MySQL;
             connection = dbConnection;
 
             keepConnection = keepConnected;
