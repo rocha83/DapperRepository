@@ -10,10 +10,11 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable persistence parser crud poco orm cqrs</PackageTags>
-    <Version>1.1.0</Version>
+    <Version>1.1.2</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
+    <PackageReleaseNotes>Many to many composition issues fix</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
