@@ -153,7 +153,7 @@ namespace Rochas.DapperRepository.Helpers
 
                         break;
                     case SQL.DataType.Decimal:
-                        if (((double)columnValue == 0) && !isRequired)
+                        if (((decimal)columnValue == 0) && !isRequired)
                             columnValue = SqlDefaultValue.Null;
                         else
                             columnValue = columnValue.ToString().Replace(",", ".");
