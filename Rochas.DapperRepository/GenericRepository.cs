@@ -445,8 +445,8 @@ namespace Rochas.DapperRepository
                         break;
                     case RelationCardinality.ManyToOne:
 
-                        EntityReflector.SetParentForeignKeyValue(childEntityInstance, childProps, loadedEntity, 
-                                                                 entityProps, relationAttrib.ForeignKeyAttribute);
+                        EntityReflector.SetParentForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
+                                                                 childProps, relationAttrib.ForeignKeyAttribute);
 
                         childEntityInstance = GetObjectSync(childEntityInstance, true);
 
