@@ -437,27 +437,28 @@ namespace Rochas.DapperRepository
                 {
                     case RelationCardinality.OneToOne:
 
-                        EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
-                                                           childProps, relationAttrib.ForeignKeyAttribute);
-
-                        childEntityInstance = GetObjectSync(childEntityInstance, true);
+                        if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
+                                                                    childProps, relationAttrib.ForeignKeyAttribute))
+                            childEntityInstance = GetObjectSync(childEntityInstance, true);
 
                         break;
                     case RelationCardinality.ManyToOne:
 
-                        EntityReflector.SetParentForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
-                                                                 childProps, relationAttrib.ForeignKeyAttribute);
-
-                        childEntityInstance = GetObjectSync(childEntityInstance, true);
+                        if (EntityReflector.SetParentForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
+                                                                     childProps, relationAttrib.ForeignKeyAttribute))
+                        {
+							childEntityInstance = GetObjectSync(childEntityInstance, true);
+						}
 
                         break;
                     case RelationCardinality.OneToMany:
 
                         childProps = childEntityType.GetProperties();
-                        EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
-                                                                childProps, relationAttrib.ForeignKeyAttribute);
-
-                        childEntityInstance = ListObjectsSync(childEntityInstance, PersistenceAction.List, true);
+                        if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
+                                                                    childProps, relationAttrib.ForeignKeyAttribute))
+                        {
+							childEntityInstance = ListObjectsSync(childEntityInstance, PersistenceAction.List, true);
+						}
 
                         break;
                     case RelationCardinality.ManyToMany:
@@ -467,24 +468,26 @@ namespace Rochas.DapperRepository
 
                         if (intermedyEntityInstance != null)
                         {
-                            EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, intermedyEntityInstance,
-                                                                    intermedyEntityProps, relationAttrib.IntermediaryKeyAttribute);
-
-                            var manyToManyRelations = ListObjectsSync(intermedyEntityInstance, PersistenceAction.Get);
-                            var manyToManyResultList = EntityReflector.CreateTypedList(child);
-                            
-                            foreach (var relationInstance in manyToManyRelations)
+                            if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, intermedyEntityInstance,
+                                                                        intermedyEntityProps, relationAttrib.IntermediaryKeyAttribute))
                             {
-                                EntityReflector.SetParentForeignKeyValue(relationInstance, intermedyEntityProps, 
-                                                                         childEntityInstance, childProps, 
-                                                                         relationAttrib.ForeignKeyAttribute);
+								var manyToManyRelations = ListObjectsSync(intermedyEntityInstance, PersistenceAction.Get);
+								var manyToManyResultList = EntityReflector.CreateTypedList(child);
 
-                                var childRelationInstance = GetObjectSync(childEntityInstance);
-                                manyToManyResultList.Add(childRelationInstance);
-                            }
+								foreach (var relationInstance in manyToManyRelations)
+								{
+									if (EntityReflector.SetParentForeignKeyValue(relationInstance, intermedyEntityProps,
+										    									 childEntityInstance, childProps,
+											    								 relationAttrib.ForeignKeyAttribute))
+                                    {
+										var childRelationInstance = GetObjectSync(childEntityInstance);
+										manyToManyResultList.Add(childRelationInstance);
+									}
+								}
 
-                            childEntityInstance = manyToManyResultList;
-                            childEntityIsList = false; // Typed list already created
+								childEntityInstance = manyToManyResultList;
+								childEntityIsList = false; // Typed list already created
+							}
                         }
                         break;
                 }

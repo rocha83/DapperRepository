@@ -212,24 +212,46 @@ namespace Rochas.DapperRepository.Helpers
             }
         }
 
-        public static void SetChildForeignKeyValue(object parentEntity, PropertyInfo[] parentProps, object childEntity, 
+        public static bool SetChildForeignKeyValue(object parentEntity, PropertyInfo[] parentProps, object childEntity, 
                                                    PropertyInfo[] childProps, string foreignKeyPropName)
         {
+            bool result = false;
+            
             var parentKey = GetKeyColumn(parentProps);
             var childForeignKey = childProps?.FirstOrDefault(prp => prp.Name.Equals(foreignKeyPropName));
 
             if ((parentKey != null) && (childForeignKey != null))
-                childForeignKey.SetValue(childEntity, parentKey.GetValue(parentEntity, null), null);
+            {
+                var parentKeyValue = parentKey.GetValue(parentEntity, null);
+                if ((parentKeyValue != null) && (parentKeyValue != default))
+                {
+					childForeignKey.SetValue(childEntity, parentKeyValue, null);
+					result = true;
+				}
+			}
+
+            return result;
         }
 
-        public static void SetParentForeignKeyValue(object parentEntity, PropertyInfo[] parentProps, object childEntity, 
+        public static bool SetParentForeignKeyValue(object parentEntity, PropertyInfo[] parentProps, object childEntity, 
                                                     PropertyInfo[] childProps, string foreignKeyPropName)
         {
+            bool result = false;
+
             var parentForeignKey = parentProps?.FirstOrDefault(prp => prp.Name.Equals(foreignKeyPropName));
             var childKey = GetKeyColumn(childProps);
 
             if ((parentForeignKey != null) && (childKey != null))
-                childKey.SetValue(childEntity, parentForeignKey.GetValue(parentEntity, null), null);
+            {
+                var foreignKeyValue = parentForeignKey.GetValue(parentEntity, null);
+				if ((foreignKeyValue != null) && (foreignKeyValue != default))
+                {
+					childKey.SetValue(childEntity, foreignKeyValue, null);
+					result = true;
+				}
+			}
+
+            return result;
         }
 
         public static IEnumerable<PropertyInfo> GetRelatedEntities(PropertyInfo[] entityProperties)
