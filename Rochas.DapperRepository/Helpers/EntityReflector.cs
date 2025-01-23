@@ -223,8 +223,9 @@ namespace Rochas.DapperRepository.Helpers
             if ((parentKey != null) && (childForeignKey != null))
             {
                 var parentKeyValue = parentKey.GetValue(parentEntity, null);
-                if ((parentKeyValue != null) && (parentKeyValue != default))
-                {
+				var keyStrValue = parentKeyValue.ToString();
+				if (!string.IsNullOrWhiteSpace(keyStrValue) && (keyStrValue != "0"))
+				{
 					childForeignKey.SetValue(childEntity, parentKeyValue, null);
 					result = true;
 				}
@@ -244,7 +245,8 @@ namespace Rochas.DapperRepository.Helpers
             if ((parentForeignKey != null) && (childKey != null))
             {
                 var foreignKeyValue = parentForeignKey.GetValue(parentEntity, null);
-				if ((foreignKeyValue != null) && (foreignKeyValue != default))
+                var keyStrValue = foreignKeyValue.ToString();
+				if (!string.IsNullOrWhiteSpace(keyStrValue) && (keyStrValue != "0"))
                 {
 					childKey.SetValue(childEntity, foreignKeyValue, null);
 					result = true;
