@@ -66,21 +66,35 @@ namespace Rochas.DapperRepository.Test
         public void Test02_Create()
         {
             int result;
-            var sampleEntity = new SampleEntity()
+            var sampleEntity1 = new SampleEntity()
             {
                 DocNumber = 12345,
                 CreationDate = DateTime.Now,
                 Name = "Roberto Torres",
                 Resume = "Technology Professional from Sao Paulo Brazil",
-                Age = 18,
+                Age = 32,
                 Active = true
             };
-            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
-            {
-                result = repos.CreateSync(sampleEntity);
-            }
 
-            Assert.True(result > 0);
+			var sampleEntity2 = new SampleEntity()
+			{
+				DocNumber = 76910,
+				CreationDate = DateTime.Now,
+				Name = "Gustavo Meireles",
+				Resume = "Technology Professional from Rio de Janeiro Brazil",
+				Age = 25,
+				Active = true
+			};
+			using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.CreateSync(sampleEntity1);
+            }
+			using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+			{
+				result += repos.CreateSync(sampleEntity2);
+			}
+
+			Assert.True(result > 1);
         }
 
         [Fact]
@@ -161,7 +175,7 @@ namespace Rochas.DapperRepository.Test
 
 			Assert.NotNull(result);
 			Assert.True(result.Any());
-			Assert.StartsWith("Alberto", result.First().Name);
+			Assert.StartsWith("Gustavo", result.First().Name);
 
 			using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
 			{
@@ -172,7 +186,7 @@ namespace Rochas.DapperRepository.Test
 
 			Assert.NotNull(result);
 			Assert.True(result.Any());
-			Assert.StartsWith("Danilo", result.First().Name);
+			Assert.StartsWith("Roberto", result.First().Name);
 		}
 
 		[Fact]
@@ -277,7 +291,13 @@ namespace Rochas.DapperRepository.Test
                 result = repos.DeleteSync(filter);
             }
 
-            Assert.True(result > 0);
+			filter = new SampleEntity() { DocNumber = 76910 };
+			using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+			{
+				result += repos.DeleteSync(filter);
+			}
+
+			Assert.True(result > 1);
         }
 
         #endregion
