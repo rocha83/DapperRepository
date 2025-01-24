@@ -143,7 +143,7 @@ namespace Rochas.DapperRepository.Helpers
                                                    sqlParameters["TableName"],
                                                    sqlParameters["RelationList"],
                                                    sqlParameters["ColumnFilterList"],
-                                                   "{0}", "{1}", string.Empty);
+                                                   "{0}", "{1}", "{2}");
 
                     break;
             }
