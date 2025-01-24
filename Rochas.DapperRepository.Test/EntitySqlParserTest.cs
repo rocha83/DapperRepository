@@ -61,7 +61,20 @@ namespace Rochas.DapperRepository.Test
             Assert.EndsWith("LIMIT 5", result);
         }
 
-        [Fact]
+		[Fact]
+		public void ListSortedTest()
+		{
+			var testFilter = new SampleEntity() { };
+			var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.List, testFilter, orderAttributes: "Name" );
+			result = result.Trim();
+
+			Assert.NotNull(result);
+			Assert.StartsWith("SELECT", result);
+			Assert.Contains("FROM", result);
+			Assert.EndsWith("ORDER BY name ASC", result);
+		}
+
+		[Fact]
         public void ListLimitedSQLServerTest()
         {
             var testFilter = new SampleEntity() { Name = "roberto" };
