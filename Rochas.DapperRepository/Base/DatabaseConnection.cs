@@ -223,7 +223,11 @@ namespace Rochas.DapperRepository.Base
                     executionReturn = scalarReturn;
                 }
                 else
-                    executionReturn = await connection.ExecuteAsync(sqlInstruction);
+                {
+                    executionReturn = (transactionControl == null) ?
+                                      await connection.ExecuteAsync(sqlInstruction) :
+                                      await transactionControl.Connection.ExecuteAsync(sqlInstruction);
+                }
             }
 
             return executionReturn;
