@@ -341,7 +341,7 @@ namespace Rochas.DapperRepository
                 recordsAffected = await ExecuteCommandAsync(sqlInstruction);
 
                 if (persistComposition)
-                    PersistComposition(entity, PersistenceAction.Edit);
+                    PersistComposition(entity, PersistenceAction.Edit, filterEntity);
                 else
                 if (!keepConnection) base.Disconnect();
             }
@@ -509,7 +509,7 @@ namespace Rochas.DapperRepository
                 var relationAttrib = EntityReflector.GetRelatedEntityAttribute(child);
 
                 childEntityInstance = child.GetValue(entity, null);
-                var entityParent = (action != PersistenceAction.Edit) ? entity : filterEntity;
+                var entityParent = entity; //(action != PersistenceAction.Edit) ? entity : filterEntity
 
                 if (childEntityInstance != null)
                 {
@@ -549,7 +549,7 @@ namespace Rochas.DapperRepository
                                 if (relationAttrib.Cardinality == RelationCardinality.OneToMany)
                                 {
                                     EntitySqlParser.ParseOneToManyRelation(childEntityFilter, listItem, listItemType,
-                                                                           listItemProps, action, childFiltersList);
+                                                                           listItemProps, ref action, childFiltersList);
 
                                     EntityReflector.SetChildForeignKeyValue(entityParent, entityProps, listItem, listItemProps, relationAttrib.ForeignKeyAttribute);
 

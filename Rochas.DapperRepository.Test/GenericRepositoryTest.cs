@@ -76,29 +76,60 @@ namespace Rochas.DapperRepository.Test
                 Active = true
             };
 
-			var sampleEntity2 = new SampleEntity()
-			{
-				DocNumber = 76910,
-				CreationDate = DateTime.Now,
-				Name = "Gustavo Meireles",
-				Resume = "Technology Professional from Rio de Janeiro Brazil",
-				Age = 25,
-				Active = true
-			};
-			using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            var sampleEntity2 = new SampleEntity()
+            {
+                DocNumber = 76910,
+                CreationDate = DateTime.Now,
+                Name = "Gustavo Meireles",
+                Resume = "Technology Professional from Rio de Janeiro Brazil",
+                Age = 25,
+                Active = true
+            };
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 result = repos.CreateSync(sampleEntity1);
             }
-			using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
-			{
-				result += repos.CreateSync(sampleEntity2);
-			}
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result += repos.CreateSync(sampleEntity2);
+            }
 
-			Assert.True(result > 1);
+            Assert.True(result > 1);
         }
 
         [Fact]
-        public void Test03_GetByKey()
+        public void Test03_CreateComposition()
+        {
+            int result;
+            var sampleEntity = new SampleEntity()
+            {
+                DocNumber = 12345,
+                CreationDate = DateTime.Now,
+                Name = "Roberto Torres",
+                Resume = "Technology Professional from Sao Paulo Brazil",
+                Age = 32,
+                Active = true,
+                OneToManyForeignEntities = new List<SampleManyForeignEntity>() {
+                    new SampleManyForeignEntity()
+                    {
+                        Code = 444666,
+                        Title = "New Many Entity Composition Test",
+                        CreationDate = DateTime.Now,
+                        Active = true
+                    }
+                }
+            };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.CreateSync(sampleEntity, true);
+            }
+
+            Assert.True(result > 1);
+        }
+
+        [Fact]
+        public void Test04_GetByKey()
         {
             SampleEntity result;
 
@@ -113,7 +144,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test04_GetByFilter()
+        public void Test05_GetByFilter()
         {
             SampleEntity result;
 
@@ -128,7 +159,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test05_List()
+        public void Test06_List()
         {
             ICollection<SampleEntity> result;
 
@@ -144,7 +175,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test06_ListLimited()
+        public void Test07_ListLimited()
         {
             ICollection<SampleEntity> result;
 
@@ -160,37 +191,37 @@ namespace Rochas.DapperRepository.Test
             Assert.True(result.Count <= 5);
         }
 
-		[Fact]
-		public void Test07_ListSorted()
-		{
-			ICollection<SampleEntity> result;
+        [Fact]
+        public void Test08_ListSorted()
+        {
+            ICollection<SampleEntity> result;
 
-			var filter = new SampleEntity() { };
+            var filter = new SampleEntity() { };
 
-			using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
-			{
-				result = repos.ListSync(filter, 
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.ListSync(filter,
                                         sortAttributes: "Name");
-			}
+            }
 
-			Assert.NotNull(result);
-			Assert.True(result.Any());
-			Assert.StartsWith("Gustavo", result.First().Name);
+            Assert.NotNull(result);
+            Assert.True(result.Any());
+            Assert.StartsWith("Gustavo", result.First().Name);
 
-			using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
-			{
-				result = repos.ListSync(filter,
-										sortAttributes: "Name",
-										orderDescending: true);
-			}
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.ListSync(filter,
+                                        sortAttributes: "Name",
+                                        orderDescending: true);
+            }
 
-			Assert.NotNull(result);
-			Assert.True(result.Any());
-			Assert.StartsWith("Roberto", result.First().Name);
-		}
+            Assert.NotNull(result);
+            Assert.True(result.Any());
+            Assert.StartsWith("Roberto", result.First().Name);
+        }
 
-		[Fact]
-        public void Test08_ListByDateRange()
+        [Fact]
+        public void Test09_ListByDateRange()
         {
             ICollection<SampleEntity> result;
 
@@ -210,7 +241,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test09_ListByAgeMajorThan()
+        public void Test10_ListByAgeMajorThan()
         {
             ICollection<SampleEntity> result;
 
@@ -229,7 +260,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test10_Search()
+        public void Test11_Search()
         {
             ICollection<SampleEntity> result;
 
@@ -250,7 +281,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test11_Count()
+        public void Test12_Count()
         {
             int result = 0;
             var filter = new SampleEntity() { Name = "roberto" };
@@ -264,7 +295,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test12_Edit()
+        public void Test13_Edit()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -282,7 +313,34 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test13_Delete()
+        public void Test14_EditComposition()
+        {
+            int result = 0;
+            var filter = new SampleEntity() { DocNumber = 12345 };
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var item = repos.GetSync(filter);
+                if (item != null)
+                {
+                    item.Age = 37;
+                    item.OneToManyForeignEntities = new List<SampleManyForeignEntity>() {
+                        new SampleManyForeignEntity()
+                        {
+                            Code = 555777,
+                            Title = "New Many Entity Composition Test",
+                            CreationDate = DateTime.Now,
+                            Active = true
+                        }
+                    };
+                    result = repos.EditSync(item, filter, true);
+                }
+            }
+
+            Assert.True(result > 0);
+        }
+
+        [Fact]
+        public void Test15_Delete()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -291,13 +349,13 @@ namespace Rochas.DapperRepository.Test
                 result = repos.DeleteSync(filter);
             }
 
-			filter = new SampleEntity() { DocNumber = 76910 };
-			using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
-			{
-				result += repos.DeleteSync(filter);
-			}
+            filter = new SampleEntity() { DocNumber = 76910 };
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result += repos.DeleteSync(filter);
+            }
 
-			Assert.True(result > 1);
+            Assert.True(result > 1);
         }
 
         #endregion
@@ -305,7 +363,7 @@ namespace Rochas.DapperRepository.Test
         #region OneToOne Composite Entity Tests
 
         [Fact]
-        public void Test14_OneToOneCompositionCreate()
+        public void Test16_OneToOneCompositionCreate()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -329,7 +387,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test15_GetOneToOneCompositionByKey()
+        public void Test17_GetOneToOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -346,7 +404,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test16_ListOneToOneComposition()
+        public void Test18_ListOneToOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -368,7 +426,7 @@ namespace Rochas.DapperRepository.Test
         #region ManyToOne Composition Entity Tests
 
         [Fact]
-        public void Test17_ManyToOneCompositionCreate()
+        public void Test19_ManyToOneCompositionCreate()
         {
             int result;
 
@@ -405,7 +463,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test18_GetManyToOneCompositionByKey()
+        public void Test20_GetManyToOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -422,7 +480,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test19_ListManyToOneComposition()
+        public void Test21_ListManyToOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -444,7 +502,7 @@ namespace Rochas.DapperRepository.Test
         #region OneToMany Composite Entity Tests
 
         [Fact]
-        public void Test20_OneToManyCompositionCreate()
+        public void Test22_OneToManyCompositionCreate()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -474,7 +532,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test21_GetOneToManyCompositionByKey()
+        public void Test23_GetOneToManyCompositionByKey()
         {
             SampleEntity result;
 
@@ -488,11 +546,11 @@ namespace Rochas.DapperRepository.Test
             Assert.Equal(key, result.Id);
 
             Assert.NotNull(result.OneToManyForeignEntities);
-            Assert.True(result.OneToManyForeignEntities.Count == 5);
+            Assert.True(result.OneToManyForeignEntities.Count == 6);
         }
 
         [Fact]
-        public void Test22_ListOneToManyComposition()
+        public void Test24_ListOneToManyComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -508,7 +566,7 @@ namespace Rochas.DapperRepository.Test
 
             var firstItem = result.First();
             Assert.NotNull(firstItem.OneToManyForeignEntities);
-            Assert.True(firstItem.OneToManyForeignEntities.Count == 5);
+            Assert.True(firstItem.OneToManyForeignEntities.Count == 6);
         }
 
         #endregion
@@ -516,7 +574,7 @@ namespace Rochas.DapperRepository.Test
         #region ManyToMany Composite Entity Tests
 
         [Fact]
-        public void Test23_IntermedyCompositionCreate()
+        public void Test25_IntermedyCompositionCreate()
         {
             int leftEntityResult;
             var sampleLeftEntity = new SampleEntity()
@@ -555,7 +613,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test24_IntermedyCompositionGet()
+        public void Test26_IntermedyCompositionGet()
         {
             using var leftEntityRepos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString);
             var leftEntityFilter = new SampleEntity() { DocNumber = 15678 };
@@ -567,10 +625,10 @@ namespace Rochas.DapperRepository.Test
 
             Assert.NotNull(leftEntityResult);
             Assert.NotNull(rightEntityResult);
-            
+
             Assert.True(leftEntityResult.ManyToManyForeignEntities.Count > 0);
             Assert.Equal(123, leftEntityResult.ManyToManyForeignEntities.Single().Code);
-            
+
             Assert.True(rightEntityResult.ManyToManyForeignEntities.Count > 0);
             Assert.Equal(15678, rightEntityResult.ManyToManyForeignEntities.Single().DocNumber);
         }

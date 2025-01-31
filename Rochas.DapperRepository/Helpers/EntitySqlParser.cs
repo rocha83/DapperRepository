@@ -264,7 +264,7 @@ namespace Rochas.DapperRepository.Helpers
         }
 
         public static void ParseOneToManyRelation(object childEntityFilter, object listItem, Type listItemType, PropertyInfo[] listItemProps,
-                                                  PersistenceAction action, List<object> childFiltersList)
+                                                  ref PersistenceAction action, List<object> childFiltersList)
         {
             childEntityFilter = Activator.CreateInstance(listItemType);
 
