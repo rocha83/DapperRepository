@@ -11,7 +11,7 @@ namespace Rochas.DapperRepository.Helpers.SQL
         public const string Equal = " = ";
         public const string Different = " <> ";
         public const string Contains = " LIKE '%{0}%' ";
-        public const string And = " AND ";
+        public const string And = " AND (";
         public const string Or = " OR ";
         public const string Major = " > ";
         public const string MajorOrEqual = " >= ";

@@ -333,12 +333,6 @@ namespace Rochas.DapperRepository.Helpers
 
                 if (!string.IsNullOrEmpty(columnFilterList))
                 {
-                    var tokenRemove = (action == PersistenceAction.List)
-                                       ? SqlOperator.Or.Length
-                                       : SqlOperator.And.Length;
-
-                    columnFilterList = columnFilterList.Substring(0, columnFilterList.Length - tokenRemove);
-
                     returnDictionary.Add("ColumnFilterList", columnFilterList);
                 }
                 else
@@ -477,8 +471,24 @@ namespace Rochas.DapperRepository.Helpers
                                               filterColumnName.ToString(), ref columnFilterList);
                     }
                 }
-            }
-        }
+			}
+
+            FinishFilterSql(ref columnFilterList, action);
+		}
+
+        private static void FinishFilterSql(ref string columnFilterList, PersistenceAction action)
+        {
+            if (!string.IsNullOrWhiteSpace(columnFilterList))
+            {
+				var tokenRemove = (columnFilterList.Trim().EndsWith(SqlOperator.And))
+							       ? SqlOperator.And.Length : SqlOperator.Or.Length;
+
+				columnFilterList = columnFilterList.Substring(0, columnFilterList.Length - tokenRemove);
+
+				for (int count = 1; count <= columnFilterList.Count(fl => fl.Equals('(')); count++)
+					columnFilterList += ")";
+			}
+		}
 
         private static void SetRangeFilterSql(KeyValuePair<object, object> filter,
                                             IDictionary<string, object[]> rangeValues, 
