@@ -88,11 +88,11 @@ namespace Rochas.DapperRepository
             return GetObjectSync(filter, loadComposition) as T;
         }
 
-        public async Task<ICollection<T>> Search(object criteria, bool loadComposition = false, int recordsLimit = 0, string orderAttributes = null, bool orderDescending = false)
+        public async Task<ICollection<T>> Search(object criteria, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false)
         {
             var result = new List<T>();
             var filter = EntityReflector.GetFilterByFilterableColumns(entityType, entityProps, criteria);
-            var queryResult = await ListObjects(filter, PersistenceAction.List, loadComposition, recordsLimit, orderAttributes: orderAttributes, orderDescending: orderDescending);
+            var queryResult = await ListObjects(filter, PersistenceAction.List, loadComposition, recordsLimit, sortAttributes: sortAttributes, orderDescending: orderDescending);
             if (queryResult != null)
                 foreach (var item in queryResult)
                     result.Add(item as T);
@@ -112,10 +112,10 @@ namespace Rochas.DapperRepository
             return result;
         }
 
-        public async Task<ICollection<T>> List(T filter, bool loadComposition = false, int recordsLimit = 0, string orderAttributes = null, bool orderDescending = false)
+        public async Task<ICollection<T>> List(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
         {
             var result = new List<T>();
-            var queryResult = await ListObjects(filter, PersistenceAction.List, loadComposition, recordsLimit, orderAttributes: orderAttributes, orderDescending: orderDescending);
+            var queryResult = await ListObjects(filter, PersistenceAction.List, loadComposition, recordsLimit, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending);
             if (queryResult != null)
                 foreach (var item in queryResult)
                     result.Add(item as T);
@@ -123,10 +123,10 @@ namespace Rochas.DapperRepository
             return result;
         }
 
-        public ICollection<T> ListSync(T filter, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false)
+        public ICollection<T> ListSync(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
         {
             var result = new List<T>();
-            var queryResult = ListObjectsSync(filter, PersistenceAction.List, loadComposition, recordsLimit, sortAttributes: sortAttributes, orderDescending: orderDescending);
+            var queryResult = ListObjectsSync(filter, PersistenceAction.List, loadComposition, recordsLimit, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending);
             if (queryResult != null)
                 foreach (var item in queryResult)
                     result.Add(item as T);
@@ -239,7 +239,7 @@ namespace Rochas.DapperRepository
             return ListObjectsSync(filter, PersistenceAction.Get, loadComposition)?.FirstOrDefault();
         }
 
-        private async Task<IEnumerable<object>> ListObjects(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string orderAttributes = null, bool orderDescending = false)
+        private async Task<IEnumerable<object>> ListObjects(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
         {
             IEnumerable<object> returnList = null;
 
@@ -249,7 +249,7 @@ namespace Rochas.DapperRepository
 
             if (returnList == null)
             {
-                var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, onlyListableAttributes, showAttributes, groupAttributes, orderAttributes, orderDescending, _readUncommited);
+                var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending, _readUncommited);
 
                 if (keepConnection || base.Connect())
                 {
@@ -277,9 +277,9 @@ namespace Rochas.DapperRepository
             return returnList;
         }
 
-        private IEnumerable<object> ListObjectsSync(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
+        private IEnumerable<object> ListObjectsSync(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
         {
-            return ListObjects(filterEntity, action, loadComposition, recordLimit, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending).Result;
+            return ListObjects(filterEntity, action, loadComposition, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending).Result;
         }
 
         private async Task<int> CreateObject(object entity, bool persistComposition, string optionalConnConfig = "", bool isReplicating = false)

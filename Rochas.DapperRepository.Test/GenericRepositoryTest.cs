@@ -233,7 +233,7 @@ namespace Rochas.DapperRepository.Test
 
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.ListSync(filter);
+                result = repos.ListSync(filter, filterConjunction: false);
             }
 
             Assert.NotNull(result);

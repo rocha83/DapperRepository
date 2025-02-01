@@ -65,7 +65,7 @@ namespace Rochas.DapperRepository.Test
 		public void ListSortedTest()
 		{
 			var testFilter = new SampleEntity() { };
-			var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.List, testFilter, orderAttributes: "Name" );
+			var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.List, testFilter, sortAttributes: "Name" );
 			result = result.Trim();
 
 			Assert.NotNull(result);

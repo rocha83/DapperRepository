@@ -14,23 +14,24 @@ namespace Rochas.DapperRepository.Helpers
 {
     public static class EntitySqlParser
     {
-        #region Public Methods
+		#region Public Methods
 
-        /// <summary>
-        /// Parse entity model object instance to SQL ANSI CRUD statements
-        /// </summary>
-        /// <param name="entity">Entity model class reference</param>
-        /// <param name="persistenceAction">Persistence action enum (Get, List, Create, Edit, Delete)</param>
-        /// <param name="filterEntity">Filter entity model class reference</param>
-        /// <param name="recordLimit">Result records limit</param>
-        /// <param name="onlyListableAttributes">Flag to return only attributes marked as listable</param>
-        /// <param name="showAttributes">Comma separeted list of custom object attributes to show</param>
-        /// <param name="groupAttributes">List of object attributes to group results</param>
-        /// <param name="orderAttributes">List of object attributes to sort results</param>
-        /// <param name="orderDescending">Flag to return ordering with descending order</param>
-        /// <param name="readUncommited">Flag to set uncommited transaction level queries</param>
-        /// <returns></returns>
-        public static string ParseEntity(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int recordLimit = 0, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string orderAttributes = null, bool orderDescending = false, bool readUncommited = false)
+		/// <summary>
+		/// Parse entity model object instance to SQL ANSI CRUD statements
+		/// </summary>
+		/// <param name="entity">Entity model class reference</param>
+		/// <param name="persistenceAction">Persistence action enum (Get, List, Create, Edit, Delete)</param>
+		/// <param name="filterEntity">Filter entity model class reference</param>
+		/// <param name="recordLimit">Result records limit</param>
+		/// <param name="filterConjunction">Flag to filter entities attributes inclusively (AND operation)</param>
+		/// <param name="onlyListableAttributes">Flag to return only attributes marked as listable</param>
+		/// <param name="showAttributes">Comma separeted list of custom object attributes to show</param>
+		/// <param name="groupAttributes">List of object attributes to group results</param>
+		/// <param name="orderAttributes">List of object attributes to sort results</param>
+		/// <param name="orderDescending">Flag to return ordering with descending order</param>
+		/// <param name="readUncommited">Flag to set uncommited transaction level queries</param>
+		/// <returns></returns>
+		public static string ParseEntity(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false)
         {
             try
             {
@@ -56,7 +57,7 @@ namespace Rochas.DapperRepository.Helpers
                     EntityReflector.ValidateListableAttributes(entityProps, showAttributes, out displayAttributes);
 
                 sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, persistenceAction, filterEntity,
-                                                   recordLimit, displayAttributes, groupAttributes, readUncommited);
+                                                   recordLimit, filterConjunction, displayAttributes, groupAttributes, readUncommited);
 
                 if (persistenceAction != PersistenceAction.Create)
                 {
@@ -71,8 +72,8 @@ namespace Rochas.DapperRepository.Helpers
                     else
                         sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}");
 
-                    if (!string.IsNullOrEmpty(orderAttributes))
-                        ParseOrdinationAttributes(attributeColumnRelation, orderAttributes, orderDescending, ref sqlInstruction);
+                    if (!string.IsNullOrEmpty(sortAttributes))
+                        ParseOrdinationAttributes(attributeColumnRelation, sortAttributes, orderDescending, ref sqlInstruction);
                     else
                         sqlInstruction = string.Format(sqlInstruction, string.Empty);
                 }
@@ -89,7 +90,7 @@ namespace Rochas.DapperRepository.Helpers
 
         #region Helper Methods
 
-        private static string GetSqlInstruction(object entity, Type entityType, PropertyInfo[] entityProps, DatabaseEngine engine, PersistenceAction action, object filterEntity, int recordLimit, string[] showAttributes, string groupAttributes, bool readUncommited = false)
+        private static string GetSqlInstruction(object entity, Type entityType, PropertyInfo[] entityProps, DatabaseEngine engine, PersistenceAction action, object filterEntity, int recordLimit, bool filterConjunction, string[] showAttributes, string groupAttributes, bool readUncommited = false)
         {
             string sqlInstruction;
             Dictionary<object, object> sqlFilterData;
@@ -107,8 +108,8 @@ namespace Rochas.DapperRepository.Helpers
             var keyColumnName = EntityReflector.GetKeyColumnName(entityProps);
 
             Dictionary<string, string> sqlParameters = GetSqlParameters(sqlEntityData, engine, action, sqlFilterData,
-                                                                        recordLimit, showAttributes, keyColumnName,
-                                                                        rangeValues, groupAttributes, readUncommited);
+                                                                        recordLimit, filterConjunction, showAttributes, 
+                                                                        keyColumnName, rangeValues, groupAttributes, readUncommited);
             switch (action)
             {
                 case PersistenceAction.Create:
@@ -178,10 +179,10 @@ namespace Rochas.DapperRepository.Helpers
                                                          "{0}");
         }
 
-        private static void ParseOrdinationAttributes(Dictionary<object, object> attributeColumnRelation, string orderAttributes, bool orderDescending, ref string sqlInstruction)
+        private static void ParseOrdinationAttributes(Dictionary<object, object> attributeColumnRelation, string sortAttributes, bool orderDescending, ref string sqlInstruction)
         {
             string columnList = string.Empty;
-            string[] ordinationAttributes = orderAttributes.Split(',');
+            string[] ordinationAttributes = sortAttributes.Split(',');
 
             for (int contAtrib = 0; contAtrib < ordinationAttributes.Length; contAtrib++)
             {
@@ -205,7 +206,7 @@ namespace Rochas.DapperRepository.Helpers
                                                          orderDescending ? "DESC" : "ASC"));
         }
 
-        private static Dictionary<string, string> GetSqlParameters(Dictionary<object, object> entitySqlData, DatabaseEngine engine, PersistenceAction action, IDictionary<object, object> entitySqlFilter, int recordLimit, string[] showAttributes, string keyColumnName, IDictionary<string, object[]> rangeValues, string groupAttributes, bool readUncommited = false)
+        private static Dictionary<string, string> GetSqlParameters(Dictionary<object, object> entitySqlData, DatabaseEngine engine, PersistenceAction action, IDictionary<object, object> entitySqlFilter, int recordLimit, bool filterConjunction, string[] showAttributes, string keyColumnName, IDictionary<string, object[]> rangeValues, string groupAttributes, bool readUncommited = false)
         {
             var returnDictionary = new Dictionary<string, string>();
 
@@ -256,7 +257,7 @@ namespace Rochas.DapperRepository.Helpers
                 }
 
             if (entitySqlFilter != null)
-                SetFilterSqlParameters(entitySqlFilter, tableName, action, rangeValues, ref columnFilterList);
+                SetFilterSqlParameters(entitySqlFilter, tableName, action, rangeValues, ref columnFilterList, filterConjunction);
 
             FillSqlParametersResult(returnDictionary, action, ref columnList, ref valueList, ref columnValueList, ref columnFilterList, ref relationList, readUncommited);
 
@@ -399,7 +400,7 @@ namespace Rochas.DapperRepository.Helpers
             }
         }
 
-        private static void SetFilterSqlParameters(IDictionary<object, object> entitySqlFilter, string tableName, PersistenceAction action, IDictionary<string, object[]> rangeValues, ref string columnFilterList)
+        private static void SetFilterSqlParameters(IDictionary<object, object> entitySqlFilter, string tableName, PersistenceAction action, IDictionary<string, object[]> rangeValues, ref string columnFilterList, bool filterConjunction)
         {
             foreach (var filter in entitySqlFilter)
             {
@@ -464,7 +465,7 @@ namespace Rochas.DapperRepository.Helpers
 
                             if (!filterColumnValue.Equals(false))
                                 columnFilterList += filterColumnName + comparation +
-                                    ((compareRule) ? SqlOperator.Or : SqlOperator.And);
+                                    ((compareRule && !filterConjunction) ? SqlOperator.Or : SqlOperator.And);
                         }
                         else
                             SetRangeFilterSql(filter, rangeValues, columnNameStr, 
