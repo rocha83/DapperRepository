@@ -451,11 +451,15 @@ namespace Rochas.DapperRepository.Helpers
 
                         string comparation = string.Empty;
 
-                        if (!rangeFilter)
+                        var filterColumnValueStr = filterColumnValue.ToString()
+                                                                    .Replace("(", string.Empty)
+                                                                    .Replace(")", string.Empty);
+
+						if (!rangeFilter)
                         {
                             comparation = (compareRule)
-                                          ? string.Format(SqlOperator.Contains, filterColumnValue.ToString().Replace("'", string.Empty))
-                                          : string.Concat(SqlOperator.Equal, filterColumnValue);
+                                          ? string.Format(SqlOperator.Contains, filterColumnValueStr.Replace("'", string.Empty))
+                                          : string.Concat(SqlOperator.Equal, filterColumnValueStr);
 
                             if (filterColumnValue.Equals(true))
                                 comparation = " = 1";
@@ -469,7 +473,7 @@ namespace Rochas.DapperRepository.Helpers
                         }
                         else
                             SetRangeFilterSql(filter, rangeValues, columnNameStr, 
-                                              filterColumnName.ToString(), ref columnFilterList);
+                                              filterColumnValueStr, ref columnFilterList);
                     }
                 }
 			}

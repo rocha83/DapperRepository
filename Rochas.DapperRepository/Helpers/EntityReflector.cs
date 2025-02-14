@@ -11,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using System.Data;
 using System.Collections;
+using System.Globalization;
 
 namespace Rochas.DapperRepository.Helpers
 {
@@ -200,6 +201,13 @@ namespace Rochas.DapperRepository.Helpers
             return entity;
         }
 
+        public static bool IsEmptyObjectValue(object value)
+        {
+			var strVal = value.ToString().Trim();
+			return string.IsNullOrWhiteSpace(strVal)
+                || (double.TryParse(strVal, out double fake) && (fake == 0));
+		}
+
         public static void SetFilterPrimaryKey(object entity, PropertyInfo[] entityProps, object filterEntity)
         {
             var entityKeyColumn = GetKeyColumn(entityProps);
@@ -223,8 +231,7 @@ namespace Rochas.DapperRepository.Helpers
             if ((parentKey != null) && (childForeignKey != null))
             {
                 var parentKeyValue = parentKey.GetValue(parentEntity, null);
-				var keyStrValue = parentKeyValue.ToString();
-				if (!string.IsNullOrWhiteSpace(keyStrValue) && (keyStrValue != "0"))
+				if (!IsEmptyObjectValue(parentKeyValue))
 				{
 					childForeignKey.SetValue(childEntity, parentKeyValue, null);
 					result = true;
@@ -245,8 +252,7 @@ namespace Rochas.DapperRepository.Helpers
             if ((parentForeignKey != null) && (childKey != null))
             {
                 var foreignKeyValue = parentForeignKey.GetValue(parentEntity, null);
-                var keyStrValue = foreignKeyValue.ToString();
-				if (!string.IsNullOrWhiteSpace(keyStrValue) && (keyStrValue != "0"))
+				if (!IsEmptyObjectValue(foreignKeyValue))
                 {
 					childKey.SetValue(childEntity, foreignKeyValue, null);
 					result = true;

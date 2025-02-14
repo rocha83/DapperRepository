@@ -66,14 +66,20 @@ namespace Rochas.DapperRepository
 
         public async Task<T> Get(object key, bool loadComposition = false)
         {
-            var filter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, key) as T;
+			if (EntityReflector.IsEmptyObjectValue(key))
+				return null;
+
+			var filter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, key) as T;
 
             return await Get(filter, loadComposition);
         }
 
         public T GetSync(object key, bool loadComposition = false)
         {
-            var filter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, key) as T;
+            if (EntityReflector.IsEmptyObjectValue(key))
+				return null;
+
+			var filter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, key) as T;
 
             return GetSync(filter, loadComposition);
         }
@@ -230,13 +236,19 @@ namespace Rochas.DapperRepository
 
         private async Task<object> GetObject(object filter, bool loadComposition = false)
         {
+            if (filter == null)
+                return null;
+
             var queryResult = await ListObjects(filter, PersistenceAction.Get, loadComposition);
             return queryResult?.FirstOrDefault();
         }
 
         private object GetObjectSync(object filter, bool loadComposition = false)
         {
-            return ListObjectsSync(filter, PersistenceAction.Get, loadComposition)?.FirstOrDefault();
+			if (filter == null)
+				return null;
+
+			return ListObjectsSync(filter, PersistenceAction.Get, loadComposition)?.FirstOrDefault();
         }
 
         private async Task<IEnumerable<object>> ListObjects(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
