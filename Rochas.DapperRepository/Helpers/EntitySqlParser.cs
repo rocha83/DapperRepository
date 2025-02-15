@@ -473,7 +473,7 @@ namespace Rochas.DapperRepository.Helpers
                         }
                         else
                             SetRangeFilterSql(filter, rangeValues, columnNameStr, 
-                                              filterColumnValueStr, ref columnFilterList);
+                                              filterColumnName.ToString(), ref columnFilterList);
                     }
                 }
 			}
@@ -513,7 +513,7 @@ namespace Rochas.DapperRepository.Helpers
                 comparation = GetDateRangeComparation(rangeValues, columnNameStr, ref rangeFrom, ref rangeTo);
             
             if (!string.IsNullOrWhiteSpace(comparation))
-                columnFilterList += string.Concat(filterColumnName, " ", comparation, SqlOperator.And);
+                columnFilterList += string.Concat(columnNameStr, " ", comparation, SqlOperator.And);
         }
 
         private static string GetNumericRangeComparation(IDictionary<string, object[]> rangeValues,
