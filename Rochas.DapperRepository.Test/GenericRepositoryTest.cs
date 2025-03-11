@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using Rochas.DapperRepository.Specification.Enums;
+using Microsoft.VisualStudio.TestPlatform.Utilities;
+using Rochas.Extensions;
 
 namespace Rochas.DapperRepository.Test
 {
@@ -281,7 +283,23 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test12_Count()
+        public void Test12_BulkSearch()
+        {
+            ICollection<SampleEntity> result;
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var criterias = "roberto torres sao paulo".Tokenize();
+
+                result = repos.BulkSearchSync(criterias);
+                
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        [Fact]
+        public void Test13_Count()
         {
             int result = 0;
             var filter = new SampleEntity() { Name = "roberto" };
@@ -295,7 +313,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test13_Edit()
+        public void Test14_Edit()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -313,7 +331,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test14_EditComposition()
+        public void Test15_EditComposition()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -340,7 +358,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test15_Delete()
+        public void Test16_Delete()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -363,7 +381,7 @@ namespace Rochas.DapperRepository.Test
         #region OneToOne Composite Entity Tests
 
         [Fact]
-        public void Test16_OneToOneCompositionCreate()
+        public void Test17_OneToOneCompositionCreate()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -387,7 +405,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test17_GetOneToOneCompositionByKey()
+        public void Test18_GetOneToOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -404,7 +422,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test18_ListOneToOneComposition()
+        public void Test19_ListOneToOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -426,7 +444,7 @@ namespace Rochas.DapperRepository.Test
         #region ManyToOne Composition Entity Tests
 
         [Fact]
-        public void Test19_ManyToOneCompositionCreate()
+        public void Test20_ManyToOneCompositionCreate()
         {
             int result;
 
@@ -463,7 +481,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test20_GetManyToOneCompositionByKey()
+        public void Test21_GetManyToOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -480,7 +498,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test21_ListManyToOneComposition()
+        public void Test22_ListManyToOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -502,7 +520,7 @@ namespace Rochas.DapperRepository.Test
         #region OneToMany Composite Entity Tests
 
         [Fact]
-        public void Test22_OneToManyCompositionCreate()
+        public void Test23_OneToManyCompositionCreate()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -532,7 +550,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test23_GetOneToManyCompositionByKey()
+        public void Test24_GetOneToManyCompositionByKey()
         {
             SampleEntity result;
 
@@ -550,7 +568,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test24_ListOneToManyComposition()
+        public void Test25_ListOneToManyComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -574,7 +592,7 @@ namespace Rochas.DapperRepository.Test
         #region ManyToMany Composite Entity Tests
 
         [Fact]
-        public void Test25_IntermedyCompositionCreate()
+        public void Test26_IntermedyCompositionCreate()
         {
             int leftEntityResult;
             var sampleLeftEntity = new SampleEntity()
@@ -613,7 +631,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test26_IntermedyCompositionGet()
+        public void Test27_IntermedyCompositionGet()
         {
             using var leftEntityRepos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString);
             var leftEntityFilter = new SampleEntity() { DocNumber = 15678 };

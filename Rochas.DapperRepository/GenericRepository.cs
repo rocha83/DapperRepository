@@ -15,6 +15,9 @@ using Rochas.DapperRepository.Helpers.SQL;
 using Rochas.DapperRepository.Specification.Enums;
 using Rochas.DapperRepository.Specification.Interfaces;
 using Rochas.DapperRepository.Specification.Annotations;
+using System.Collections.Concurrent;
+using System.ComponentModel.Design;
+using System.Collections.Immutable;
 
 namespace Rochas.DapperRepository
 {
@@ -66,10 +69,10 @@ namespace Rochas.DapperRepository
 
         public async Task<T> Get(object key, bool loadComposition = false)
         {
-			if (EntityReflector.IsEmptyObjectValue(key))
-				return null;
+            if (EntityReflector.IsEmptyObjectValue(key))
+                return null;
 
-			var filter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, key) as T;
+            var filter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, key) as T;
 
             return await Get(filter, loadComposition);
         }
@@ -77,9 +80,9 @@ namespace Rochas.DapperRepository
         public T GetSync(object key, bool loadComposition = false)
         {
             if (EntityReflector.IsEmptyObjectValue(key))
-				return null;
+                return null;
 
-			var filter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, key) as T;
+            var filter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, key) as T;
 
             return GetSync(filter, loadComposition);
         }
@@ -118,6 +121,84 @@ namespace Rochas.DapperRepository
             return result;
         }
 
+        public async Task<ICollection<T>> BulkSearch(object[] criterias, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false)
+        {
+            ConcurrentDictionary<string, int> preResult = new ConcurrentDictionary<string, int>();
+
+            if (criterias != null)
+            {
+                await Task.Run(() =>
+                {
+                    criterias.AsParallel().ForAll(async criteria =>
+                    {
+                        var queryResult = await Search(criteria, loadComposition);
+                        if (queryResult != null)
+                            foreach (var item in queryResult)
+                            {
+                                var jsonItem = JsonSerializer.Serialize(item);
+                                if (!preResult.ContainsKey(jsonItem))
+                                    preResult.TryAdd(jsonItem, 1);
+                                else
+                                    preResult[jsonItem] += 1;
+                            }
+                    });
+                });
+            }
+
+            var orderedResult = preResult.OrderByDescending(rs => rs.Value)
+                                         .Select(rs => rs.Key);
+
+            var typedResult = preResult.Keys.Select(it => JsonSerializer.Deserialize<T>(it));
+
+            var result = (recordsLimit > 0)
+                       ? typedResult.Take(recordsLimit).ToList()
+                       : typedResult.ToList();
+
+            return result;
+        }
+
+        public ICollection<T> BulkSearchSync(object[] criterias, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false)
+        {
+            ConcurrentDictionary<string, int> preResult = new ConcurrentDictionary<string, int>();
+
+            try
+            {
+                if (criterias != null)
+                {
+                    foreach(var criteria in criterias)
+                    {
+                        var queryResult = SearchSync(criteria, loadComposition,
+                                                     sortAttributes: sortAttributes,
+                                                     orderDescending: orderDescending);
+                        if (queryResult != null)
+                            queryResult.AsParallel().ForAll(item =>
+                            {
+                                var jsonItem = JsonSerializer.Serialize(item);
+                                if (!preResult.ContainsKey(jsonItem))
+                                    preResult.TryAdd(jsonItem, 1);
+                                else
+                                    preResult[jsonItem] += 1;
+                            });
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
+
+            var orderedResult = preResult.OrderByDescending(rs => rs.Value)
+                                         .Select(rs => rs.Key);
+
+            var typedResult = preResult.Keys.Select(it => JsonSerializer.Deserialize<T>(it));
+            
+            var result = (recordsLimit > 0)
+                       ? typedResult.Take(recordsLimit).ToList()
+                       : typedResult.ToList();
+
+            return result;
+        }
+
         public async Task<ICollection<T>> List(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
         {
             var result = new List<T>();
@@ -149,7 +230,7 @@ namespace Rochas.DapperRepository
             return CreateObjectSync(entity, persistComposition);
         }
 
-        public async Task CreateRange(IEnumerable<T> entities, bool persistComposition = false)
+        public async Task BulkCreate(IEnumerable<T> entities, bool persistComposition = false)
         {
             try
             {
@@ -166,7 +247,7 @@ namespace Rochas.DapperRepository
                 throw ex;
             }
         }
-        public void CreateRangeSync(IEnumerable<T> entities, bool persistComposition = false)
+        public void BulkCreateSync(IEnumerable<T> entities, bool persistComposition = false)
         {
             try
             {
@@ -184,12 +265,12 @@ namespace Rochas.DapperRepository
             }
         }
 
-        public async Task CreateBulkRange(ICollection<T> entities)
+        public async Task BulkSqlCreateRange(ICollection<T> entities)
         {
             var entitiesTable = EntityReflector.GetDataTable<T>(entities);
             await ExecuteBulkCommandAsync(entitiesTable);
         }
-        public void CreateBulkRangeSync(ICollection<T> entities)
+        public void BulkSqlCreateSync(ICollection<T> entities)
         {
             var entitiesTable = EntityReflector.GetDataTable<T>(entities);
             ExecuteBulkCommand(entitiesTable);
@@ -245,10 +326,10 @@ namespace Rochas.DapperRepository
 
         private object GetObjectSync(object filter, bool loadComposition = false)
         {
-			if (filter == null)
-				return null;
+            if (filter == null)
+                return null;
 
-			return ListObjectsSync(filter, PersistenceAction.Get, loadComposition)?.FirstOrDefault();
+            return ListObjectsSync(filter, PersistenceAction.Get, loadComposition)?.FirstOrDefault();
         }
 
         private async Task<IEnumerable<object>> ListObjects(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
@@ -263,7 +344,7 @@ namespace Rochas.DapperRepository
             {
                 var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending, _readUncommited);
 
-                if (keepConnection || base.Connect())
+                if (((connection != null) && keepConnection) || base.Connect())
                 {
                     await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction);
 
@@ -449,28 +530,28 @@ namespace Rochas.DapperRepository
                 {
                     case RelationCardinality.OneToOne:
 
-                        if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
+                        if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance,
                                                                     childProps, relationAttrib.ForeignKeyAttribute))
                             childEntityInstance = GetObjectSync(childEntityInstance, true);
 
                         break;
                     case RelationCardinality.ManyToOne:
 
-                        if (EntityReflector.SetParentForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
+                        if (EntityReflector.SetParentForeignKeyValue(loadedEntity, entityProps, childEntityInstance,
                                                                      childProps, relationAttrib.ForeignKeyAttribute))
                         {
-							childEntityInstance = GetObjectSync(childEntityInstance, true);
-						}
+                            childEntityInstance = GetObjectSync(childEntityInstance, true);
+                        }
 
                         break;
                     case RelationCardinality.OneToMany:
 
                         childProps = childEntityType.GetProperties();
-                        if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance, 
+                        if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance,
                                                                     childProps, relationAttrib.ForeignKeyAttribute))
                         {
-							childEntityInstance = ListObjectsSync(childEntityInstance, PersistenceAction.List, true);
-						}
+                            childEntityInstance = ListObjectsSync(childEntityInstance, PersistenceAction.List, true);
+                        }
 
                         break;
                     case RelationCardinality.ManyToMany:
@@ -483,23 +564,23 @@ namespace Rochas.DapperRepository
                             if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, intermedyEntityInstance,
                                                                         intermedyEntityProps, relationAttrib.IntermediaryKeyAttribute))
                             {
-								var manyToManyRelations = ListObjectsSync(intermedyEntityInstance, PersistenceAction.Get);
-								var manyToManyResultList = EntityReflector.CreateTypedList(child);
+                                var manyToManyRelations = ListObjectsSync(intermedyEntityInstance, PersistenceAction.Get);
+                                var manyToManyResultList = EntityReflector.CreateTypedList(child);
 
-								foreach (var relationInstance in manyToManyRelations)
-								{
-									if (EntityReflector.SetParentForeignKeyValue(relationInstance, intermedyEntityProps,
-										    									 childEntityInstance, childProps,
-											    								 relationAttrib.ForeignKeyAttribute))
+                                foreach (var relationInstance in manyToManyRelations)
+                                {
+                                    if (EntityReflector.SetParentForeignKeyValue(relationInstance, intermedyEntityProps,
+                                                                                 childEntityInstance, childProps,
+                                                                                 relationAttrib.ForeignKeyAttribute))
                                     {
-										var childRelationInstance = GetObjectSync(childEntityInstance);
-										manyToManyResultList.Add(childRelationInstance);
-									}
-								}
+                                        var childRelationInstance = GetObjectSync(childEntityInstance);
+                                        manyToManyResultList.Add(childRelationInstance);
+                                    }
+                                }
 
-								childEntityInstance = manyToManyResultList;
-								childEntityIsList = false; // Typed list already created
-							}
+                                childEntityInstance = manyToManyResultList;
+                                childEntityIsList = false; // Typed list already created
+                            }
                         }
                         break;
                 }
@@ -538,10 +619,10 @@ namespace Rochas.DapperRepository
                         }
 
                         if (relationAttrib.Cardinality == RelationCardinality.OneToOne)
-                            EntityReflector.SetChildForeignKeyValue(entityParent, entityProps, childEntityInstance, 
+                            EntityReflector.SetChildForeignKeyValue(entityParent, entityProps, childEntityInstance,
                                                                childProps, relationAttrib.ForeignKeyAttribute);
                         else // ManyToOne relation
-                            EntityReflector.SetChildForeignKeyValue(childEntityInstance, childProps, entityParent, 
+                            EntityReflector.SetChildForeignKeyValue(childEntityInstance, childProps, entityParent,
                                                                entityProps, relationAttrib.ForeignKeyAttribute);
 
                         result.Add(EntitySqlParser.ParseEntity(childEntityInstance, engine, action));
