@@ -10,7 +10,7 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable elastic tokenized search bulk persistence parser crud poco orm cqrs</PackageTags>
-    <Version>1.2.6</Version>
+    <Version>1.2.7</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
@@ -21,12 +21,12 @@
     <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="MySqlConnector" Version="2.4.0" />
     <PackageReference Include="Npgsql" Version="8.0.7" />
-    <PackageReference Include="Rochas.DapperRepository.Specification" Version="1.1.0" />
+    <PackageReference Include="Rochas.DapperRepository.Specification" Version="1.1.2" />
     <PackageReference Include="System.ComponentModel" Version="4.3.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-    <PackageReference Include="System.Text.Json" Version="9.0.2" />
+    <PackageReference Include="System.Text.Json" Version="9.0.3" />
   </ItemGroup>
 
   <ItemGroup>

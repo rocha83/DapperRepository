@@ -289,7 +289,7 @@ namespace Rochas.DapperRepository.Test
 
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                var criterias = "roberto torres sao paulo".Tokenize();
+                var criterias = "roberto torres sao pedro".Tokenize();
 
                 result = repos.BulkSearchSync(criterias);
                 
