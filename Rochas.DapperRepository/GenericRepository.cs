@@ -154,10 +154,8 @@ namespace Rochas.DapperRepository
 				connection.Close();
 			}
 
-			var orderedResult = preResult.OrderByDescending(rs => rs.Value)
-										 .Select(rs => rs.Key);
-
-			var typedResult = preResult.Keys.Select(it => JsonSerializer.Deserialize<T>(it));
+			var typedResult = preResult.OrderByDescending(rs => rs.Value)
+										 .Select(rs => JsonSerializer.Deserialize<T>(rs.Key));
 
 			var result = (recordsLimit > 0)
 					   ? typedResult.Take(recordsLimit).ToList()
@@ -174,8 +172,6 @@ namespace Rochas.DapperRepository
 			{
 				foreach (var criteria in criterias)
 				{
-					keepConnection = true;
-
 					var queryResult = SearchSync(criteria, loadComposition,
 											 sortAttributes: sortAttributes,
 											 orderDescending: orderDescending);
@@ -191,10 +187,8 @@ namespace Rochas.DapperRepository
 				}
 			}
 
-			var orderedResult = preResult.OrderByDescending(rs => rs.Value)
-										 .Select(rs => rs.Key);
-
-			var typedResult = preResult.Keys.Select(it => JsonSerializer.Deserialize<T>(it));
+			var typedResult = preResult.OrderByDescending(rs => rs.Value)
+							  		   .Select(rs => JsonSerializer.Deserialize<T>(rs.Key));
 
 			var result = (recordsLimit > 0)
 					   ? typedResult.Take(recordsLimit).ToList()
