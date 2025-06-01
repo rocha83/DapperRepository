@@ -59,8 +59,8 @@ namespace Rochas.DapperRepository.Helpers
                 sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, persistenceAction, filterEntity,
                                                    recordLimit, filterConjunction, displayAttributes, groupAttributes, readUncommited);
 
-                if (persistenceAction != PersistenceAction.Create)
-                {
+                if ((persistenceAction != PersistenceAction.Create) && (persistenceAction != PersistenceAction.Edit))
+				{
                     sqlInstruction = string.Format(sqlInstruction, ((engine != DatabaseEngine.SQLServer) && (recordLimit > 0))
                                    ? string.Format(SQLStatements.SQL_Action_LimitResult_MySQL, recordLimit)
                                    : string.Empty, "{0}", "{1}");
