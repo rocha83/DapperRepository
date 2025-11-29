@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -10,8 +11,8 @@ namespace Rochas.DapperRepository.Helpers
     {
         #region Declarations
 
-        private static Dictionary<KeyValuePair<int, string>, object> cacheItems = 
-            new Dictionary<KeyValuePair<int, string>, object>();
+        private static ConcurrentDictionary<KeyValuePair<uint, string>, object> cacheItems = 
+            new ConcurrentDictionary<KeyValuePair<uint, string>, object>();
 
         public static int MemorySizeLimit;
 
@@ -31,7 +32,7 @@ namespace Rochas.DapperRepository.Helpers
             if (cacheKey != null)
             {
                 var serialKey = JsonSerializer.Serialize(cacheKey);
-                var serialCacheKey = new KeyValuePair<int, string>(cacheKey.GetType().GetHashCode(), serialKey);
+                var serialCacheKey = new KeyValuePair<uint, string>(GetCustomHashCode(cacheKey.GetType().FullName), serialKey);
                 if (cacheItems.ContainsKey(serialCacheKey))
                     result = cacheItems[serialCacheKey];
             }
@@ -53,10 +54,10 @@ namespace Rochas.DapperRepository.Helpers
                     CheckMemoryUsage();
 
                     var serialKey = JsonSerializer.Serialize(cacheKey);
-                    var serialCacheKey = new KeyValuePair<int, string>(cacheKey.GetType().GetHashCode(), serialKey);
+                    var serialCacheKey = new KeyValuePair<uint, string>(GetCustomHashCode(cacheKey.GetType().FullName), serialKey);
 
                     if (!cacheItems.ContainsKey(serialCacheKey))
-                        cacheItems.Add(serialCacheKey, cacheItem);
+                        cacheItems.TryAdd(serialCacheKey, cacheItem);
 
                     UpdateCacheTree(cacheKey.GetType().GetHashCode(), cacheItem);
                 }
@@ -72,9 +73,9 @@ namespace Rochas.DapperRepository.Helpers
             if (cacheKey != null)
             {
                 var serialKey = JsonSerializer.Serialize(cacheKey);
-                var serialCacheKey = new KeyValuePair<int, string>(cacheKey.GetType().GetHashCode(), serialKey);
+                var serialCacheKey = new KeyValuePair<uint, string>(GetCustomHashCode(cacheKey.GetType().FullName), serialKey);
                 if (cacheItems.ContainsKey(serialCacheKey))
-                    cacheItems.Remove(serialCacheKey);
+                    cacheItems.TryRemove(serialCacheKey, out var _fake);
 
                 if (deleteAll)
                     UpdateCacheTree(cacheKey.GetType().GetHashCode(), cacheKey, true);
@@ -99,7 +100,7 @@ namespace Rochas.DapperRepository.Helpers
                 var paramSize = MemorySizeLimit;
                 var memSize = GC.GetTotalMemory(false) / 1024 / 1024;
                 if (memSize > paramSize)
-                    cacheItems = new Dictionary<KeyValuePair<int, string>, object>();
+                    cacheItems = new ConcurrentDictionary<KeyValuePair<uint, string>, object>();
             }
         }
 
@@ -127,9 +128,26 @@ namespace Rochas.DapperRepository.Helpers
                             }
                     }
                     else
-                        cacheItems.Remove(typeCacheItems[typeCount].Key);
+                        cacheItems.TryRemove(typeCacheItems[typeCount].Key, out var _fake);
                 }
             }
+        }
+
+        private static uint GetCustomHashCode(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return 0;
+
+            const uint prime = 16777619;
+            uint hash = 2166136261;
+
+            foreach (char c in value)
+            {
+                hash ^= (byte)c;
+                hash *= prime;
+            }
+
+            return hash;
         }
 
         #endregion
