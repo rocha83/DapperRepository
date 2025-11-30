@@ -12,7 +12,7 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <PackageReleaseNotes>Repository CRUD methods signature standard fix</PackageReleaseNotes>
   </PropertyGroup>
 

@@ -7,11 +7,11 @@ namespace Rochas.DapperRepository.Specification.Enums
         #region Declarations
 
         Get = 1,
-        List = 2,
+        Query = 2,
         Count = 3,
-        Create = 4,
-        Edit = 5,
-        Delete = 6
+        Add = 4,
+        Update = 5,
+        Remove = 6
 
         #endregion
     }

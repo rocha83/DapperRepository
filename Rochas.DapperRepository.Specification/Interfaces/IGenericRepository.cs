@@ -10,8 +10,8 @@ namespace Rochas.DapperRepository.Specification.Interfaces
         int CountSync(T filterEntity);
         Task<int> Add(T entity, bool persistComposition = false);
         int AddSync(T entity, bool persistComposition = false);
-        Task BulkAdd(IEnumerable<T> entities, bool persistComposition = false);
-        void BulkAddSync(IEnumerable<T> entities, bool persistComposition = false);
+        Task AddRange(IEnumerable<T> entities, bool persistComposition = false);
+        void AddRangeSync(IEnumerable<T> entities, bool persistComposition = false);
         Task<int> Remove(T filterEntity);
         int RemoveSync(T filterEntity);
         Task<int> Update(T entity, T filterEntity, bool persistComposition = false);
