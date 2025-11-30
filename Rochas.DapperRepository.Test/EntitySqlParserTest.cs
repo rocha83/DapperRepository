@@ -38,7 +38,7 @@ namespace Rochas.DapperRepository.Test
         public void ListTest()
         {
             var testFilter = new SampleEntity() { Name = "roberto" };
-            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.List, testFilter);
+            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.Query, testFilter);
             result = result.Trim();
 
             Assert.NotNull(result);
@@ -51,7 +51,7 @@ namespace Rochas.DapperRepository.Test
         public void ListLimitedTest()
         {
             var testFilter = new SampleEntity() { Name = "roberto" };
-            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.List, testFilter, 5);
+            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.Query, testFilter, 5);
             result = result.Trim();
 
             Assert.NotNull(result);
@@ -65,7 +65,7 @@ namespace Rochas.DapperRepository.Test
 		public void ListSortedTest()
 		{
 			var testFilter = new SampleEntity() { };
-			var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.List, testFilter, sortAttributes: "Name" );
+			var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.Query, testFilter, sortAttributes: "Name" );
 			result = result.Trim();
 
 			Assert.NotNull(result);
@@ -78,7 +78,7 @@ namespace Rochas.DapperRepository.Test
         public void ListLimitedSQLServerTest()
         {
             var testFilter = new SampleEntity() { Name = "roberto" };
-            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLServer, PersistenceAction.List, testFilter, 5);
+            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLServer, PersistenceAction.Query, testFilter, 5);
             result = result.Trim();
 
             Assert.NotNull(result);
@@ -95,7 +95,7 @@ namespace Rochas.DapperRepository.Test
             var filterProps = filterType.GetProperties();
             var testFilter = EntityReflector.GetFilterByFilterableColumns(typeof(SampleEntity), filterProps, "roberto");
 
-            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.List, testFilter);
+            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.Query, testFilter);
             result = result.Trim();
 
             Assert.NotNull(result);
@@ -108,7 +108,7 @@ namespace Rochas.DapperRepository.Test
         public void CreateTest()
         {
             var sampleEntity = new SampleEntity() { DocNumber = 12345 };
-            var result = EntitySqlParser.ParseEntity(sampleEntity, DatabaseEngine.SQLite, PersistenceAction.Create);
+            var result = EntitySqlParser.ParseEntity(sampleEntity, DatabaseEngine.SQLite, PersistenceAction.Add);
             result = result.Trim();
 
             Assert.NotNull(result);
@@ -124,7 +124,7 @@ namespace Rochas.DapperRepository.Test
         {
             var editedEntity = new SampleEntity() { Name = "roberto gomes", Age = 35 };
             var filterEntity = new SampleEntity() { DocNumber = 12345 };
-            var result = EntitySqlParser.ParseEntity(editedEntity, DatabaseEngine.SQLite, PersistenceAction.Edit, filterEntity);
+            var result = EntitySqlParser.ParseEntity(editedEntity, DatabaseEngine.SQLite, PersistenceAction.Update, filterEntity);
             result = result.Trim();
 
             Assert.NotNull(result);
@@ -137,7 +137,7 @@ namespace Rochas.DapperRepository.Test
         public void DeleteTest()
         {
             var filterEntity = new SampleEntity() { DocNumber = 12345 };
-            var result = EntitySqlParser.ParseEntity(filterEntity, DatabaseEngine.SQLite, PersistenceAction.Delete, filterEntity);
+            var result = EntitySqlParser.ParseEntity(filterEntity, DatabaseEngine.SQLite, PersistenceAction.Remove, filterEntity);
             result = result.Trim();
 
             Assert.NotNull(result);

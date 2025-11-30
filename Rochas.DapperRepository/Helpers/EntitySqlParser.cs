@@ -59,7 +59,7 @@ namespace Rochas.DapperRepository.Helpers
                 sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, persistenceAction, filterEntity,
                                                    recordLimit, filterConjunction, displayAttributes, groupAttributes, readUncommited);
 
-                if ((persistenceAction != PersistenceAction.Create) && (persistenceAction != PersistenceAction.Edit))
+                if ((persistenceAction != PersistenceAction.Add) && (persistenceAction != PersistenceAction.Update))
 				{
                     sqlInstruction = string.Format(sqlInstruction, ((engine != DatabaseEngine.SQLServer) && (recordLimit > 0))
                                    ? string.Format(SQLStatements.SQL_Action_LimitResult_MySQL, recordLimit)
@@ -112,7 +112,7 @@ namespace Rochas.DapperRepository.Helpers
                                                                         keyColumnName, rangeValues, groupAttributes, readUncommited);
             switch (action)
             {
-                case PersistenceAction.Create:
+                case PersistenceAction.Add:
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Create,
                                                    sqlParameters["TableName"],
@@ -121,7 +121,7 @@ namespace Rochas.DapperRepository.Helpers
 
                     break;
 
-                case PersistenceAction.Edit:
+                case PersistenceAction.Update:
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Edit,
                                                    sqlParameters["TableName"],
@@ -130,7 +130,7 @@ namespace Rochas.DapperRepository.Helpers
 
                     break;
 
-                case PersistenceAction.Delete:
+                case PersistenceAction.Remove:
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Delete,
                                                    sqlParameters["TableName"],
@@ -271,7 +271,7 @@ namespace Rochas.DapperRepository.Helpers
 
             action = SetPersistenceAction(listItem, EntityReflector.GetKeyColumn(listItemProps));
 
-            if (action == PersistenceAction.Edit)
+            if (action == PersistenceAction.Update)
             {
                 EntityReflector.SetFilterPrimaryKey(listItem, listItemProps, childEntityFilter);
                 childFiltersList.Add(childEntityFilter);
@@ -303,12 +303,12 @@ namespace Rochas.DapperRepository.Helpers
         public static PersistenceAction SetPersistenceAction(object entity, PropertyInfo entityKeyColumn)
         {
             return (entityKeyColumn.GetValue(entity, null).ToString().Equals(SqlDefaultValue.Zero))
-                    ? PersistenceAction.Create : PersistenceAction.Edit;
+                    ? PersistenceAction.Add : PersistenceAction.Update;
         }
 
         private static void FillSqlParametersResult(IDictionary<string, string> returnDictionary, PersistenceAction action, ref string columnList, ref string valueList, ref string columnValueList, ref string columnFilterList, ref string relationList, bool readUncommited = false)
         {
-            if (action == PersistenceAction.Create)
+            if (action == PersistenceAction.Add)
             {
                 columnList = columnList.Substring(0, columnList.Length - 2);
                 valueList = valueList.Substring(0, valueList.Length - 2);
@@ -318,7 +318,7 @@ namespace Rochas.DapperRepository.Helpers
             }
             else
             {
-                if ((action == PersistenceAction.List)
+                if ((action == PersistenceAction.Query)
                     || (action == PersistenceAction.Get)
                     || (action == PersistenceAction.Count))
                 {
@@ -352,12 +352,12 @@ namespace Rochas.DapperRepository.Helpers
 
             switch (action)
             {
-                case PersistenceAction.Create:
+                case PersistenceAction.Add:
                     columnList += string.Format("{0}, ", entityColumnName);
                     valueList += string.Format("{0}, ", entityColumnValue);
 
                     break;
-                case PersistenceAction.List:
+                case PersistenceAction.Query:
 
                     if ((engine == DatabaseEngine.SQLServer) && string.IsNullOrWhiteSpace(columnList) && (recordLimit > 0))
                         columnList += string.Format(SQLStatements.SQL_Action_LimitResult, recordLimit);
@@ -422,7 +422,7 @@ namespace Rochas.DapperRepository.Helpers
                     {
                         RelationalColumn relationConfig = itemChildKeyPair.Key as RelationalColumn;
 
-                        if ((action == PersistenceAction.List) && relationConfig.Filterable)
+                        if ((action == PersistenceAction.Query) && relationConfig.Filterable)
                         {
                             filterColumnName = string.Concat(relationConfig.TableName.ToLower(), ".", relationConfig.ColumnName);
                             filterColumnValue = itemChildKeyPair.Value;
@@ -441,7 +441,7 @@ namespace Rochas.DapperRepository.Helpers
                             && (filterColumnValue.ToString() != SqlDefaultValue.Zero))
                         || rangeFilter)
                     {
-                        bool compareRule = ((action == PersistenceAction.List)
+                        bool compareRule = ((action == PersistenceAction.Query)
                                             || (action == PersistenceAction.Count))
                                          && !long.TryParse(filterColumnValue.ToString(), out long fake)
                                          && !filterColumnName.ToString().ToLower().Contains("date")
@@ -464,7 +464,7 @@ namespace Rochas.DapperRepository.Helpers
                             if (filterColumnValue.Equals(true))
                                 comparation = " = 1";
 
-                            if ((action == PersistenceAction.Edit) && filterColumnValue.Equals(false))
+                            if ((action == PersistenceAction.Update) && filterColumnValue.Equals(false))
                                 comparation = " = 0";
 
                             if (!filterColumnValue.Equals(false))
