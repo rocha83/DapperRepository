@@ -13,7 +13,7 @@
     <RepositoryType>Git</RepositoryType>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <Version>1.2.0</Version>
-    <PackageReleaseNotes>Repository CRUD methods signatures standard fix</PackageReleaseNotes>
+    <PackageReleaseNotes>Repository CRUD methods signature standard fix</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
