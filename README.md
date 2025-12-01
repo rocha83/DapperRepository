@@ -54,7 +54,7 @@ private readonly IGenericRepository<SampleEntity> _repo;
 
 ---
 
-## 📌 Exemplo de Entidade (Metadados Reais)
+## 📌 Exemplo de Entidade (Anotações de Metadados)
 
 ```csharp
 [Cacheable]
@@ -207,11 +207,10 @@ var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connStrin
 
 ## 🔗 Leitura automática da composição usando `[RelatedEntity]`
 ```csharp
-repos.Query(filterEntity, loadComposition: true)
-);
+repos.Query(filterEntity, loadComposition: true);
 ```
 
-Configuração de relacionamentos ( 1-1, 1->N, N<-1, N<->N ):
+Configuração de relacionamentos ( 1-1,  1->N,  N<-1,  N<->N ):
 ```csharp
 [RelatedEntity(Cardinality = RelationCardinality.OneToOne, 
                ForeignKeyAttribute = "ParentId")] 
