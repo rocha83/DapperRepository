@@ -26,10 +26,10 @@ IGenericRepository<T>
 ```csharp
 var connString = "Data Source=sample.db;Cache=Shared";
 
-using (var repo = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
-{
-    var result = repo.List();
-}
+using var repo = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString);
+
+var result = repo.Search('Celulares');
+
 ```
 
 ## 📌 Exemplo de Registro no DI
@@ -210,7 +210,7 @@ var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connStrin
 repos.Query(filterEntity, loadComposition: true);
 ```
 
-Configuração de relacionamentos ( 1-1,  1->N,  N<-1,  N<->N ):
+Configuração de relacionamentos ( 1-1 ,  1->N ,  N<-1 ,  N<->N ):
 ```csharp
 [RelatedEntity(Cardinality = RelationCardinality.OneToOne, 
                ForeignKeyAttribute = "ParentId")] 
