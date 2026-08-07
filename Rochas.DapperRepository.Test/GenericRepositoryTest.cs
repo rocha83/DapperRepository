@@ -382,114 +382,95 @@ namespace Rochas.DapperRepository.Test
         #region Pagination Tests
 
         [Fact]
-        public void Test17_SearchPaginated_FirstPage()
+        public void Test40_SearchPaginated()
         {
-            PaginatedResult<SampleEntity> result;
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(new SampleEntity { DocNumber = 90001, CreationDate = DateTime.Now, Name = "Paginated Alpha", Resume = "Test pagination", Age = 20, Active = true });
+                repos.AddSync(new SampleEntity { DocNumber = 90002, CreationDate = DateTime.Now, Name = "Paginated Beta", Resume = "Test pagination", Age = 25, Active = true });
+                repos.AddSync(new SampleEntity { DocNumber = 90003, CreationDate = DateTime.Now, Name = "Paginated Gamma", Resume = "Test pagination", Age = 30, Active = true });
+            }
 
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.SearchPaginatedSync("almeida", page: 1, pageSize: 10);
-            }
+                var result = repos.SearchPaginatedSync("paginated", page: 1, pageSize: 2);
 
-            Assert.NotNull(result);
-            Assert.True(result.Items.Any());
-            Assert.Equal(1, result.Page);
-            Assert.Equal(10, result.PageSize);
-            Assert.True(result.TotalCount >= 1);
-            Assert.True(result.PageCount >= 1);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Any());
+                Assert.Equal(1, result.Page);
+                Assert.Equal(2, result.PageSize);
+                Assert.True(result.TotalCount >= 3);
+                Assert.True(result.PageCount >= 2);
+            }
         }
 
         [Fact]
-        public void Test18_SearchPaginated_SecondPage()
+        public void Test41_QueryPaginated()
         {
-            PaginatedResult<SampleEntity> result;
-
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.SearchPaginatedSync("almeida", page: 2, pageSize: 1);
-            }
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryPaginatedSync(filter, page: 1, pageSize: 5);
 
-            Assert.NotNull(result);
-            Assert.Equal(2, result.Page);
-            Assert.Equal(1, result.PageSize);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Any());
+                Assert.Equal(1, result.Page);
+                Assert.Equal(5, result.PageSize);
+                Assert.True(result.TotalCount > 0);
+            }
         }
 
         [Fact]
-        public void Test19_SearchPaginated_WithSort()
+        public async Task Test42_SearchPaginated_Async()
         {
-            PaginatedResult<SampleEntity> result;
-
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = repos.SearchPaginatedSync("almeida", page: 1, pageSize: 10, sortAttributes: "Name", orderDescending: true);
-            }
+                var result = await repos.SearchPaginated("paginated", page: 1, pageSize: 10);
 
-            Assert.NotNull(result);
-            Assert.True(result.Items.Any());
+                Assert.NotNull(result);
+                Assert.True(result.Items.Any());
+                Assert.True(result.TotalCount >= 1);
+            }
         }
 
         [Fact]
-        public void Test20_QueryPaginated_FirstPage()
+        public async Task Test43_QueryPaginated_Async()
         {
-            PaginatedResult<SampleEntity> result;
-
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                var filter = new SampleEntity() { Active = true };
-                result = repos.QueryPaginatedSync(filter, page: 1, pageSize: 5);
-            }
+                var filter = new SampleEntity { Active = true };
+                var result = await repos.QueryPaginated(filter, page: 1, pageSize: 5);
 
-            Assert.NotNull(result);
-            Assert.True(result.Items.Any());
-            Assert.Equal(1, result.Page);
-            Assert.Equal(5, result.PageSize);
-            Assert.True(result.TotalCount > 0);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Any());
+                Assert.True(result.TotalCount > 0);
+            }
         }
 
         [Fact]
-        public void Test21_QueryPaginated_WithSort()
+        public void Test44_SearchPaginated_WithSort()
         {
-            PaginatedResult<SampleEntity> result;
-
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                var filter = new SampleEntity() { Active = true };
-                result = repos.QueryPaginatedSync(filter, page: 1, pageSize: 10, sortAttributes: "Name");
-            }
+                var result = repos.SearchPaginatedSync("paginated", page: 1, pageSize: 10, sortAttributes: "Name", orderDescending: true);
 
-            Assert.NotNull(result);
-            Assert.True(result.Items.Any());
+                Assert.NotNull(result);
+                Assert.True(result.Items.Any());
+                Assert.StartsWith("Paginated G", result.Items.First().Name);
+            }
         }
 
         [Fact]
-        public async Task Test22_SearchPaginated_Async()
+        public void Test45_QueryPaginated_WithSort()
         {
-            PaginatedResult<SampleEntity> result;
-
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                result = await repos.SearchPaginated("almeida", page: 1, pageSize: 10);
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryPaginatedSync(filter, page: 1, pageSize: 10, sortAttributes: "Name");
+
+                Assert.NotNull(result);
+                Assert.True(result.Items.Any());
             }
-
-            Assert.NotNull(result);
-            Assert.True(result.Items.Any());
-            Assert.True(result.TotalCount > 0);
-        }
-
-        [Fact]
-        public async Task Test23_QueryPaginated_Async()
-        {
-            PaginatedResult<SampleEntity> result;
-
-            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
-            {
-                var filter = new SampleEntity() { Active = true };
-                result = await repos.QueryPaginated(filter, page: 1, pageSize: 5);
-            }
-
-            Assert.NotNull(result);
-            Assert.True(result.Items.Any());
-            Assert.True(result.TotalCount > 0);
         }
 
         #endregion
