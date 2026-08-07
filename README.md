@@ -187,6 +187,72 @@ Somente atributos marcados com `[Filterable]` entram automaticamente na busca.
 
 ---
 
+## 📄 SearchPaginated (buscas paginadas com `[Filterable]`)
+
+Retorna `PaginatedResult<T>` com items, contagem total e metadados de paginação.
+
+```csharp
+var result = await repository.SearchPaginated(
+    criteria: "Paulo",
+    page: 1,
+    pageSize: 20,
+    sortAttributes: "Name",
+    orderDescending: false
+);
+
+Console.WriteLine($"Total: {result.TotalCount}");
+Console.WriteLine($"Página {result.Page} de {result.PageCount}");
+
+foreach (var item in result.Items)
+{
+    Console.WriteLine(item.Name);
+}
+```
+
+### PaginatedResult\<T\>
+
+```csharp
+public class PaginatedResult<T>
+{
+    public IReadOnlyList<T> Items { get; set; }
+    public int TotalCount { get; set; }
+    public int Page { get; set; }
+    public int PageSize { get; set; }
+    public int PageCount => PageSize > 0 ? (int)Math.Ceiling((double)TotalCount / PageSize) : 0;
+}
+```
+
+---
+
+## 📄 QueryPaginated (consultas paginadas por filtro tipado)
+
+```csharp
+var filter = new SampleEntity { Active = true };
+
+var result = await repository.QueryPaginated(
+    filter,
+    page: 1,
+    pageSize: 10,
+    sortAttributes: "Name",
+    orderDescending: true,
+    filterConjunction: true
+);
+
+foreach (var item in result.Items)
+{
+    Console.WriteLine($"{item.Name} - Age: {item.Age}");
+}
+```
+
+### Sincrono
+
+```csharp
+var result = repository.SearchPaginatedSync("termo", page: 1, pageSize: 10);
+var result = repository.QueryPaginatedSync(filter, page: 1, pageSize: 10);
+```
+
+---
+
 ## ⚡ Cache Interno usando `[Cacheable]`
 
 Ao marcar a entidade:
