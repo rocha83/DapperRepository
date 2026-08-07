@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Rochas.DapperRepository.Specification.Enums;
-using Microsoft.VisualStudio.TestPlatform.Utilities;
+using Rochas.DapperRepository.Specification.Models;
 using Rochas.Extensions;
 
 namespace Rochas.DapperRepository.Test
@@ -378,10 +379,125 @@ namespace Rochas.DapperRepository.Test
 
         #endregion
 
+        #region Pagination Tests
+
+        [Fact]
+        public void Test17_SearchPaginated_FirstPage()
+        {
+            PaginatedResult<SampleEntity> result;
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.SearchPaginatedSync("almeida", page: 1, pageSize: 10);
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Items.Any());
+            Assert.Equal(1, result.Page);
+            Assert.Equal(10, result.PageSize);
+            Assert.True(result.TotalCount >= 1);
+            Assert.True(result.PageCount >= 1);
+        }
+
+        [Fact]
+        public void Test18_SearchPaginated_SecondPage()
+        {
+            PaginatedResult<SampleEntity> result;
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.SearchPaginatedSync("almeida", page: 2, pageSize: 1);
+            }
+
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Page);
+            Assert.Equal(1, result.PageSize);
+        }
+
+        [Fact]
+        public void Test19_SearchPaginated_WithSort()
+        {
+            PaginatedResult<SampleEntity> result;
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = repos.SearchPaginatedSync("almeida", page: 1, pageSize: 10, sortAttributes: "Name", orderDescending: true);
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Items.Any());
+        }
+
+        [Fact]
+        public void Test20_QueryPaginated_FirstPage()
+        {
+            PaginatedResult<SampleEntity> result;
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity() { Active = true };
+                result = repos.QueryPaginatedSync(filter, page: 1, pageSize: 5);
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Items.Any());
+            Assert.Equal(1, result.Page);
+            Assert.Equal(5, result.PageSize);
+            Assert.True(result.TotalCount > 0);
+        }
+
+        [Fact]
+        public void Test21_QueryPaginated_WithSort()
+        {
+            PaginatedResult<SampleEntity> result;
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity() { Active = true };
+                result = repos.QueryPaginatedSync(filter, page: 1, pageSize: 10, sortAttributes: "Name");
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Items.Any());
+        }
+
+        [Fact]
+        public async Task Test22_SearchPaginated_Async()
+        {
+            PaginatedResult<SampleEntity> result;
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                result = await repos.SearchPaginated("almeida", page: 1, pageSize: 10);
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Items.Any());
+            Assert.True(result.TotalCount > 0);
+        }
+
+        [Fact]
+        public async Task Test23_QueryPaginated_Async()
+        {
+            PaginatedResult<SampleEntity> result;
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity() { Active = true };
+                result = await repos.QueryPaginated(filter, page: 1, pageSize: 5);
+            }
+
+            Assert.NotNull(result);
+            Assert.True(result.Items.Any());
+            Assert.True(result.TotalCount > 0);
+        }
+
+        #endregion
+
         #region OneToOne Composite Entity Tests
 
         [Fact]
-        public void Test17_OneToOneCompositionAdd()
+        public void Test24_OneToOneCompositionAdd()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -405,7 +521,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test18_GetOneToOneCompositionByKey()
+        public void Test25_GetOneToOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -422,7 +538,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test19_QueryOneToOneComposition()
+        public void Test26_QueryOneToOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -444,7 +560,7 @@ namespace Rochas.DapperRepository.Test
         #region ManyToOne Composition Entity Tests
 
         [Fact]
-        public void Test20_ManyToOneCompositionAdd()
+        public void Test27_ManyToOneCompositionAdd()
         {
             int result;
 
@@ -481,7 +597,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test21_GetManyToOneCompositionByKey()
+        public void Test28_GetManyToOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -498,7 +614,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test22_QueryManyToOneComposition()
+        public void Test29_QueryManyToOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -520,7 +636,7 @@ namespace Rochas.DapperRepository.Test
         #region OneToMany Composite Entity Tests
 
         [Fact]
-        public void Test23_OneToManyCompositionAdd()
+        public void Test30_OneToManyCompositionAdd()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -550,7 +666,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test24_GetOneToManyCompositionByKey()
+        public void Test31_GetOneToManyCompositionByKey()
         {
             SampleEntity result;
 
@@ -568,7 +684,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test25_QueryOneToManyComposition()
+        public void Test32_QueryOneToManyComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -592,7 +708,7 @@ namespace Rochas.DapperRepository.Test
         #region ManyToMany Composite Entity Tests
 
         [Fact]
-        public void Test26_IntermedyCompositionCreate()
+        public void Test33_IntermedyCompositionCreate()
         {
             int leftEntityResult;
             var sampleLeftEntity = new SampleEntity()
@@ -631,7 +747,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test27_IntermedyCompositionGet()
+        public void Test34_IntermedyCompositionGet()
         {
             using var leftEntityRepos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString);
             var leftEntityFilter = new SampleEntity() { DocNumber = 15678 };
@@ -649,6 +765,82 @@ namespace Rochas.DapperRepository.Test
 
             Assert.True(rightEntityResult.ManyToManyForeignEntities.Count > 0);
             Assert.Equal(15678, rightEntityResult.ManyToManyForeignEntities.Single().DocNumber);
+        }
+
+        #endregion
+
+        #region AddRange and BulkSqlCreateRange Tests
+
+        [Fact]
+        public void Test35_AddRange()
+        {
+            var entities = new List<SampleManyForeignEntity>
+            {
+                new SampleManyForeignEntity { Code = 1001, Title = "Bulk 1", CreationDate = DateTime.Now, Active = true },
+                new SampleManyForeignEntity { Code = 1002, Title = "Bulk 2", CreationDate = DateTime.Now, Active = true },
+                new SampleManyForeignEntity { Code = 1003, Title = "Bulk 3", CreationDate = DateTime.Now, Active = true }
+            };
+
+            using (var repos = new GenericRepository<SampleManyForeignEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddRangeSync(entities);
+            }
+
+            var count = 0;
+            using (var repos = new GenericRepository<SampleManyForeignEntity>(DatabaseEngine.SQLite, connString))
+            {
+                count = repos.CountSync(new SampleManyForeignEntity());
+            }
+
+            Assert.True(count >= 3);
+        }
+
+        #endregion
+
+        #region Edge Cases
+
+        [Fact]
+        public void Test36_GetByKey_EmptyKey_ReturnsNull()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.GetSync(0);
+                Assert.Null(result);
+            }
+        }
+
+        [Fact]
+        public void Test37_GetByKey_NonExistentKey_ReturnsNull()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.GetSync(99999);
+                Assert.Null(result);
+            }
+        }
+
+        [Fact]
+        public void Test38_SearchPaginated_PageSizeOne()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.SearchPaginatedSync("almeida", page: 1, pageSize: 1);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Count <= 1);
+                Assert.True(result.TotalCount >= 1);
+                Assert.True(result.PageCount >= 1);
+            }
+        }
+
+        [Fact]
+        public void Test39_QueryPaginated_EmptyFilter()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QueryPaginatedSync(new SampleEntity(), page: 1, pageSize: 10);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Any());
+            }
         }
 
         #endregion

@@ -86,6 +86,76 @@ namespace Rochas.DapperRepository.Helpers
             }
         }
 
+		/// <summary>
+		/// Parse entity model object instance to SQL ANSI CRUD statements with OFFSET/FETCH pagination
+		/// </summary>
+		public static string ParseEntityPaged(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false)
+        {
+            try
+            {
+                string sqlInstruction;
+                string[] displayAttributes = new string[0];
+                Dictionary<object, object> attributeColumnRelation;
+
+                var entityType = entity.GetType();
+                var nameSpacePrefix = entityType.Namespace.Substring(0, entityType.Namespace.IndexOf("."));
+
+                var entityProps = entityType.GetProperties()
+                                            .Where(p => !p.PropertyType.Namespace.StartsWith(nameSpacePrefix)).ToArray();
+
+                if (!EntityReflector.VerifyTableAnnotation(entityType))
+                    throw new InvalidOperationException("Entity table annotation not found.");
+
+                if (EntityReflector.GetKeyColumn(entityProps) == null)
+                    throw new KeyNotFoundException("Entity key column annotation not found.");
+
+                sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, PersistenceAction.Query, filterEntity,
+                                                   0, filterConjunction, displayAttributes, null, readUncommited);
+
+                if ((persistenceAction != PersistenceAction.Add) && (persistenceAction != PersistenceAction.Update))
+				{
+                    sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}", "{1}");
+
+                    attributeColumnRelation = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, persistenceAction);
+
+                    sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}");
+
+                    if (!string.IsNullOrEmpty(sortAttributes))
+                        ParseOrdinationAttributes(attributeColumnRelation, sortAttributes, orderDescending, ref sqlInstruction);
+                    else
+                        sqlInstruction = string.Format(sqlInstruction, string.Empty);
+
+                    // Adiciona OFFSET/FETCH para paginação
+                    sqlInstruction = sqlInstruction.TrimEnd(';') + GetPaginationClause(engine, offset, pageSize);
+                }
+
+                return sqlInstruction;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+		private static string GetPaginationClause(DatabaseEngine engine, int offset, int pageSize)
+		{
+			switch (engine)
+			{
+				case DatabaseEngine.MySQL:
+				case DatabaseEngine.SQLite:
+					return string.Format(" LIMIT {0} OFFSET {1};", pageSize, offset);
+
+				case DatabaseEngine.PostgreSQL:
+					return string.Format(" LIMIT {0} OFFSET {1};", pageSize, offset);
+
+				case DatabaseEngine.SQLServer:
+					return string.Format(" OFFSET {0} ROWS FETCH NEXT {1} ROWS ONLY;", offset, pageSize);
+
+				default:
+					return string.Format(" LIMIT {0} OFFSET {1};", pageSize, offset);
+			}
+		}
+
         #endregion
 
         #region Helper Methods
@@ -137,7 +207,7 @@ namespace Rochas.DapperRepository.Helpers
                                                    sqlParameters["ColumnFilterList"]);
 
                     break;
-                default: // Listagem ou Consulta
+                default: // Listagem, Consulta ou Count
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Query,
                                                    sqlParameters["ColumnList"],

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using Rochas.DapperRepository.Specification.Models;
 
 namespace Rochas.DapperRepository.Specification.Interfaces
 {
@@ -26,6 +27,11 @@ namespace Rochas.DapperRepository.Specification.Interfaces
         ICollection<T> BulkSearchSync(object[] criterias, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false);
         Task<ICollection<T>> Query(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false);
         ICollection<T> QuerySync(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false);
+
+        Task<PaginatedResult<T>> SearchPaginated(object criteria, int page = 1, int pageSize = 20, bool loadComposition = false, string sortAttributes = null, bool orderDescending = false);
+        PaginatedResult<T> SearchPaginatedSync(object criteria, int page = 1, int pageSize = 20, bool loadComposition = false, string sortAttributes = null, bool orderDescending = false);
+        Task<PaginatedResult<T>> QueryPaginated(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false);
+        PaginatedResult<T> QueryPaginatedSync(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false);
 
         void Dispose();
     }

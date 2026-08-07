@@ -11,6 +11,7 @@ using System.Data;
 using System.Data.SQLite;
 using Rochas.DapperRepository.Base;
 using Rochas.DapperRepository.Helpers;
+using Rochas.DapperRepository.Specification.Models;
 using Rochas.DapperRepository.Specification.Enums;
 using Rochas.DapperRepository.Specification.Interfaces;
 using Rochas.DapperRepository.Specification.Annotations;
@@ -300,6 +301,53 @@ namespace Rochas.DapperRepository
 			return CountObjectSync(filterEntity as object);
 		}
 
+		public async Task<PaginatedResult<T>> SearchPaginated(object criteria, int page = 1, int pageSize = 20, bool loadComposition = false, string sortAttributes = null, bool orderDescending = false)
+		{
+			page = Math.Max(1, page);
+			pageSize = Math.Max(1, pageSize);
+
+			var filter = EntityReflector.GetFilterByFilterableColumns(entityType, entityProps, criteria);
+			var totalCount = await CountObject(filter as object);
+
+			int offset = (page - 1) * pageSize;
+			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, sortAttributes: sortAttributes, orderDescending: orderDescending);
+
+			var items = new List<T>();
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					items.Add(item as T);
+
+			return new PaginatedResult<T>(items, totalCount, page, pageSize);
+		}
+
+		public PaginatedResult<T> SearchPaginatedSync(object criteria, int page = 1, int pageSize = 20, bool loadComposition = false, string sortAttributes = null, bool orderDescending = false)
+		{
+			return SearchPaginated(criteria, page, pageSize, loadComposition, sortAttributes, orderDescending).GetAwaiter().GetResult();
+		}
+
+		public async Task<PaginatedResult<T>> QueryPaginated(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
+		{
+			page = Math.Max(1, page);
+			pageSize = Math.Max(1, pageSize);
+
+			var totalCount = await CountObject(filter as object);
+
+			int offset = (page - 1) * pageSize;
+			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending);
+
+			var items = new List<T>();
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					items.Add(item as T);
+
+			return new PaginatedResult<T>(items, totalCount, page, pageSize);
+		}
+
+		public PaginatedResult<T> QueryPaginatedSync(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
+		{
+			return QueryPaginated(filter, page, pageSize, loadComposition, filterConjunction, sortAttributes, orderDescending).GetAwaiter().GetResult();
+		}
+
 		#endregion
 
 		#region Helper Methods
@@ -368,6 +416,26 @@ namespace Rochas.DapperRepository
 		private IEnumerable<object> QueryObjectsSync(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
 		{
 			return QueryObjects(filterEntity, action, loadComposition, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending).GetAwaiter().GetResult();
+		}
+
+		private async Task<IEnumerable<object>> QueryObjectsPaged(object filterEntity, PersistenceAction action, bool loadComposition = false, int totalCount = 0, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
+		{
+			// Gera SQL para query completa (sem recordLimit)
+			var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, 0, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, readUncommited: _readUncommited);
+
+			IEnumerable<object> returnList = null;
+
+			if (((connection != null) && keepConnection) || base.Connect())
+			{
+				returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction);
+			}
+
+			if (!keepConnection) base.Disconnect();
+
+			if (returnList == null)
+				return new List<object>();
+
+			return returnList.Skip(offset).Take(pageSize);
 		}
 
 		private async Task<int> AddObject(object entity, bool persistComposition, string optionalConnConfig = "", bool isReplicating = false)

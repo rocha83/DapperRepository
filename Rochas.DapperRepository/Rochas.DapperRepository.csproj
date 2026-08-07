@@ -10,24 +10,24 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable elastic tokenized search bulk persistence parser crud poco orm cqrs</PackageTags>
-    <Version>1.3.0</Version>
+    <Version>1.4.0</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
-    <PackageReleaseNotes>Data caching concurrency issue fix</PackageReleaseNotes>
+    <PackageReleaseNotes>Add PaginatedResult, SearchPaginated, QueryPaginated; update dependencies; migrate to Microsoft.Data.SqlClient</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.1.66" />
-    <PackageReference Include="MySqlConnector" Version="2.5.0" />
+    <PackageReference Include="Dapper" Version="2.1.79" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+    <PackageReference Include="MySqlConnector" Version="2.6.1" />
     <PackageReference Include="Npgsql" Version="8.0.8" />
-    <PackageReference Include="Rochas.DapperRepository.Specification" Version="1.2.1" />
+    <PackageReference Include="Rochas.DapperRepository.Specification" Version="1.3.0" />
     <PackageReference Include="System.ComponentModel" Version="4.3.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
-    <PackageReference Include="System.Text.Json" Version="10.0.0" />
+    <PackageReference Include="System.Text.Json" Version="10.0.10" />
   </ItemGroup>
 
   <ItemGroup>
