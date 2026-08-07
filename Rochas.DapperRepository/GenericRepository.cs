@@ -389,8 +389,6 @@ namespace Rochas.DapperRepository
 
 				if (((connection != null) && keepConnection) || base.Connect())
 				{
-					await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction);
-
 					// Getting database return using Dapper
 					returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction);
 				}
@@ -420,8 +418,8 @@ namespace Rochas.DapperRepository
 
 		private async Task<IEnumerable<object>> QueryObjectsPaged(object filterEntity, PersistenceAction action, bool loadComposition = false, int totalCount = 0, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
 		{
-			// Gera SQL para query completa (sem recordLimit)
-			var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, 0, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, readUncommited: _readUncommited);
+			// Gera SQL com LIMIT/OFFSET nativo do banco
+			var sqlInstruction = EntitySqlParser.ParseEntityPaged(filterEntity, engine, action, filterEntity, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, readUncommited: _readUncommited);
 
 			IEnumerable<object> returnList = null;
 
@@ -432,10 +430,7 @@ namespace Rochas.DapperRepository
 
 			if (!keepConnection) base.Disconnect();
 
-			if (returnList == null)
-				return new List<object>();
-
-			return returnList.Skip(offset).Take(pageSize);
+			return returnList ?? new List<object>();
 		}
 
 		private async Task<int> AddObject(object entity, bool persistComposition, string optionalConnConfig = "", bool isReplicating = false)
