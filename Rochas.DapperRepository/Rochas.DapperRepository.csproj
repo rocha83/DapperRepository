@@ -11,11 +11,11 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable elastic tokenized search bulk persistence parser crud poco orm cqrs</PackageTags>
-    <Version>1.5.0</Version>
+    <Version>1.6.0</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
-    <PackageReleaseNotes>Parameterized queries for Filterable/Search (security + query plan caching); reflection caching (ConcurrentDictionary) for attributes (Key, Filterable, RelatedEntity, Table, Column); [Key] attribute-based PK detection replaces string-based 'id' checks; _id suffix convention for FK detection</PackageReleaseNotes>
+    <PackageReleaseNotes>Pluggable cache providers (ICacheProvider): InMemoryCacheProvider (default), DistributedCacheProvider placeholder for Redis/Garnet, CompositeCacheProvider for L1+L2; parameterized queries for security and query plan caching; reflection caching for performance; [Key] attribute for PK + _id suffix convention for FK detection</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
 
