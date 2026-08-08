@@ -31,7 +31,7 @@ namespace Rochas.DapperRepository.Helpers
 		/// <param name="orderDescending">Flag to return ordering with descending order</param>
 		/// <param name="readUncommited">Flag to set uncommited transaction level queries</param>
 		/// <returns></returns>
-		public static string ParseEntity(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false)
+		public static string ParseEntity(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false, Dictionary<string, object> sqlParameters = null)
         {
             try
             {
@@ -57,7 +57,7 @@ namespace Rochas.DapperRepository.Helpers
                     EntityReflector.ValidateListableAttributes(entityProps, showAttributes, out displayAttributes);
 
                 sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, persistenceAction, filterEntity,
-                                                   recordLimit, filterConjunction, displayAttributes, groupAttributes, readUncommited);
+                                                   recordLimit, filterConjunction, displayAttributes, groupAttributes, readUncommited, sqlParameters);
 
                 if ((persistenceAction != PersistenceAction.Add) && (persistenceAction != PersistenceAction.Update))
 				{
@@ -89,7 +89,7 @@ namespace Rochas.DapperRepository.Helpers
 		/// <summary>
 		/// Parse entity model object instance to SQL ANSI CRUD statements with OFFSET/FETCH pagination
 		/// </summary>
-		public static string ParseEntityPaged(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false)
+		public static string ParseEntityPaged(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false, Dictionary<string, object> sqlParameters = null)
         {
             try
             {
@@ -110,7 +110,7 @@ namespace Rochas.DapperRepository.Helpers
                     throw new KeyNotFoundException("Entity key column annotation not found.");
 
                 sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, PersistenceAction.Query, filterEntity,
-                                                   0, filterConjunction, displayAttributes, null, readUncommited);
+                                                   0, filterConjunction, displayAttributes, null, readUncommited, sqlParameters);
 
                 if ((persistenceAction != PersistenceAction.Add) && (persistenceAction != PersistenceAction.Update))
 				{
@@ -160,7 +160,7 @@ namespace Rochas.DapperRepository.Helpers
 
         #region Helper Methods
 
-        private static string GetSqlInstruction(object entity, Type entityType, PropertyInfo[] entityProps, DatabaseEngine engine, PersistenceAction action, object filterEntity, int recordLimit, bool filterConjunction, string[] showAttributes, string groupAttributes, bool readUncommited = false)
+        private static string GetSqlInstruction(object entity, Type entityType, PropertyInfo[] entityProps, DatabaseEngine engine, PersistenceAction action, object filterEntity, int recordLimit, bool filterConjunction, string[] showAttributes, string groupAttributes, bool readUncommited = false, Dictionary<string, object> sqlParameters = null)
         {
             string sqlInstruction;
             Dictionary<object, object> sqlFilterData;
@@ -177,43 +177,43 @@ namespace Rochas.DapperRepository.Helpers
 
             var keyColumnName = EntityReflector.GetKeyColumnName(entityProps);
 
-            Dictionary<string, string> sqlParameters = GetSqlParameters(sqlEntityData, engine, action, sqlFilterData,
-                                                                        recordLimit, filterConjunction, showAttributes, 
-                                                                        keyColumnName, rangeValues, groupAttributes, readUncommited);
+            Dictionary<string, string> sqlResult = GetSqlParameters(sqlEntityData, engine, action, sqlFilterData,
+                                                                        recordLimit, filterConjunction, showAttributes,
+                                                                        keyColumnName, rangeValues, groupAttributes, readUncommited, sqlParameters);
             switch (action)
             {
                 case PersistenceAction.Add:
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Create,
-                                                   sqlParameters["TableName"],
-                                                   sqlParameters["ColumnList"],
-                                                   sqlParameters["ValueList"]);
+                                                   sqlResult["TableName"],
+                                                   sqlResult["ColumnList"],
+                                                   sqlResult["ValueList"]);
 
                     break;
 
                 case PersistenceAction.Update:
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Edit,
-                                                   sqlParameters["TableName"],
-                                                   sqlParameters["ColumnValueList"],
-                                                   sqlParameters["ColumnFilterList"]);
+                                                   sqlResult["TableName"],
+                                                   sqlResult["ColumnValueList"],
+                                                   sqlResult["ColumnFilterList"]);
 
                     break;
 
                 case PersistenceAction.Remove:
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Delete,
-                                                   sqlParameters["TableName"],
-                                                   sqlParameters["ColumnFilterList"]);
+                                                   sqlResult["TableName"],
+                                                   sqlResult["ColumnFilterList"]);
 
                     break;
                 default: // Listagem, Consulta ou Count
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Query,
-                                                   sqlParameters["ColumnList"],
-                                                   sqlParameters["TableName"],
-                                                   sqlParameters["RelationList"],
-                                                   sqlParameters["ColumnFilterList"],
+                                                   sqlResult["ColumnList"],
+                                                   sqlResult["TableName"],
+                                                   sqlResult["RelationList"],
+                                                   sqlResult["ColumnFilterList"],
                                                    "{0}", "{1}", "{2}");
 
                     break;
@@ -276,7 +276,7 @@ namespace Rochas.DapperRepository.Helpers
                                                          orderDescending ? "DESC" : "ASC"));
         }
 
-        private static Dictionary<string, string> GetSqlParameters(Dictionary<object, object> entitySqlData, DatabaseEngine engine, PersistenceAction action, IDictionary<object, object> entitySqlFilter, int recordLimit, bool filterConjunction, string[] showAttributes, string keyColumnName, IDictionary<string, object[]> rangeValues, string groupAttributes, bool readUncommited = false)
+        private static Dictionary<string, string> GetSqlParameters(Dictionary<object, object> entitySqlData, DatabaseEngine engine, PersistenceAction action, IDictionary<object, object> entitySqlFilter, int recordLimit, bool filterConjunction, string[] showAttributes, string keyColumnName, IDictionary<string, object[]> rangeValues, string groupAttributes, bool readUncommited = false, Dictionary<string, object> sqlParameters = null)
         {
             var returnDictionary = new Dictionary<string, string>();
 
@@ -327,7 +327,9 @@ namespace Rochas.DapperRepository.Helpers
                 }
 
             if (entitySqlFilter != null)
-                SetFilterSqlParameters(entitySqlFilter, tableName, action, rangeValues, ref columnFilterList, filterConjunction);
+            {
+                SetFilterSqlParameters(entitySqlFilter, tableName, action, rangeValues, ref columnFilterList, filterConjunction, sqlParameters, keyColumnName);
+            }
 
             FillSqlParametersResult(returnDictionary, action, ref columnList, ref valueList, ref columnValueList, ref columnFilterList, ref relationList, readUncommited);
 
@@ -470,8 +472,9 @@ namespace Rochas.DapperRepository.Helpers
             }
         }
 
-        private static void SetFilterSqlParameters(IDictionary<object, object> entitySqlFilter, string tableName, PersistenceAction action, IDictionary<string, object[]> rangeValues, ref string columnFilterList, bool filterConjunction)
+        private static void SetFilterSqlParameters(IDictionary<object, object> entitySqlFilter, string tableName, PersistenceAction action, IDictionary<string, object[]> rangeValues, ref string columnFilterList, bool filterConjunction, Dictionary<string, object> sqlParameters = null, string keyColumnName = null)
         {
+            int paramCounter = 0;
             foreach (var filter in entitySqlFilter)
             {
                 if (!filter.Key.Equals("TableName") && !filter.Key.Equals("RelatedEntityAttribute"))
@@ -511,13 +514,16 @@ namespace Rochas.DapperRepository.Helpers
                             && (filterColumnValue.ToString() != SqlDefaultValue.Zero))
                         || rangeFilter)
                     {
+                        var filterColumnNameLower = filterColumnName.ToString().ToLower();
+                        var isKeyColumn = string.Equals(filterColumnName.ToString(), string.Concat(tableName, ".", keyColumnName), StringComparison.OrdinalIgnoreCase);
+                        var isForeignKey = filterColumnNameLower.EndsWith("_id") || filterColumnNameLower.EndsWith(".id");
+
                         bool compareRule = ((action == PersistenceAction.Query)
                                             || (action == PersistenceAction.Count))
                                          && !long.TryParse(filterColumnValue.ToString(), out long fake)
-                                         && !filterColumnName.ToString().ToLower().Contains("date")
-                                         && !filterColumnName.ToString().ToLower().StartsWith("id")
-                                         && !filterColumnName.ToString().ToLower().EndsWith("id")
-                                         && !filterColumnName.ToString().ToLower().Contains(".id");
+                                         && !filterColumnNameLower.Contains("date")
+                                         && !isKeyColumn
+                                         && !isForeignKey;
 
                         string comparation = string.Empty;
 
@@ -527,9 +533,23 @@ namespace Rochas.DapperRepository.Helpers
 
 						if (!rangeFilter)
                         {
-                            comparation = (compareRule)
-                                          ? string.Format(SqlOperator.Contains, filterColumnValueStr.Replace("'", string.Empty))
-                                          : string.Concat(SqlOperator.Equal, filterColumnValueStr);
+                            if (compareRule && sqlParameters != null)
+                            {
+                                // Parâmetro: valor com wildcards vai para o dictionary, SQL usa @pN
+                                var paramName = $"@p{paramCounter++}";
+                                var rawValue = filterColumnValueStr.Replace("'", string.Empty);
+                                // Garante wildcards LIKE em todos os caminhos (Query, Search, Count)
+                                if (!rawValue.StartsWith("%")) rawValue = "%" + rawValue;
+                                if (!rawValue.EndsWith("%")) rawValue = rawValue + "%";
+                                sqlParameters[paramName] = rawValue;
+                                comparation = string.Format(SqlOperator.Contains, paramName);
+                            }
+                            else
+                            {
+                                comparation = (compareRule)
+                                              ? string.Format(SqlOperator.Contains, filterColumnValueStr.Replace("'", string.Empty))
+                                              : string.Concat(SqlOperator.Equal, filterColumnValueStr);
+                            }
 
                             if (filterColumnValue.Equals(true))
                                 comparation = " = 1";

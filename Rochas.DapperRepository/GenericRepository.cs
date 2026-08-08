@@ -385,12 +385,13 @@ namespace Rochas.DapperRepository
 
 			if (returnList == null)
 			{
-				var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending, _readUncommited);
+				var sqlParameters = new Dictionary<string, object>();
+				var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending, _readUncommited, sqlParameters);
 
 				if (((connection != null) && keepConnection) || base.Connect())
 				{
-					// Getting database return using Dapper
-					returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction);
+					// Getting database return using Dapper (parametrizado)
+					returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction, sqlParameters);
 				}
 
 				if (!keepConnection) base.Disconnect();
@@ -418,14 +419,15 @@ namespace Rochas.DapperRepository
 
 		private async Task<IEnumerable<object>> QueryObjectsPaged(object filterEntity, PersistenceAction action, bool loadComposition = false, int totalCount = 0, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
 		{
-			// Gera SQL com LIMIT/OFFSET nativo do banco
-			var sqlInstruction = EntitySqlParser.ParseEntityPaged(filterEntity, engine, action, filterEntity, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, readUncommited: _readUncommited);
+			// Gera SQL com LIMIT/OFFSET nativo do banco (parametrizado)
+			var sqlParameters = new Dictionary<string, object>();
+			var sqlInstruction = EntitySqlParser.ParseEntityPaged(filterEntity, engine, action, filterEntity, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, readUncommited: _readUncommited, sqlParameters: sqlParameters);
 
 			IEnumerable<object> returnList = null;
 
 			if (((connection != null) && keepConnection) || base.Connect())
 			{
-				returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction);
+				returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction, sqlParameters);
 			}
 
 			if (!keepConnection) base.Disconnect();
@@ -548,12 +550,14 @@ namespace Rochas.DapperRepository
 			int result = 0;
 
 			// Getting SQL statement from Helper
-			var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, PersistenceAction.Count, filterEntity);
+			var sqlParameters = new Dictionary<string, object>();
+			var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, PersistenceAction.Count, filterEntity, sqlParameters: sqlParameters);
 
 			if (keepConnection || Connect())
 			{
-				// Getting database return using Dapper
-				result = await ExecuteCommandAsync(sqlInstruction);
+				// Converte para formato do CompositeCommand e executa
+				var dapperParams = sqlParameters.ToDictionary(k => (object)k.Key, v => v.Value);
+				result = await ExecuteCommandAsync(sqlInstruction, dapperParams);
 			}
 
 			if (!keepConnection) Disconnect();

@@ -139,26 +139,26 @@ namespace Rochas.DapperRepository.Base
             return (connection.State == ConnectionState.Closed);
         }
 
-        protected IEnumerable<object> ExecuteQuery(Type entityType, string sqlInstruction)
+        protected IEnumerable<object> ExecuteQuery(Type entityType, string sqlInstruction, Dictionary<string, object> parameters = null)
         {
             IEnumerable<object> result;
 
             if (connection.State != ConnectionState.Open)
                 Connect();
 
-            result = connection.Query(entityType, sqlInstruction);
+            result = connection.Query(entityType, sqlInstruction, parameters);
 
             return result;
         }
 
-        protected async Task<IEnumerable<object>> ExecuteQueryAsync(Type entityType, string sqlInstruction)
+        protected async Task<IEnumerable<object>> ExecuteQueryAsync(Type entityType, string sqlInstruction, Dictionary<string, object> parameters = null)
         {
             IEnumerable<object> result;
 
             if (connection.State != ConnectionState.Open)
                 Connect();
 
-            result = await connection.QueryAsync(entityType, sqlInstruction);
+            result = await connection.QueryAsync(entityType, sqlInstruction, parameters);
 
             return result;
         }

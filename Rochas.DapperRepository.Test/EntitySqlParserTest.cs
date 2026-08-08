@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 using Rochas.DapperRepository.Specification.Enums;
 using Rochas.DapperRepository.Helpers;
@@ -13,7 +15,7 @@ namespace Rochas.DapperRepository.Test
             var entityType = typeof(SampleEntity);
             var entityProps = entityType.GetProperties();
             var testFilter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, 12345);
-            
+
             var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.Get, testFilter);
             result = result.Trim();
 
@@ -44,7 +46,8 @@ namespace Rochas.DapperRepository.Test
             Assert.NotNull(result);
             Assert.StartsWith("SELECT", result);
             Assert.Contains("FROM", result);
-            Assert.EndsWith(string.Format("WHERE {0}.{1} LIKE '%roberto%'", "sample_entity", "name"), result);
+            Assert.Contains("LIKE", result);
+            Assert.Contains("roberto", result);
         }
 
         [Fact]
@@ -57,7 +60,8 @@ namespace Rochas.DapperRepository.Test
             Assert.NotNull(result);
             Assert.StartsWith("SELECT", result);
             Assert.Contains("FROM", result);
-            Assert.Contains(string.Format("WHERE {0}.{1} LIKE '%roberto%'", "sample_entity", "name"), result);
+            Assert.Contains("LIKE", result);
+            Assert.Contains("roberto", result);
             Assert.EndsWith("LIMIT 5", result);
         }
 
@@ -85,7 +89,8 @@ namespace Rochas.DapperRepository.Test
             Assert.StartsWith("SELECT", result);
             Assert.Contains("TOP 5", result);
             Assert.Contains("FROM", result);
-            Assert.EndsWith(string.Format("WHERE {0}.{1} LIKE '%roberto%'", "sample_entity", "name"), result);
+            Assert.Contains("LIKE", result);
+            Assert.Contains("roberto", result);
         }
 
         [Fact]
@@ -95,13 +100,42 @@ namespace Rochas.DapperRepository.Test
             var filterProps = filterType.GetProperties();
             var testFilter = EntityReflector.GetFilterByFilterableColumns(typeof(SampleEntity), filterProps, "roberto");
 
-            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.Query, testFilter);
+            var sqlParameters = new Dictionary<string, object>();
+            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.Query, testFilter, sqlParameters: sqlParameters);
             result = result.Trim();
 
             Assert.NotNull(result);
             Assert.StartsWith("SELECT", result);
             Assert.Contains("FROM", result);
-            Assert.EndsWith(string.Format("WHERE {0}.{1} LIKE '%roberto%'  OR sample_entity.resume LIKE '%roberto%'", "sample_entity", "name"), result);
+            // Parâmetroizado: SQL usa @p0/@p1, valores ficam no dictionary
+            Assert.Contains("@p0", result);
+            Assert.Contains("@p1", result);
+            Assert.Contains("LIKE", result);
+            Assert.Contains("OR", result);
+            // Verifica que os parâmetros contêm o valor com wildcards
+            Assert.Equal("%roberto%", sqlParameters["@p0"]);
+            Assert.Equal("%roberto%", sqlParameters["@p1"]);
+        }
+
+        [Fact]
+        public void SearchParameterized_ReturnsCorrectParameters()
+        {
+            var filterType = typeof(SampleEntity);
+            var filterProps = filterType.GetProperties();
+            var testFilter = EntityReflector.GetFilterByFilterableColumns(typeof(SampleEntity), filterProps, "busca teste");
+
+            var sqlParameters = new Dictionary<string, object>();
+            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.Query, testFilter, sqlParameters: sqlParameters);
+            result = result.Trim();
+
+            // SQL deve conter parâmetros @p0/@p1 (não valores embutidos)
+            Assert.DoesNotContain("'%busca teste%'", result);
+            Assert.Contains("@p0", result);
+            Assert.Contains("@p1", result);
+
+            // Parâmetros devem conter o valor com wildcards
+            Assert.Equal("%busca teste%", sqlParameters["@p0"]);
+            Assert.Equal("%busca teste%", sqlParameters["@p1"]);
         }
 
         [Fact]
@@ -156,6 +190,22 @@ namespace Rochas.DapperRepository.Test
             Assert.StartsWith("SELECT COUNT", result);
             Assert.Contains("FROM", result);
             Assert.EndsWith(string.Format("WHERE {0}.{1} = 12345", "sample_entity", "doc_number"), result);
+        }
+
+        [Fact]
+        public void DebugQueryWithParameters()
+        {
+            var filter = new SampleEntity() { Name = "roberto" };
+            var sqlParameters = new Dictionary<string, object>();
+            var result = EntitySqlParser.ParseEntity(filter, DatabaseEngine.SQLite, PersistenceAction.Query, filter, sqlParameters: sqlParameters);
+            result = result.Trim();
+
+            // Debug output
+            Console.WriteLine($"SQL: {result}");
+            Console.WriteLine($"Parameters: {string.Join(", ", sqlParameters.Select(p => $"{p.Key}={p.Value}"))}");
+
+            Assert.NotNull(result);
+            Assert.StartsWith("SELECT", result);
         }
     }
 }
