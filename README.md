@@ -253,6 +253,24 @@ var result = repository.QueryPaginatedSync(filter, page: 1, pageSize: 10);
 
 ---
 
+## 🔗 Leitura automática da composição usando `[RelatedEntity]`
+```csharp
+repos.Query(filterEntity, loadComposition: true);
+```
+
+Configuração de relacionamentos ( 1-1 ,  1->N ,  N<-1 ,  N<->N ):
+```csharp
+[RelatedEntity(Cardinality = RelationCardinality.OneToOne, 
+               ForeignKeyAttribute = "ParentId")] 
+public <ChildEntity> Child { get; set; }
+
+[RelatedEntity(Cardinality = RelationCardinality.OneToMany, 
+               ForeignKeyAttribute = "ParentId")] 
+public IList<ChildEntity> Childs { get; set; }
+```
+
+---
+
 ## ⚡ Cache Plugável (ICacheProvider)
 
 O componente oferece **provedores de cache intercambiáveis** via `ICacheProvider`.
@@ -328,22 +346,4 @@ DataCache.Initialize(new CompositeCacheProvider(
 ```
 
 L1 local (microssegundos) → L2 compartilhado entre pods (milissegundos) → banco SQL.
-
----
-
-## 🔗 Leitura automática da composição usando `[RelatedEntity]`
-```csharp
-repos.Query(filterEntity, loadComposition: true);
-```
-
-Configuração de relacionamentos ( 1-1 ,  1->N ,  N<-1 ,  N<->N ):
-```csharp
-[RelatedEntity(Cardinality = RelationCardinality.OneToOne, 
-               ForeignKeyAttribute = "ParentId")] 
-public <ChildEntity> Child { get; set; }
-
-[RelatedEntity(Cardinality = RelationCardinality.OneToMany, 
-               ForeignKeyAttribute = "ParentId")] 
-public IList<ChildEntity> Childs { get; set; }
-```
 
