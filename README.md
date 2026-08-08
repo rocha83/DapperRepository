@@ -253,21 +253,81 @@ var result = repository.QueryPaginatedSync(filter, page: 1, pageSize: 10);
 
 ---
 
-## ⚡ Cache Interno usando `[Cacheable]`
+## ⚡ Cache Plugável (ICacheProvider)
 
-Ao marcar a entidade:
+O componente oferece **provedores de cache intercambiáveis** via `ICacheProvider`.
+O comportamento padrão permanece in-memory (`InMemoryCacheProvider`), mas é possível
+injetar Redis, Garnet ou canais de replicação sem alterar o código do repositório.
+
+### Ativando o cache na entidade
 
 ```csharp
 [Cacheable]
+[Table("sample_entities")]
+public class SampleEntity { ... }
 ```
-
-O repositório ativa o gerenciamento automático de cache.
 
 É possível ligar/desligar o cache no construtor:
 
 ```csharp
 var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString, useCache: true);
 ```
+
+### InMemoryCacheProvider (padrão)
+
+```csharp
+DataCache.Initialize(memorySizeLimit: 100); // MB
+DataCache.Initialize();                      // sem limite
+```
+
+### DistributedCacheProvider (Redis / Garnet)
+
+Placeholder para implementação com `Microsoft.Extensions.Caching.StackExchangeRedis`
+ou `Microsoft.Garnet` (Redis-compatible in-memory da Microsoft).
+
+```csharp
+DataCache.Initialize(new DistributedCacheProvider("localhost:6379"));
+```
+
+### PersistenceChannelCacheProvider (Replicação Master→Slave)
+
+Canal de persistência assíncrona para clusters SQL master-slave.
+O master publica no canal; múltiplos consumidores (slaves) persistem nos seus bancos.
+
+```csharp
+// Master
+var localCache = new InMemoryCacheProvider();
+var channel = new PersistenceChannelCacheProvider(localCache);
+DataCache.Initialize(channel);
+
+// Slave (consumer)
+await foreach (var msg in channel.ConsumeAsync(ct))
+{
+    switch (msg.Action)
+    {
+        case ChannelAction.Put:
+            slaveRepo.AddSync(msg.CacheItem);
+            break;
+        case ChannelAction.Del:
+            slaveRepo.RemoveSync(msg.CacheKey);
+            break;
+    }
+}
+```
+
+Backpressure: `BoundedChannelFullMode.Wait` — não perde mensagens se o canal lotar.
+
+### CompositeCacheProvider (L1 InMemory + L2 Distribuído)
+
+Para alta disponibilidade com múltiplas instâncias:
+
+```csharp
+DataCache.Initialize(new CompositeCacheProvider(
+    new InMemoryCacheProvider(),
+    new DistributedCacheProvider("redis:6379")));
+```
+
+L1 local (microssegundos) → L2 compartilhado entre pods (milissegundos) → banco SQL.
 
 ---
 
