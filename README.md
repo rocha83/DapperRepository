@@ -307,6 +307,18 @@ ou `Microsoft.Garnet` (Redis-compatible in-memory da Microsoft).
 DataCache.Initialize(new DistributedCacheProvider("localhost:6379"));
 ```
 
+### CompositeCacheProvider (L1 InMemory + L2 Distribuído)
+
+Para alta disponibilidade com múltiplas instâncias:
+
+```csharp
+DataCache.Initialize(new CompositeCacheProvider(
+    new InMemoryCacheProvider(),
+    new DistributedCacheProvider("redis:6379")));
+```
+
+L1 local (microssegundos) → L2 compartilhado entre pods (milissegundos) → banco SQL.
+
 ### PersistenceChannelCacheProvider (Replicação Master→Slave)
 
 Canal de persistência assíncrona para clusters SQL master-slave.
@@ -334,16 +346,4 @@ await foreach (var msg in channel.ConsumeAsync(ct))
 ```
 
 Backpressure: `BoundedChannelFullMode.Wait` — não perde mensagens se o canal lotar.
-
-### CompositeCacheProvider (L1 InMemory + L2 Distribuído)
-
-Para alta disponibilidade com múltiplas instâncias:
-
-```csharp
-DataCache.Initialize(new CompositeCacheProvider(
-    new InMemoryCacheProvider(),
-    new DistributedCacheProvider("redis:6379")));
-```
-
-L1 local (microssegundos) → L2 compartilhado entre pods (milissegundos) → banco SQL.
 
