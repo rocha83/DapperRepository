@@ -117,7 +117,7 @@ public class SampleEntity
 }
 ```
 
-> **Regra:** Se `[Table]` não existir, usa o nome da classe. Se `[Column]` não existir, usa o nome da propriedade. Não há conversão automática de snake_case.
+> **Regra:** Se `[Table]` não existir, usa o nome da classe. Se `[Column]` não existir, usa o nome da propriedade.
 
 ## 🔧 Métodos CRUD disponíveis no repositório
 
