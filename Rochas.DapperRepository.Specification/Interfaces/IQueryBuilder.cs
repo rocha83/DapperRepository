@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Rochas.DapperRepository.Specification.Enums;
 
@@ -11,6 +12,7 @@ namespace Rochas.DapperRepository.Specification.Interfaces
         IQueryBuilder<T> GroupBy(string groupAttribute);
         IQueryBuilder<T> GroupBy(string[] groupAttributes);
         IQueryBuilder<T> Descending();
+        TaskAwaiter<ICollection<T>> GetAwaiter();
         Task<ICollection<T>> ToListAsync();
         ICollection<T> ToList();
     }

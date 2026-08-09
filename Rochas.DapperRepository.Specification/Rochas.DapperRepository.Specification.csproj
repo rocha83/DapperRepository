@@ -12,7 +12,7 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
-    <Version>1.4.0</Version>
+    <Version>1.4.2</Version>
     <PackageReleaseNotes>IQueryBuilder/IQueryPaginatedBuilder interfaces for fluent builder pattern; QueryBuilder/QueryPaginatedBuilder entry points on IGenericRepository; OrderBy, GroupBy, Descending, Paginate async/sync; groupAttributes parameter for GROUP BY; RelationalColumn/DataAggregationColumn annotations for ETL/DW fact table queries</PackageReleaseNotes>
   </PropertyGroup>
 
