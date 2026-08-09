@@ -511,7 +511,8 @@ namespace Rochas.DapperRepository.Helpers
 
                     if (((filterColumnValue != null)
                             && (filterColumnValue.ToString() != SqlDefaultValue.Null)
-                            && (filterColumnValue.ToString() != SqlDefaultValue.Zero))
+                            && (filterColumnValue.ToString() != SqlDefaultValue.Zero)
+                            && (filterColumnValue.ToString() != "''"))
                         || rangeFilter)
                     {
                         var filterColumnNameLower = filterColumnName.ToString().ToLower();
@@ -594,8 +595,9 @@ namespace Rochas.DapperRepository.Helpers
             string rangeTo = "'{0}'";
             string comparation = string.Empty;
 
-            var isNumericRange = double.TryParse(rangeValues[columnNameStr][0].ToString(), out var fake1);
-            var isDateRange = filter.Key.ToString().ToLower().Contains("date");
+            var rangeFromValue = rangeValues[columnNameStr][0];
+            var isNumericRange = rangeFromValue is not null && double.TryParse(rangeFromValue.ToString(), out var fake1);
+            var isDateRange = !isNumericRange && rangeFromValue is DateTime;
 
             if (isNumericRange)
                 comparation = GetNumericRangeComparation(rangeValues, columnNameStr, ref rangeFrom, ref rangeTo);
@@ -649,8 +651,10 @@ namespace Rochas.DapperRepository.Helpers
                                                       ref string rangeTo)
         {
             var result = string.Empty;
-            var emptyRangeFrom = (DateTime)rangeValues[columnNameStr][0] == DateTime.MinValue;
-            var emptyRangeTo = (DateTime)rangeValues[columnNameStr][1] == DateTime.MinValue;
+            var fromVal = rangeValues[columnNameStr][0];
+            var toVal = rangeValues[columnNameStr][1];
+            var emptyRangeFrom = fromVal is null || (DateTime)fromVal == DateTime.MinValue;
+            var emptyRangeTo = toVal is null || (DateTime)toVal == DateTime.MinValue;
 
             if (!emptyRangeFrom && !emptyRangeTo)
             {

@@ -825,5 +825,134 @@ namespace Rochas.DapperRepository.Test
         }
 
         #endregion
+
+        #region v1.6.8 Fixes - End-to-End Tests
+
+        [Fact]
+        public void Test46_EmptyStringFilter_ShouldNotAffectQuery()
+        {
+            var filter = new SampleEntity() { Name = "" };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QuerySync(filter);
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        [Fact]
+        public void Test49_NullStringFilter_ShouldNotAffectQuery()
+        {
+            var filter = new SampleEntity() { Name = null, Resume = null };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QuerySync(filter);
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        [Fact]
+        public void Test50_Count_EmptyStringFilter()
+        {
+            var filter = new SampleEntity() { Name = "" };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var count = repos.CountSync(filter);
+                Assert.True(count > 0);
+            }
+        }
+
+        [Fact]
+        public void Test51_MixedFilters_EmptyAndNonEmpty()
+        {
+            var filter = new SampleEntity() { Name = "", Active = true };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QuerySync(filter);
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+                Assert.All(result, e => Assert.True(e.Active));
+            }
+        }
+
+        [Fact]
+        public void Test52_DateRange_EndToEnd()
+        {
+            var filter = new SampleEntity()
+            {
+                CreationDate = DateTime.Now.Date.AddDays(-30),
+                CreationDateEnd = DateTime.Now.Date.AddDays(1)
+            };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QuerySync(filter, filterConjunction: false);
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        [Fact]
+        public void Test53_ArrayProperty_Insert_SkipsArray()
+        {
+            var tableScript = @"CREATE TABLE IF NOT EXISTS [sample_array_entity] (
+                                        [id] INTEGER PRIMARY KEY,
+                                        [name] [varchar](200) NULL,
+                                        [hash_codes] [blob] NULL,
+                                        [active] [bit] NOT NULL)";
+
+            using (var repos = new GenericRepository<SampleArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.Initialize(tableScript);
+            }
+
+            var entity = new SampleArrayEntity()
+            {
+                Name = "array test",
+                HashCodes = new uint[] { 12345, 67890 },
+                Active = true
+            };
+
+            int id;
+            using (var repos = new GenericRepository<SampleArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                id = repos.AddSync(entity);
+            }
+
+            Assert.True(id > 0);
+        }
+
+        [Fact]
+        public void Test54_ArrayProperty_Query_SkipsArray()
+        {
+            var entity = new SampleArrayEntity()
+            {
+                Name = "query array test",
+                HashCodes = new uint[] { 11111, 22222 },
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            var filter = new SampleArrayEntity() { Name = "query array test" };
+
+            using (var repos = new GenericRepository<SampleArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QuerySync(filter);
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+                Assert.Equal("query array test", result.First().Name);
+            }
+        }
+
+        #endregion
     }
 }
