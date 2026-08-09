@@ -485,7 +485,11 @@ namespace Rochas.DapperRepository.Helpers
                     string columnNameStr = string.Empty;
 
                     var itemChildKeyPair = (KeyValuePair<object, object>)filter.Value;
-                    if (!(itemChildKeyPair.Key is RelationalColumn))
+                    if (itemChildKeyPair.Key is DataAggregationColumn)
+                    {
+                        continue;
+                    }
+                    else if (!(itemChildKeyPair.Key is RelationalColumn))
                     {
                         columnName = itemChildKeyPair.Key;
                         filterColumnName = string.Concat(tableName, ".", columnName);
@@ -503,7 +507,7 @@ namespace Rochas.DapperRepository.Helpers
                     }
 
                     var rangeFilter = false;
-                    if (rangeValues != null)
+                    if (rangeValues != null && columnName != null)
                     {
                         columnNameStr = columnName.ToString();
                         rangeFilter = rangeValues.ContainsKey(columnNameStr);

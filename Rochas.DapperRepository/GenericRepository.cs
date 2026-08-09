@@ -351,9 +351,45 @@ namespace Rochas.DapperRepository
 			return QueryPaginated(filter, page, pageSize, loadComposition, filterConjunction, sortAttributes, orderDescending).GetAwaiter().GetResult();
 		}
 
+		public QueryBuilder<T> QueryBuilder(T filter, bool loadComposition = false, bool filterConjunction = false)
+		{
+			return new QueryBuilder<T>(this, filter, loadComposition, filterConjunction);
+		}
+
+		public QueryPaginatedBuilder<T> QueryPaginatedBuilder(T filter, bool loadComposition = false, bool filterConjunction = false)
+		{
+			return new QueryPaginatedBuilder<T>(this, filter, loadComposition, filterConjunction);
+		}
+
 		#endregion
 
 		#region Helper Methods
+
+		internal async Task<ICollection<T>> QueryWithBuilder(T filter, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending, string groupAttributes)
+		{
+			var result = new List<T>();
+			var queryResult = await QueryObjects(filter, PersistenceAction.Query, loadComposition, filterConjunction: filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, groupAttributes: groupAttributes);
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					result.Add(item as T);
+
+			return result;
+		}
+
+		internal async Task<PaginatedResult<T>> QueryPaginatedWithBuilder(T filter, int page, int pageSize, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending)
+		{
+			var totalCount = await CountObject(filter as object);
+
+			int offset = (page - 1) * pageSize;
+			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending);
+
+			var items = new List<T>();
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					items.Add(item as T);
+
+			return new PaginatedResult<T>(items, totalCount, page, pageSize);
+		}
 
 		public new void Dispose()
 		{

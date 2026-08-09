@@ -954,5 +954,370 @@ namespace Rochas.DapperRepository.Test
         }
 
         #endregion
+
+        #region QueryBuilder Tests
+
+        [Fact]
+        public void Test55_QueryBuilder_FilterOnly()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryBuilder(filter).ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        [Fact]
+        public void Test56_QueryBuilder_FilterOnly_Await()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryBuilder(filter).GetAwaiter().GetResult();
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        [Fact]
+        public void Test57_QueryBuilder_OrderBy_SingleColumn()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryBuilder(filter).OrderBy("Name").ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Count > 1);
+                var list = result.ToList();
+                Assert.True(list[0].Name.CompareTo(list[1].Name) <= 0);
+            }
+        }
+
+        [Fact]
+        public void Test58_QueryBuilder_OrderBy_Descending()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryBuilder(filter).OrderBy("Name").Descending().ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Count > 1);
+                var list = result.ToList();
+                Assert.True(list[0].Name.CompareTo(list[1].Name) >= 0);
+            }
+        }
+
+        [Fact]
+        public void Test59_QueryBuilder_OrderBy_MultipleColumns()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryBuilder(filter).OrderBy(new[] { "Age", "Name" }).ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        [Fact]
+        public void Test60_QueryBuilder_OrderBy_Await()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryBuilder(filter).OrderBy("Name").GetAwaiter().GetResult();
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        [Fact]
+        public void Test61_QueryBuilder_OrderBy_Descending_Await()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryBuilder(filter).OrderBy("Name", descending: true).GetAwaiter().GetResult();
+                Assert.NotNull(result);
+                Assert.True(result.Count > 1);
+                var list = result.ToList();
+                Assert.True(list[0].Name.CompareTo(list[1].Name) >= 0);
+            }
+        }
+
+        [Fact]
+        public void Test62_QueryBuilder_EmptyFilter()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity();
+                var result = repos.QueryBuilder(filter).ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        [Fact]
+        public void Test63_QueryBuilder_FilterConjunction()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true, Age = 32 };
+                var result = repos.QueryBuilder(filter, filterConjunction: true).OrderBy("Name").ToList();
+                Assert.NotNull(result);
+            }
+        }
+
+        #endregion
+
+        #region QueryPaginatedBuilder Tests
+
+        [Fact]
+        public void Test64_QueryPaginatedBuilder_Paginate()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryPaginatedBuilder(filter).Paginate(1, 2);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Count <= 2);
+                Assert.True(result.TotalCount > 0);
+                Assert.Equal(1, result.Page);
+                Assert.Equal(2, result.PageSize);
+            }
+        }
+
+        [Fact]
+        public void Test65_QueryPaginatedBuilder_Paginate_Page2()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryPaginatedBuilder(filter).Paginate(2, 1);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Count <= 1);
+                Assert.True(result.TotalCount > 0);
+                Assert.Equal(2, result.Page);
+            }
+        }
+
+        [Fact]
+        public void Test66_QueryPaginatedBuilder_OrderBy()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryPaginatedBuilder(filter).OrderBy("Name").Paginate(1, 10);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Count > 1);
+                Assert.True(result.Items.ElementAt(0).Name.CompareTo(result.Items.ElementAt(1).Name) <= 0);
+            }
+        }
+
+        [Fact]
+        public void Test67_QueryPaginatedBuilder_OrderBy_Descending()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryPaginatedBuilder(filter).OrderBy("Name").Descending().Paginate(1, 10);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Count > 1);
+                Assert.True(result.Items[0].Name.CompareTo(result.Items[1].Name) >= 0);
+            }
+        }
+
+        [Fact]
+        public void Test68_QueryPaginatedBuilder_OrderBy_Await()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QueryPaginatedBuilder(filter).OrderBy("Name").PaginateAsync(1, 5).GetAwaiter().GetResult();
+                Assert.NotNull(result);
+                Assert.True(result.Items.Any());
+            }
+        }
+
+        [Fact]
+        public void Test69_QueryPaginatedBuilder_EmptyFilter()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity();
+                var result = repos.QueryPaginatedBuilder(filter).Paginate(1, 5);
+                Assert.NotNull(result);
+                Assert.True(result.Items.Any());
+                Assert.True(result.TotalCount > 0);
+            }
+        }
+
+        #endregion
+
+        #region RelationalColumn Tests
+
+        [Fact]
+        public void Test70_RelationalColumn_CreateTables()
+        {
+            var dimProductScript = @"CREATE TABLE IF NOT EXISTS [dim_product] (
+                                        [id] INTEGER PRIMARY KEY,
+                                        [product_name] [varchar](200) NOT NULL,
+                                        [category] [varchar](100) NULL,
+                                        [price] [decimal](18, 2) NULL)";
+
+            var dimCustomerScript = @"CREATE TABLE IF NOT EXISTS [dim_customer] (
+                                        [id] INTEGER PRIMARY KEY,
+                                        [customer_name] [varchar](200) NOT NULL,
+                                        [region] [varchar](100) NULL)";
+
+            var factSalesScript = @"CREATE TABLE IF NOT EXISTS [fact_sales] (
+                                        [id] INTEGER PRIMARY KEY,
+                                        [sale_date] [varchar](20) NULL,
+                                        [product_id] [int] NOT NULL,
+                                        [customer_id] [int] NOT NULL,
+                                        [quantity] [int] NULL,
+                                        [unit_price] [decimal](18, 2) NULL,
+                                        [total_amount] [decimal](18, 2) NULL)";
+
+            using (var repos = new GenericRepository<DimProductEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.Initialize(dimProductScript);
+            }
+            using (var repos = new GenericRepository<DimCustomerEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.Initialize(dimCustomerScript);
+            }
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.Initialize(factSalesScript);
+            }
+        }
+
+        [Fact]
+        public void Test71_RelationalColumn_InsertDimensionData()
+        {
+            var product1 = new DimProductEntity { ProductName = "Notebook Dell", Category = "Electronics", Price = 4500m };
+            var product2 = new DimProductEntity { ProductName = "Mouse Logitech", Category = "Peripherals", Price = 150m };
+
+            using (var repos = new GenericRepository<DimProductEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(product1);
+                repos.AddSync(product2);
+            }
+
+            var customer1 = new DimCustomerEntity { CustomerName = "Joao Silva", Region = "Southeast" };
+            var customer2 = new DimCustomerEntity { CustomerName = "Maria Santos", Region = "Northeast" };
+
+            using (var repos = new GenericRepository<DimCustomerEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(customer1);
+                repos.AddSync(customer2);
+            }
+        }
+
+        [Fact]
+        public void Test72_RelationalColumn_InsertFactData()
+        {
+            var sales = new FactSalesEntity
+            {
+                SaleDate = "2024-01-15",
+                ProductId = 1,
+                CustomerId = 1,
+                Quantity = 2,
+                UnitPrice = 4500m,
+                TotalAmount = 9000m
+            };
+
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(sales);
+            }
+        }
+
+        [Fact]
+        public void Test73_RelationalColumn_QueryWithJoin()
+        {
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new FactSalesEntity();
+                var result = repos.QuerySync(filter);
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+
+                var first = result.First();
+                Assert.False(string.IsNullOrEmpty(first.ProductName));
+                Assert.False(string.IsNullOrEmpty(first.CustomerName));
+            }
+        }
+
+        [Fact]
+        public void Test74_RelationalColumnQueryBuilder_OrderBy()
+        {
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new FactSalesEntity();
+                var result = repos.QueryBuilder(filter).OrderBy("ProductName").ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+            }
+        }
+
+        #endregion
+
+        #region DataAggregationColumn Tests
+
+        [Fact]
+        public void Test75_DataAggregationColumn_QueryWithAggregations()
+        {
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new FactSalesEntity();
+                var result = repos.QuerySync(filter);
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+
+                var first = result.First();
+                Assert.True(first.SumTotalAmount > 0);
+                Assert.True(first.CountSales > 0);
+                Assert.True(first.AvgUnitPrice > 0);
+            }
+        }
+
+        [Fact]
+        public void Test76_DataAggregationColumn_QueryBuilder_WithAggregations()
+        {
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new FactSalesEntity();
+                var result = repos.QueryBuilder(filter).ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+
+                var first = result.First();
+                Assert.True(first.SumTotalAmount > 0);
+                Assert.True(first.CountSales > 0);
+            }
+        }
+
+        [Fact]
+        public void Test77_DataAggregationColumn_MaxMin()
+        {
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new FactSalesEntity();
+                var result = repos.QuerySync(filter);
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+
+                var first = result.First();
+                Assert.True(first.MaxTotalAmount > 0);
+                Assert.True(first.MinTotalAmount > 0);
+                Assert.True(first.MaxTotalAmount >= first.MinTotalAmount);
+            }
+        }
+
+        #endregion
     }
 }
