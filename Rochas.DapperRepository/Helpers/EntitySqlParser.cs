@@ -43,7 +43,7 @@ namespace Rochas.DapperRepository.Helpers
                 var nameSpacePrefix = entityType.Namespace.Substring(0, entityType.Namespace.IndexOf("."));
 
                 var entityProps = entityType.GetProperties()
-                                            .Where(p => !p.PropertyType.Namespace.StartsWith(nameSpacePrefix)).ToArray();
+                                            .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace.StartsWith(nameSpacePrefix))).ToArray();
 
                 // Model validation
                 if (!EntityReflector.VerifyTableAnnotation(entityType))
@@ -101,7 +101,7 @@ namespace Rochas.DapperRepository.Helpers
                 var nameSpacePrefix = entityType.Namespace.Substring(0, entityType.Namespace.IndexOf("."));
 
                 var entityProps = entityType.GetProperties()
-                                            .Where(p => !p.PropertyType.Namespace.StartsWith(nameSpacePrefix)).ToArray();
+                                            .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace.StartsWith(nameSpacePrefix))).ToArray();
 
                 if (!EntityReflector.VerifyTableAnnotation(entityType))
                     throw new InvalidOperationException("Entity table annotation not found.");

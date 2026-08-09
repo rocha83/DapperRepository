@@ -193,6 +193,22 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
+        public void EntityWithoutTableAttribute_ShouldFallbackToClassName()
+        {
+            var entityType = typeof(SampleNoTableEntity);
+            var entityProps = entityType.GetProperties()
+                .Where(p => !p.PropertyType.Namespace.StartsWith("Rochas")).ToArray();
+            var testFilter = EntityReflector.GetFilterByPrimaryKey(entityType, entityProps, 1);
+
+            var result = EntitySqlParser.ParseEntity(testFilter, DatabaseEngine.SQLite, PersistenceAction.Get, testFilter);
+            result = result.Trim();
+
+            Assert.NotNull(result);
+            Assert.StartsWith("SELECT", result);
+            Assert.Contains("SampleNoTableEntity", result);
+        }
+
+        [Fact]
         public void DebugQueryWithParameters()
         {
             var filter = new SampleEntity() { Name = "roberto" };

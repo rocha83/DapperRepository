@@ -180,6 +180,9 @@ namespace Rochas.DapperRepository.Helpers
 
                         break;
                 }
+
+                if (columnValue.GetType().IsEnum)
+                    columnValue = string.Concat("'", columnValue.ToString(), "'");
             }
             else
             {
