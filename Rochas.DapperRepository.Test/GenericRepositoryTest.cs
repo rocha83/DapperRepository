@@ -963,7 +963,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryBuilder(filter).ToList();
+                var result = repos.Query(filter).ToList();
                 Assert.NotNull(result);
                 Assert.True(result.Any());
             }
@@ -975,7 +975,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryBuilder(filter).GetAwaiter().GetResult();
+                var result = repos.Query(filter).GetAwaiter().GetResult();
                 Assert.NotNull(result);
                 Assert.True(result.Any());
             }
@@ -987,7 +987,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryBuilder(filter).OrderBy(new[] { "Name" }).ToList();
+                var result = repos.Query(filter).OrderBy(new[] { "Name" }).ToList();
                 Assert.NotNull(result);
                 Assert.True(result.Count > 1);
                 var list = result.ToList();
@@ -1001,7 +1001,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryBuilder(filter).OrderBy(new[] { "Name" }).Descending().ToList();
+                var result = repos.Query(filter).OrderBy(new[] { "Name" }).Descending().ToList();
                 Assert.NotNull(result);
                 Assert.True(result.Count > 1);
                 var list = result.ToList();
@@ -1015,7 +1015,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryBuilder(filter).OrderBy(new[] { "Age", "Name" }).ToList();
+                var result = repos.Query(filter).OrderBy(new[] { "Age", "Name" }).ToList();
                 Assert.NotNull(result);
                 Assert.True(result.Any());
             }
@@ -1027,7 +1027,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryBuilder(filter).OrderBy(new[] { "Name" }).GetAwaiter().GetResult();
+                var result = repos.Query(filter).OrderBy(new[] { "Name" }).GetAwaiter().GetResult();
                 Assert.NotNull(result);
                 Assert.True(result.Any());
             }
@@ -1039,7 +1039,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryBuilder(filter).OrderBy(new[] { "Name" }, descending: true).GetAwaiter().GetResult();
+                var result = repos.Query(filter).OrderBy(new[] { "Name" }, descending: true).GetAwaiter().GetResult();
                 Assert.NotNull(result);
                 Assert.True(result.Count > 1);
                 var list = result.ToList();
@@ -1053,7 +1053,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity();
-                var result = repos.QueryBuilder(filter).ToList();
+                var result = repos.Query(filter).ToList();
                 Assert.NotNull(result);
                 Assert.True(result.Any());
             }
@@ -1065,7 +1065,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true, Age = 32 };
-                var result = repos.QueryBuilder(filter, filterConjunction: true).OrderBy(new[] { "Name" }).ToList();
+                var result = repos.Query(filter, filterConjunction: true).OrderBy(new[] { "Name" }).ToList();
                 Assert.NotNull(result);
             }
         }
@@ -1080,7 +1080,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryPaginatedBuilder(filter).Paginate(1, 2);
+                var result = repos.QueryPaginated(filter).Paginate(1, 2);
                 Assert.NotNull(result);
                 Assert.True(result.Items.Count <= 2);
                 Assert.True(result.TotalCount > 0);
@@ -1095,7 +1095,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryPaginatedBuilder(filter).Paginate(2, 1);
+                var result = repos.QueryPaginated(filter).Paginate(2, 1);
                 Assert.NotNull(result);
                 Assert.True(result.Items.Count <= 1);
                 Assert.True(result.TotalCount > 0);
@@ -1109,7 +1109,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryPaginatedBuilder(filter).OrderBy(new[] { "Name" }).Paginate(1, 10);
+                var result = repos.QueryPaginated(filter).OrderBy(new[] { "Name" }).Paginate(1, 10);
                 Assert.NotNull(result);
                 Assert.True(result.Items.Count > 1);
                 Assert.True(result.Items.ElementAt(0).Name.CompareTo(result.Items.ElementAt(1).Name) <= 0);
@@ -1122,7 +1122,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryPaginatedBuilder(filter).OrderBy(new[] { "Name" }).Descending().Paginate(1, 10);
+                var result = repos.QueryPaginated(filter).OrderBy(new[] { "Name" }).Descending().Paginate(1, 10);
                 Assert.NotNull(result);
                 Assert.True(result.Items.Count > 1);
                 Assert.True(result.Items[0].Name.CompareTo(result.Items[1].Name) >= 0);
@@ -1135,7 +1135,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = repos.QueryPaginatedBuilder(filter).OrderBy(new[] { "Name" }).PaginateAsync(1, 5).GetAwaiter().GetResult();
+                var result = repos.QueryPaginated(filter).OrderBy(new[] { "Name" }).PaginateAsync(1, 5).GetAwaiter().GetResult();
                 Assert.NotNull(result);
                 Assert.True(result.Items.Any());
             }
@@ -1147,7 +1147,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity();
-                var result = repos.QueryPaginatedBuilder(filter).Paginate(1, 5);
+                var result = repos.QueryPaginated(filter).Paginate(1, 5);
                 Assert.NotNull(result);
                 Assert.True(result.Items.Any());
                 Assert.True(result.TotalCount > 0);
@@ -1258,7 +1258,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new FactSalesEntity();
-                var result = repos.QueryBuilder(filter).OrderBy(new[] { "ProductName" }).ToList();
+                var result = repos.Query(filter).OrderBy(new[] { "ProductName" }).ToList();
                 Assert.NotNull(result);
                 Assert.True(result.Any());
             }
@@ -1291,7 +1291,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new FactSalesEntity();
-                var result = repos.QueryBuilder(filter).ToList();
+                var result = repos.Query(filter).ToList();
                 Assert.NotNull(result);
                 Assert.True(result.Any());
 
@@ -1437,7 +1437,7 @@ namespace Rochas.DapperRepository.Test
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
-                var result = repos.QueryBuilder(new FactSalesEntity()).GroupBy(new[] { "ProductId" }).ToList();
+                var result = repos.Query(new FactSalesEntity()).GroupBy(new[] { "ProductId" }).ToList();
                 Assert.NotNull(result);
                 Assert.Equal(2, result.Count);
 
@@ -1457,7 +1457,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Resume = "sort test group", Active = true };
-                var result = repos.QueryBuilder(filter, filterConjunction: true).OrderBy(new[] { "Name" }).ToList();
+                var result = repos.Query(filter, filterConjunction: true).OrderBy(new[] { "Name" }).ToList();
                 var list = result.ToList();
                 Assert.Equal(4, list.Count);
                 for (int i = 0; i < expected.Length; i++)
@@ -1472,7 +1472,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Resume = "sort test group", Active = true };
-                var result = repos.QueryBuilder(filter, filterConjunction: true).OrderBy(new[] { "Name" }).Descending().ToList();
+                var result = repos.Query(filter, filterConjunction: true).OrderBy(new[] { "Name" }).Descending().ToList();
                 var list = result.ToList();
                 Assert.Equal(4, list.Count);
                 for (int i = 0; i < expected.Length; i++)

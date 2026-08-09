@@ -301,42 +301,42 @@ o resultado é aguardado (`await`) ou materializado com `.ToList()`/`.ToListAsyn
 
 ```csharp
 // Retorna QueryBuilder<T> — consulta simples ou com encadeamento
-var builder = repos.QueryBuilder(filter);
+var builder = repos.Query(filter);
 
 // Retorna QueryPaginatedBuilder<T> — consulta paginada
-var pagedBuilder = repos.QueryPaginatedBuilder(filter);
+var pagedBuilder = repos.QueryPaginated(filter);
 ```
 
 ### Consulta simples (sem ordenação/agrupamento)
 
 ```csharp
-var all = await repos.QueryBuilder(new SampleEntity());   // await executa
-var list = repos.QueryBuilder(filter).ToList();           // materializa sync
-var listAsync = await repos.QueryBuilder(filter).ToListAsync();
+var all = await repos.Query(new SampleEntity());   // await executa
+var list = repos.Query(filter).ToList();           // materializa sync
+var listAsync = await repos.Query(filter).ToListAsync();
 ```
 
 ### Ordenação
 
 ```csharp
 // Ascendente (padrão) — sempre array de strings
-var result = await repos.QueryBuilder(filter).OrderBy(new[] { "Name" });
+var result = await repos.Query(filter).OrderBy(new[] { "Name" });
 
 // Descendente
-var result = await repos.QueryBuilder(filter).OrderBy(new[] { "Name" }).Descending();
-var result = await repos.QueryBuilder(filter).OrderBy(new[] { "Name" }, descending: true);
+var result = await repos.Query(filter).OrderBy(new[] { "Name" }).Descending();
+var result = await repos.Query(filter).OrderBy(new[] { "Name" }, descending: true);
 
 // Múltiplas colunas
-var result = await repos.QueryBuilder(filter).OrderBy(new[] { "Age", "Name" });
+var result = await repos.Query(filter).OrderBy(new[] { "Age", "Name" });
 ```
 
 ### Agrupamento (GROUP BY — DW/ETL)
 
 ```csharp
 // Agrupamento simples por colunas
-var result = await repos.QueryBuilder(filter).GroupBy(new[] { "Category" });
+var result = await repos.Query(filter).GroupBy(new[] { "Category" });
 
 // Agrupamento por múltiplas colunas
-var result = await repos.QueryBuilder(filter).GroupBy(new[] { "Category", "Status" });
+var result = await repos.Query(filter).GroupBy(new[] { "Category", "Status" });
 ```
 
 > **Nota:** para agregar valores (SUM, COUNT, MIN, MAX, AVG) utilize as
@@ -347,11 +347,11 @@ var result = await repos.QueryBuilder(filter).GroupBy(new[] { "Category", "Statu
 ### Encadeamento (qualquer ordem)
 
 ```csharp
-var result = await repos.QueryBuilder(filter)
+var result = await repos.Query(filter)
     .GroupBy(new[] { "Category" })
     .OrderBy(new[] { "Category" });
 
-var result = await repos.QueryBuilder(filter)
+var result = await repos.Query(filter)
     .OrderBy(new[] { "Category" })
     .GroupBy(new[] { "Category" });
 ```
@@ -368,16 +368,16 @@ agrupamento e a execução monta o SQL na ordem correta
 
 ```csharp
 // Assíncrono
-var result = await repos.QueryPaginatedBuilder(filter).PaginateAsync(1, 10);
+var result = await repos.QueryPaginated(filter).PaginateAsync(1, 10);
 
 // Síncrono
-var result = repos.QueryPaginatedBuilder(filter).Paginate(1, 10);
+var result = repos.QueryPaginated(filter).Paginate(1, 10);
 ```
 
 ### Com ordenação
 
 ```csharp
-var result = await repos.QueryPaginatedBuilder(filter)
+var result = await repos.QueryPaginated(filter)
     .OrderBy(new[] { "Name" })
     .Descending()
     .PaginateAsync(page: 1, pageSize: 20);
@@ -453,14 +453,14 @@ WHERE 1 = 1
 
 ```csharp
 // Consulta simples com JOINs e agregações automáticas
-var result = await repos.QueryBuilder(new FactSalesEntity());
+var result = await repos.Query(new FactSalesEntity());
 
 // Com ordenação por coluna relacional
-var result = await repos.QueryBuilder(new FactSalesEntity())
+var result = await repos.Query(new FactSalesEntity())
     .OrderBy(new[] { "ProductName" });
 
 // Com agrupamento
-var result = await repos.QueryBuilder(new FactSalesEntity())
+var result = await repos.Query(new FactSalesEntity())
     .GroupBy(new[] { "ProductId" });
 ```
 

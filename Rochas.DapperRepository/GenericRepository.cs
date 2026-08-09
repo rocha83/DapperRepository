@@ -351,12 +351,12 @@ namespace Rochas.DapperRepository
 			return QueryPaginated(filter, page, pageSize, loadComposition, filterConjunction, sortAttributes, orderDescending).GetAwaiter().GetResult();
 		}
 
-		public IQueryBuilder<T> QueryBuilder(T filter, bool loadComposition = false, bool filterConjunction = false)
+		public IQueryBuilder<T> Query(T filter, bool loadComposition = false, bool filterConjunction = false)
 		{
 			return new QueryBuilder<T>(this, filter, loadComposition, filterConjunction);
 		}
 
-		public IQueryPaginatedBuilder<T> QueryPaginatedBuilder(T filter, bool loadComposition = false, bool filterConjunction = false)
+		public IQueryPaginatedBuilder<T> QueryPaginated(T filter, bool loadComposition = false, bool filterConjunction = false)
 		{
 			return new QueryPaginatedBuilder<T>(this, filter, loadComposition, filterConjunction);
 		}

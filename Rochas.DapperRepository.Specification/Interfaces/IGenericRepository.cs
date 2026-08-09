@@ -36,8 +36,8 @@ namespace Rochas.DapperRepository.Specification.Interfaces
         Task<ICollection<T>> QueryWithBuilder(T filter, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending, string groupAttributes);
         Task<PaginatedResult<T>> QueryPaginatedWithBuilder(T filter, int page, int pageSize, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending);
 
-        IQueryBuilder<T> QueryBuilder(T filter, bool loadComposition = false, bool filterConjunction = false);
-        IQueryPaginatedBuilder<T> QueryPaginatedBuilder(T filter, bool loadComposition = false, bool filterConjunction = false);
+        IQueryBuilder<T> Query(T filter, bool loadComposition = false, bool filterConjunction = false);
+        IQueryPaginatedBuilder<T> QueryPaginated(T filter, bool loadComposition = false, bool filterConjunction = false);
 
         void Dispose();
     }
