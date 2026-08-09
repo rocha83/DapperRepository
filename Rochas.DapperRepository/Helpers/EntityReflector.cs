@@ -108,7 +108,7 @@ namespace Rochas.DapperRepository.Helpers
             return TableNames.GetOrAdd(entityType, t =>
             {
                 var attr = t.GetCustomAttribute(typeof(TableAttribute)) as TableAttribute;
-                if (attr == null) return string.Empty;
+                if (attr == null) return t.Name;
                 return string.IsNullOrWhiteSpace(attr.Schema)
                     ? attr.Name
                     : $"{attr.Schema}.{attr.Name}";
