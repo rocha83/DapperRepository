@@ -12,7 +12,7 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
-    <Version>1.4.4</Version>
+    <Version>1.4.5</Version>
     <PackageReleaseNotes>IGenericRepository: Query() returns IQueryBuilder (renamed from QueryBuilder); QueryPaginated() returns IQueryPaginatedBuilder (renamed from QueryPaginatedBuilder); OrderBy and GroupBy only accept string[]; awaitable builders (GetAwaiter)</PackageReleaseNotes>
   </PropertyGroup>
 
