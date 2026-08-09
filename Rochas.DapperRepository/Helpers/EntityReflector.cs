@@ -140,7 +140,7 @@ namespace Rochas.DapperRepository.Helpers
                         break;
                     case SQL.DataType.String:
                         var strValue = columnValue.ToString().Replace("'", "\"");
-                        if (!string.IsNullOrWhiteSpace(strValue))
+                        if (strValue != null)
                             columnValue = string.Concat("'", strValue, "'");
                         else
                             columnValue = SqlDefaultValue.Null;
