@@ -13,7 +13,7 @@
     <RepositoryType>Git</RepositoryType>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <Version>1.4.0</Version>
-    <PackageReleaseNotes>Add groupAttributes parameter to IGenericRepository.Query/QuerySync for GROUP BY support; RelationalColumn/DataAggregationColumn annotations for ETL/DW fact table queries</PackageReleaseNotes>
+    <PackageReleaseNotes>IQueryBuilder/IQueryPaginatedBuilder interfaces for fluent builder pattern; QueryBuilder/QueryPaginatedBuilder entry points on IGenericRepository; OrderBy, GroupBy, Descending, Paginate async/sync; groupAttributes parameter for GROUP BY; RelationalColumn/DataAggregationColumn annotations for ETL/DW fact table queries</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
