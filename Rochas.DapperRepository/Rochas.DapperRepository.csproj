@@ -15,7 +15,7 @@
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
-    <PackageReleaseNotes>Pluggable cache providers (ICacheProvider): InMemoryCacheProvider (default), DistributedCacheProvider placeholder for Redis/Garnet, CompositeCacheProvider for L1+L2; parameterized queries for security and query plan caching; reflection caching for performance; [Key] attribute for PK + _id suffix convention for FK detection. v1.6.5: [Table] and [Column] optional with class/property name fallback (PascalCase); enum values serialized as string literals; empty strings inserted as '' instead of NULL; namespace filter excludes only class types (not enums/structs); PostgreSQL compliant - table and column names automatically lowercased for PostgreSQL engine.</PackageReleaseNotes>
+    <PackageReleaseNotes>Pluggable cache providers (ICacheProvider): InMemoryCacheProvider (default), DistributedCacheProvider placeholder for Redis/Garnet, CompositeCacheProvider for L1+L2; parameterized queries for security and query plan caching; reflection caching for performance; [Key] attribute for PK + _id suffix convention for FK detection. v1.6.5: [Table] and [Column] optional with class/property name fallback (PascalCase); enum values serialized as string literals; empty strings inserted as '' instead of NULL; namespace filter excludes only class types (not enums/structs); PostgreSQL compliant - table and column names automatically converted to snake_case for PostgreSQL engine.</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
 
