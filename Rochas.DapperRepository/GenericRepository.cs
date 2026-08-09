@@ -27,23 +27,26 @@ namespace Rochas.DapperRepository
 		static readonly PropertyInfo[] entityProps = entityType.GetProperties();
 		bool _readUncommited;
 		bool _useCache;
+		bool _snakeCaseNaming;
 
 		#endregion
 
 		#region Constructors
 
-		public GenericRepository(DatabaseEngine engine, string connectionString, string logPath = null, bool keepConnected = false, bool readUncommited = false, bool useCache = true, params string[] replicaConnStrings)
+		public GenericRepository(DatabaseEngine engine, string connectionString, string logPath = null, bool keepConnected = false, bool readUncommited = false, bool useCache = true, bool forceSnakeCase = false, params string[] replicaConnStrings)
 			: base(engine, connectionString, logPath, keepConnected, replicaConnStrings)
 		{
 			_readUncommited = readUncommited;
 			_useCache = useCache;
+			_snakeCaseNaming = forceSnakeCase;
 		}
 
-		public GenericRepository(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, bool readUncommited = false, bool useCache = true, params string[] replicaConnStrings)
+		public GenericRepository(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, bool readUncommited = false, bool useCache = true, bool forceSnakeCase = false, params string[] replicaConnStrings)
 			: base(dbConnection, logPath, keepConnected, replicaConnStrings)
 		{
 			_readUncommited = readUncommited;
 			_useCache = useCache;
+			_snakeCaseNaming = forceSnakeCase;
 		}
 
 		#endregion

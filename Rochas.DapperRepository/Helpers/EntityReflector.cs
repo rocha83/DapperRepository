@@ -32,11 +32,11 @@ namespace Rochas.DapperRepository.Helpers
         private static readonly ConcurrentDictionary<PropertyInfo, ColumnAttribute> ColumnAnnotations = new();
         private static readonly ConcurrentDictionary<PropertyInfo, RelatedEntityAttribute> RelatedEntityAttributes = new();
 
-        public static Dictionary<object, object> GetPropertiesValueList(object entity, Type entityType, PropertyInfo[] entityProperties, PersistenceAction action)
+        public static Dictionary<object, object> GetPropertiesValueList(object entity, Type entityType, PropertyInfo[] entityProperties, PersistenceAction action, DatabaseEngine? engine = null)
         {
             var objectSQLDataRelation = new Dictionary<object, object>();
 
-            var tableName = GetTableName(entityType);
+            var tableName = GetTableName(entityType, engine);
             if (!string.IsNullOrWhiteSpace(tableName))
                 objectSQLDataRelation.Add("TableName", tableName);
 
@@ -57,6 +57,8 @@ namespace Rochas.DapperRepository.Helpers
                         p.GetCustomAttribute(typeof(ColumnAttribute)) as ColumnAttribute);
 
                     var columnName = columnAnnotation?.Name ?? prop.Name;
+                    if (engine == DatabaseEngine.PostgreSQL)
+                        columnName = ToSnakeCase(columnName);
 
                     var columnValue = prop.GetValue(Convert.ChangeType(entity, entity.GetType()), null);
                     columnValue = FormatSQLInputValue(prop, columnValue, action);
@@ -103,9 +105,9 @@ namespace Rochas.DapperRepository.Helpers
             }
         }
 
-        private static string GetTableName(Type entityType)
+        private static string GetTableName(Type entityType, DatabaseEngine? engine = null)
         {
-            return TableNames.GetOrAdd(entityType, t =>
+            var name = TableNames.GetOrAdd(entityType, t =>
             {
                 var attr = t.GetCustomAttribute(typeof(TableAttribute)) as TableAttribute;
                 if (attr == null) return t.Name;
@@ -113,6 +115,11 @@ namespace Rochas.DapperRepository.Helpers
                     ? attr.Name
                     : $"{attr.Schema}.{attr.Name}";
             });
+
+            if (engine == DatabaseEngine.PostgreSQL)
+                name = ToSnakeCase(name);
+
+            return name;
         }
 
         private static object FormatSQLInputValue(PropertyInfo column, object columnValue, PersistenceAction action)
@@ -423,6 +430,28 @@ namespace Rochas.DapperRepository.Helpers
                 table.Columns.Add(prop.Name, prop.PropertyType);
             }
             return table;
+        }
+
+        private static string ToSnakeCase(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+
+            var sb = new StringBuilder();
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (char.IsWhiteSpace(value[i]))
+                {
+                    sb.Append('_');
+                }
+                else
+                {
+                    if (i > 0 && char.IsUpper(value[i]) && !char.IsWhiteSpace(value[i - 1]))
+                        sb.Append('_');
+                    sb.Append(value[i]);
+                }
+            }
+            return sb.ToString().ToLower();
         }
     }
 }

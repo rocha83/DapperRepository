@@ -11,11 +11,11 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable elastic tokenized search bulk persistence parser crud poco orm cqrs</PackageTags>
-    <Version>1.6.3</Version>
+    <Version>1.6.5</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
-    <PackageReleaseNotes>Pluggable cache providers (ICacheProvider): InMemoryCacheProvider (default), DistributedCacheProvider placeholder for Redis/Garnet, CompositeCacheProvider for L1+L2; parameterized queries for security and query plan caching; reflection caching for performance; [Key] attribute for PK + _id suffix convention for FK detection. v1.6.2: [Table] attribute is now optional - falls back to entity class name (PascalCase); [Column] attribute already optional - falls back to property name (PascalCase).</PackageReleaseNotes>
+    <PackageReleaseNotes>Pluggable cache providers (ICacheProvider): InMemoryCacheProvider (default), DistributedCacheProvider placeholder for Redis/Garnet, CompositeCacheProvider for L1+L2; parameterized queries for security and query plan caching; reflection caching for performance; [Key] attribute for PK + _id suffix convention for FK detection. v1.6.5: [Table] and [Column] optional with class/property name fallback (PascalCase); enum values serialized as string literals; empty strings inserted as '' instead of NULL; namespace filter excludes only class types (not enums/structs); PostgreSQL compliant - table and column names automatically lowercased for PostgreSQL engine.</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
 

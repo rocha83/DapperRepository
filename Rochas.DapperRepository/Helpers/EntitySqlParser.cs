@@ -65,7 +65,7 @@ namespace Rochas.DapperRepository.Helpers
                                    ? string.Format(SQLStatements.SQL_Action_LimitResult_MySQL, recordLimit)
                                    : string.Empty, "{0}", "{1}");
 
-                    attributeColumnRelation = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, persistenceAction);
+                    attributeColumnRelation = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, persistenceAction, engine);
 
                     if (!string.IsNullOrEmpty(groupAttributes))
                         ParseGroupingAttributes(attributeColumnRelation, groupAttributes, ref sqlInstruction);
@@ -116,7 +116,7 @@ namespace Rochas.DapperRepository.Helpers
 				{
                     sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}", "{1}");
 
-                    attributeColumnRelation = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, persistenceAction);
+                    attributeColumnRelation = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, persistenceAction, engine);
 
                     sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}");
 
@@ -165,11 +165,11 @@ namespace Rochas.DapperRepository.Helpers
             string sqlInstruction;
             Dictionary<object, object> sqlFilterData;
             Dictionary<string, object[]> rangeValues = null;
-            Dictionary<object, object> sqlEntityData = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, action);
+            Dictionary<object, object> sqlEntityData = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, action, engine);
 
             if (filterEntity != null)
             {
-                sqlFilterData = EntityReflector.GetPropertiesValueList(filterEntity, entityType, entityProps, action);
+                sqlFilterData = EntityReflector.GetPropertiesValueList(filterEntity, entityType, entityProps, action, engine);
                 rangeValues = EntityReflector.GetEntityRangeFilter(filterEntity, entityProps);
             }
             else
