@@ -11,11 +11,11 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable elastic tokenized search bulk persistence parser crud poco orm cqrs builder pattern fluent api</PackageTags>
-    <Version>1.7.4</Version>
+    <Version>1.7.5</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
-    <PackageReleaseNotes>v1.7.4: QueryBuilder fluent API (QueryBuilder/QueryPaginatedBuilder) with OrderBy/GroupBy terminal methods, awaitable builders (GetAwaiter), QueryPaginatedBuilder sync + async; RelationalColumn and DataAggregationColumn annotations now fully supported for ETL/DW fact queries (automatic JOIN generation INNER/LEFT, aggregation functions SUM/COUNT/MIN/MAX/AVG with aliases, skipped from INSERT/UPDATE mapping); DataAggregationColumn entries excluded from WHERE filter processing; null-safe range filter handling for RelationalColumn non-filterable entries. v1.6.8: date range filters detected by value type (DateTime) instead of column name; null-safe handling of nullable range boundaries; empty string ('') filters excluded from WHERE clause; KeyColumns cache keyed by entity type; array-typed properties skipped from SQL mapping (except byte[]/byte[][]). Pluggable cache providers (ICacheProvider); parameterized queries; reflection caching; [Key] attribute for PK + _id suffix convention for FK detection. v1.6.6: [Table] and [Column] optional; enum values serialized as string literals; empty strings inserted as '' instead of NULL; PostgreSQL compliant.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.7.5: BREAKING - OrderBy and GroupBy methods now only accept string[] (array) for consistency; QueryBuilder/QueryPaginatedBuilder interfaces from Specification 1.4.3; awaitable builders (GetAwaiter); RelationalColumn and DataAggregationColumn annotations now fully supported for ETL/DW fact queries (automatic JOIN generation INNER/LEFT, aggregation functions SUM/COUNT/MIN/MAX/AVG with aliases, skipped from INSERT/UPDATE mapping); DataAggregationColumn entries excluded from WHERE filter processing; null-safe range filter handling for RelationalColumn non-filterable entries. v1.6.8: date range filters detected by value type (DateTime) instead of column name; null-safe handling of nullable range boundaries; empty string ('') filters excluded from WHERE clause; KeyColumns cache keyed by entity type; array-typed properties skipped from SQL mapping (except byte[]/byte[][]). Pluggable cache providers (ICacheProvider); parameterized queries; reflection caching; [Key] attribute for PK + _id suffix convention for FK detection. v1.6.6: [Table] and [Column] optional; enum values serialized as string literals; empty strings inserted as '' instead of NULL; PostgreSQL compliant.</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
 
@@ -24,7 +24,7 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
     <PackageReference Include="MySqlConnector" Version="2.6.1" />
     <PackageReference Include="Npgsql" Version="8.0.8" />
-    <PackageReference Include="Rochas.DapperRepository.Specification" Version="1.4.2" />
+    <PackageReference Include="Rochas.DapperRepository.Specification" Version="1.4.3" />
     <PackageReference Include="System.ComponentModel" Version="4.3.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />

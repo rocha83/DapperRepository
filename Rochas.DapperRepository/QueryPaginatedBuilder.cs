@@ -22,13 +22,6 @@ namespace Rochas.DapperRepository
 			_filterConjunction = filterConjunction;
 		}
 
-		public IQueryPaginatedBuilder<T> OrderBy(string sortAttribute, bool descending = false)
-		{
-			_sortAttributes = sortAttribute;
-			_orderDescending = descending;
-			return this;
-		}
-
 		public IQueryPaginatedBuilder<T> OrderBy(string[] sortAttributes, bool descending = false)
 		{
 			_sortAttributes = string.Join(",", sortAttributes);

@@ -23,23 +23,10 @@ namespace Rochas.DapperRepository
 			_filterConjunction = filterConjunction;
 		}
 
-		public IQueryBuilder<T> OrderBy(string sortAttribute, bool descending = false)
-		{
-			_sortAttributes = sortAttribute;
-			_orderDescending = descending;
-			return this;
-		}
-
 		public IQueryBuilder<T> OrderBy(string[] sortAttributes, bool descending = false)
 		{
 			_sortAttributes = string.Join(",", sortAttributes);
 			_orderDescending = descending;
-			return this;
-		}
-
-		public IQueryBuilder<T> GroupBy(string groupAttribute)
-		{
-			_groupAttributes = groupAttribute;
 			return this;
 		}
 

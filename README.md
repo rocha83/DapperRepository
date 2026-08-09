@@ -318,12 +318,12 @@ var listAsync = await repos.QueryBuilder(filter).ToListAsync();
 ### Ordenação
 
 ```csharp
-// Ascendente (padrão)
-var result = await repos.QueryBuilder(filter).OrderBy("Name");
+// Ascendente (padrão) — sempre array de strings
+var result = await repos.QueryBuilder(filter).OrderBy(new[] { "Name" });
 
 // Descendente
-var result = await repos.QueryBuilder(filter).OrderBy("Name").Descending();
-var result = await repos.QueryBuilder(filter).OrderBy("Name", descending: true);
+var result = await repos.QueryBuilder(filter).OrderBy(new[] { "Name" }).Descending();
+var result = await repos.QueryBuilder(filter).OrderBy(new[] { "Name" }, descending: true);
 
 // Múltiplas colunas
 var result = await repos.QueryBuilder(filter).OrderBy(new[] { "Age", "Name" });
@@ -333,7 +333,7 @@ var result = await repos.QueryBuilder(filter).OrderBy(new[] { "Age", "Name" });
 
 ```csharp
 // Agrupamento simples por colunas
-var result = await repos.QueryBuilder(filter).GroupBy("Category");
+var result = await repos.QueryBuilder(filter).GroupBy(new[] { "Category" });
 
 // Agrupamento por múltiplas colunas
 var result = await repos.QueryBuilder(filter).GroupBy(new[] { "Category", "Status" });
@@ -349,10 +349,10 @@ var result = await repos.QueryBuilder(filter).GroupBy(new[] { "Category", "Statu
 ```csharp
 var result = await repos.QueryBuilder(filter)
     .GroupBy(new[] { "Category" })
-    .OrderBy("Category");
+    .OrderBy(new[] { "Category" });
 
 var result = await repos.QueryBuilder(filter)
-    .OrderBy("Category")
+    .OrderBy(new[] { "Category" })
     .GroupBy(new[] { "Category" });
 ```
 
@@ -378,7 +378,7 @@ var result = repos.QueryPaginatedBuilder(filter).Paginate(1, 10);
 
 ```csharp
 var result = await repos.QueryPaginatedBuilder(filter)
-    .OrderBy("Name")
+    .OrderBy(new[] { "Name" })
     .Descending()
     .PaginateAsync(page: 1, pageSize: 20);
 
@@ -457,11 +457,11 @@ var result = await repos.QueryBuilder(new FactSalesEntity());
 
 // Com ordenação por coluna relacional
 var result = await repos.QueryBuilder(new FactSalesEntity())
-    .OrderBy("ProductName");
+    .OrderBy(new[] { "ProductName" });
 
 // Com agrupamento
 var result = await repos.QueryBuilder(new FactSalesEntity())
-    .GroupBy("ProductId");
+    .GroupBy(new[] { "ProductId" });
 ```
 
 ### Tipos de junção (`RelationalJunctionType`)
