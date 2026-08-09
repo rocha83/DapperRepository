@@ -30,10 +30,16 @@ namespace Rochas.DapperRepository.Specification.Interfaces
         PaginatedResult<T> SearchPaginatedSync(object criteria, int page = 1, int pageSize = 20, bool loadComposition = false, string sortAttributes = null, bool orderDescending = false);
 
         IQueryBuilder<T> Query(T filter, bool loadComposition = false, bool filterConjunction = false);
+        ICollection<T> QuerySync(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, string groupAttributes = null);
+
         IQueryPaginatedBuilder<T> QueryPaginated(T filter, bool loadComposition = false, bool filterConjunction = false);
+        PaginatedResult<T> QueryPaginatedSync(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false);
 
         Task<ICollection<T>> QueryWithBuilder(T filter, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending, string groupAttributes);
         Task<PaginatedResult<T>> QueryPaginatedWithBuilder(T filter, int page, int pageSize, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending);
+
+        Task<ICollection<T>> QueryRaw(string sql, Dictionary<string, object> parameters);
+        ICollection<T> QueryRawSync(string sql, Dictionary<string, object> parameters);
 
         void Dispose();
     }

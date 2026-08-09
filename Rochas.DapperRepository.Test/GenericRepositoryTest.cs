@@ -439,7 +439,7 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 var filter = new SampleEntity { Active = true };
-                var result = await repos.QueryPaginated(filter, page: 1, pageSize: 5);
+                var result = await repos.QueryPaginated(filter).PaginateAsync(page: 1, pageSize: 5);
 
                 Assert.NotNull(result);
                 Assert.True(result.Items.Any());
@@ -1361,7 +1361,7 @@ namespace Rochas.DapperRepository.Test
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
-                var result = repos.Query(new FactSalesEntity(), groupAttributes: "ProductId").GetAwaiter().GetResult();
+                var result = repos.Query(new FactSalesEntity()).GroupBy(new[] { "ProductId" }).ToList();
                 Assert.NotNull(result);
                 Assert.Equal(2, result.Count);
 

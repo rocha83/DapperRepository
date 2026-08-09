@@ -311,9 +311,72 @@ namespace Rochas.DapperRepository
 			return new QueryBuilder<T>(this, filter, loadComposition, filterConjunction);
 		}
 
+		public ICollection<T> QuerySync(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, string groupAttributes = null)
+		{
+			var result = new List<T>();
+			var queryResult = QueryObjectsSync(filter, PersistenceAction.Query, loadComposition, recordsLimit, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, groupAttributes: groupAttributes);
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					result.Add(item as T);
+
+			return result;
+		}
+
 		public IQueryPaginatedBuilder<T> QueryPaginated(T filter, bool loadComposition = false, bool filterConjunction = false)
 		{
 			return new QueryPaginatedBuilder<T>(this, filter, loadComposition, filterConjunction);
+		}
+
+		public PaginatedResult<T> QueryPaginatedSync(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
+		{
+			return QueryPaginated(filter, loadComposition, filterConjunction)
+				.OrderBy(sortAttributes != null ? new[] { sortAttributes } : Array.Empty<string>(), orderDescending)
+				.Paginate(page, pageSize);
+		}
+
+		public async Task<ICollection<T>> QueryRaw(string sql, Dictionary<string, object> parameters)
+		{
+			ValidateRawSql(sql, parameters);
+
+			var result = new List<T>();
+			var queryResult = await ExecuteQueryAsync(typeof(T), sql, parameters);
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					result.Add((T)item);
+
+			return result;
+		}
+
+		public ICollection<T> QueryRawSync(string sql, Dictionary<string, object> parameters)
+		{
+			return QueryRaw(sql, parameters).GetAwaiter().GetResult();
+		}
+
+		private static void ValidateRawSql(string sql, Dictionary<string, object> parameters)
+		{
+			if (string.IsNullOrWhiteSpace(sql))
+				throw new ArgumentException("SQL cannot be null or empty.");
+
+			if (parameters == null)
+				throw new ArgumentException("Parameters dictionary cannot be null. Use an empty dictionary if no parameters are needed.");
+
+			var normalized = sql.TrimStart().ToUpperInvariant();
+
+			if (!normalized.StartsWith("SELECT"))
+				throw new ArgumentException("Only SELECT statements are allowed in QueryRaw.");
+
+			if (sql.Contains(';'))
+				throw new ArgumentException("Multiple statements are not allowed in QueryRaw.");
+
+			if (sql.Contains("--") || sql.Contains("/*"))
+				throw new ArgumentException("SQL comments are not allowed in QueryRaw.");
+
+			var forbidden = new[] { "DROP ", "DELETE ", "TRUNCATE ", "ALTER ", "INSERT ", "UPDATE ", "CREATE ", "EXEC ", "EXECUTE " };
+			foreach (var word in forbidden)
+			{
+				if (normalized.Contains(word))
+					throw new ArgumentException($"Statement containing '{word.Trim()}' is not allowed in QueryRaw.");
+			}
 		}
 
 		#endregion
