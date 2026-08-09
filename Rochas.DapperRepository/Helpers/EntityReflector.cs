@@ -5,7 +5,6 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Data;
 using System.Collections;
 using System.Globalization;
@@ -58,7 +57,7 @@ namespace Rochas.DapperRepository.Helpers
 
                     var columnName = columnAnnotation?.Name ?? prop.Name;
                     if (engine == DatabaseEngine.PostgreSQL)
-                        columnName = ToSnakeCase(columnName);
+                        columnName = columnName.ToLower();
 
                     var columnValue = prop.GetValue(Convert.ChangeType(entity, entity.GetType()), null);
                     columnValue = FormatSQLInputValue(prop, columnValue, action);
@@ -117,7 +116,7 @@ namespace Rochas.DapperRepository.Helpers
             });
 
             if (engine == DatabaseEngine.PostgreSQL)
-                name = ToSnakeCase(name);
+                name = name.ToLower();
 
             return name;
         }
@@ -430,28 +429,6 @@ namespace Rochas.DapperRepository.Helpers
                 table.Columns.Add(prop.Name, prop.PropertyType);
             }
             return table;
-        }
-
-        private static string ToSnakeCase(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-                return value;
-
-            var sb = new StringBuilder();
-            for (int i = 0; i < value.Length; i++)
-            {
-                if (char.IsWhiteSpace(value[i]))
-                {
-                    sb.Append('_');
-                }
-                else
-                {
-                    if (i > 0 && char.IsUpper(value[i]) && !char.IsWhiteSpace(value[i - 1]))
-                        sb.Append('_');
-                    sb.Append(value[i]);
-                }
-            }
-            return sb.ToString().ToLower();
         }
     }
 }
