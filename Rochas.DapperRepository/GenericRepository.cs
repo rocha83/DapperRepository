@@ -198,28 +198,6 @@ namespace Rochas.DapperRepository
 			return result;
 		}
 
-		public async Task<ICollection<T>> Query(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, string groupAttributes = null)
-		{
-			var result = new List<T>();
-			var queryResult = await QueryObjects(filter, PersistenceAction.Query, loadComposition, recordsLimit, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, groupAttributes: groupAttributes);
-			if (queryResult != null)
-				foreach (var item in queryResult)
-					result.Add(item as T);
-
-			return result;
-		}
-
-		public ICollection<T> QuerySync(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, string groupAttributes = null)
-		{
-			var result = new List<T>();
-			var queryResult = QueryObjectsSync(filter, PersistenceAction.Query, loadComposition, recordsLimit, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, groupAttributes: groupAttributes);
-			if (queryResult != null)
-				foreach (var item in queryResult)
-					result.Add(item as T);
-
-			return result;
-		}
-
 		public async Task<int> Add(T entity, bool persistComposition = false)
 		{
 			return await AddObject(entity, persistComposition);
@@ -326,29 +304,6 @@ namespace Rochas.DapperRepository
 		public PaginatedResult<T> SearchPaginatedSync(object criteria, int page = 1, int pageSize = 20, bool loadComposition = false, string sortAttributes = null, bool orderDescending = false)
 		{
 			return SearchPaginated(criteria, page, pageSize, loadComposition, sortAttributes, orderDescending).GetAwaiter().GetResult();
-		}
-
-		public async Task<PaginatedResult<T>> QueryPaginated(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
-		{
-			page = Math.Max(1, page);
-			pageSize = Math.Max(1, pageSize);
-
-			var totalCount = await CountObject(filter as object);
-
-			int offset = (page - 1) * pageSize;
-			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending);
-
-			var items = new List<T>();
-			if (queryResult != null)
-				foreach (var item in queryResult)
-					items.Add(item as T);
-
-			return new PaginatedResult<T>(items, totalCount, page, pageSize);
-		}
-
-		public PaginatedResult<T> QueryPaginatedSync(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
-		{
-			return QueryPaginated(filter, page, pageSize, loadComposition, filterConjunction, sortAttributes, orderDescending).GetAwaiter().GetResult();
 		}
 
 		public IQueryBuilder<T> Query(T filter, bool loadComposition = false, bool filterConjunction = false)

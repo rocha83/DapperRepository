@@ -291,7 +291,7 @@ public IList<ChildEntity> Childs { get; set; }
 
 ---
 
-## 🧱 QueryBuilder — consultas fluentes com OrderBy/GroupBy
+## 🧱 Query — consultas fluentes com OrderBy/GroupBy
 
 O componente oferece uma API fluente (builder pattern) para montagem de consultas
 com ordenação e agrupamento. O builder é **awaitable**: a execução acontece quando
@@ -300,10 +300,10 @@ o resultado é aguardado (`await`) ou materializado com `.ToList()`/`.ToListAsyn
 ### Entry points
 
 ```csharp
-// Retorna QueryBuilder<T> — consulta simples ou com encadeamento
+// Retorna IQueryBuilder — consulta simples ou com encadeamento
 var builder = repos.Query(filter);
 
-// Retorna QueryPaginatedBuilder<T> — consulta paginada
+// Retorna IQueryPaginatedBuilder — consulta paginada
 var pagedBuilder = repos.QueryPaginated(filter);
 ```
 
@@ -362,7 +362,7 @@ agrupamento e a execução monta o SQL na ordem correta
 
 ---
 
-## 📄 QueryPaginatedBuilder — consultas paginadas fluentes
+## 📄 QueryPaginated — consultas paginadas fluentes
 
 ### Uso
 
@@ -385,7 +385,7 @@ var result = await repos.QueryPaginated(filter)
 Console.WriteLine($"Total: {result.TotalCount}, Página: {result.Page}/{result.PageCount}");
 ```
 
-> **Nota:** o `QueryPaginatedBuilder` também aceita `Paginate(page, pageSize)`
+> **Nota:** o `QueryPaginated` também aceita `Paginate(page, pageSize)`
 > (sync) e `PaginateAsync(page, pageSize)` (async), ambos recebendo os
 > delimitadores de página e tamanho.
 

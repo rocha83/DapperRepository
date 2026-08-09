@@ -25,16 +25,9 @@ namespace Rochas.DapperRepository.Specification.Interfaces
         ICollection<T> SearchSync(object criteria, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false);
         ICollection<T> BulkSearch(object[] criterias, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false);
         ICollection<T> BulkSearchSync(object[] criterias, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false);
-        Task<ICollection<T>> Query(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, string groupAttributes = null);
-        ICollection<T> QuerySync(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, string groupAttributes = null);
 
         Task<PaginatedResult<T>> SearchPaginated(object criteria, int page = 1, int pageSize = 20, bool loadComposition = false, string sortAttributes = null, bool orderDescending = false);
         PaginatedResult<T> SearchPaginatedSync(object criteria, int page = 1, int pageSize = 20, bool loadComposition = false, string sortAttributes = null, bool orderDescending = false);
-        Task<PaginatedResult<T>> QueryPaginated(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false);
-        PaginatedResult<T> QueryPaginatedSync(T filter, int page = 1, int pageSize = 20, bool loadComposition = false, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false);
-
-        Task<ICollection<T>> QueryWithBuilder(T filter, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending, string groupAttributes);
-        Task<PaginatedResult<T>> QueryPaginatedWithBuilder(T filter, int page, int pageSize, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending);
 
         IQueryBuilder<T> Query(T filter, bool loadComposition = false, bool filterConjunction = false);
         IQueryPaginatedBuilder<T> QueryPaginated(T filter, bool loadComposition = false, bool filterConjunction = false);
