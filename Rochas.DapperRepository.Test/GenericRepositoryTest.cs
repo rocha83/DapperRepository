@@ -1319,5 +1319,167 @@ namespace Rochas.DapperRepository.Test
         }
 
         #endregion
+
+        #region Real Grouping and Sorting Tests
+
+        [Fact]
+        public void Test78_GroupSort_SetupFactData()
+        {
+            var row1 = new FactSalesEntity { SaleDate = "2024-02-01", ProductId = 1, CustomerId = 1, Quantity = 2, UnitPrice = 4500m, TotalAmount = 9000m };
+            var row2 = new FactSalesEntity { SaleDate = "2024-02-02", ProductId = 2, CustomerId = 1, Quantity = 5, UnitPrice = 150m, TotalAmount = 750m };
+            var row3 = new FactSalesEntity { SaleDate = "2024-02-03", ProductId = 1, CustomerId = 2, Quantity = 3, UnitPrice = 4500m, TotalAmount = 13500m };
+
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(row1);
+                repos.AddSync(row2);
+                repos.AddSync(row3);
+            }
+        }
+
+        [Fact]
+        public void Test79_MainMethod_QuerySync_GroupBy_ProductId()
+        {
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QuerySync(new FactSalesEntity(), groupAttributes: "ProductId");
+                Assert.NotNull(result);
+                Assert.Equal(2, result.Count);
+
+                var product1 = result.First(r => r.ProductId == 1);
+                Assert.Equal(31500m, product1.SumTotalAmount);
+                Assert.Equal(3, product1.CountSales);
+
+                var product2 = result.First(r => r.ProductId == 2);
+                Assert.Equal(750m, product2.SumTotalAmount);
+                Assert.Equal(1, product2.CountSales);
+            }
+        }
+
+        [Fact]
+        public void Test80_MainMethod_Query_GroupBy_ProductId()
+        {
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.Query(new FactSalesEntity(), groupAttributes: "ProductId").GetAwaiter().GetResult();
+                Assert.NotNull(result);
+                Assert.Equal(2, result.Count);
+
+                var product2 = result.First(r => r.ProductId == 2);
+                Assert.Equal(750m, product2.SumTotalAmount);
+                Assert.Equal(1, product2.CountSales);
+            }
+        }
+
+        [Fact]
+        public void Test81_b_GroupSort_SetupSampleData()
+        {
+            var names = new[] { "Alpha Souza", "Beta Lima", "Gamma Costa", "Delta Rocha" };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                foreach (var name in names)
+                {
+                    repos.AddSync(new SampleEntity
+                    {
+                        DocNumber = 99000 + names.ToList().IndexOf(name),
+                        CreationDate = DateTime.Now,
+                        Name = name,
+                        Resume = "sort test group",
+                        Age = 30,
+                        Active = true
+                    });
+                }
+            }
+        }
+
+        private List<SampleEntity> SortFilter()
+        {
+            var filter = new SampleEntity { Resume = "sort test group", Active = true };
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                return repos.QuerySync(filter, filterConjunction: true).ToList();
+            }
+        }
+
+        [Fact]
+        public void Test82_MainMethod_QuerySync_OrderBy_Ascending()
+        {
+            var expected = new[] { "Alpha Souza", "Beta Lima", "Delta Rocha", "Gamma Costa" };
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Resume = "sort test group", Active = true };
+                var result = repos.QuerySync(filter, filterConjunction: true, sortAttributes: "Name");
+                var list = result.ToList();
+                Assert.Equal(4, list.Count);
+                for (int i = 0; i < expected.Length; i++)
+                    Assert.Equal(expected[i], list[i].Name);
+            }
+        }
+
+        [Fact]
+        public void Test83_MainMethod_QuerySync_OrderBy_Descending()
+        {
+            var expected = new[] { "Gamma Costa", "Delta Rocha", "Beta Lima", "Alpha Souza" };
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Resume = "sort test group", Active = true };
+                var result = repos.QuerySync(filter, filterConjunction: true, sortAttributes: "Name", orderDescending: true);
+                var list = result.ToList();
+                Assert.Equal(4, list.Count);
+                for (int i = 0; i < expected.Length; i++)
+                    Assert.Equal(expected[i], list[i].Name);
+            }
+        }
+
+        [Fact]
+        public void Test84_Builder_GroupBy_ProductId()
+        {
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QueryBuilder(new FactSalesEntity()).GroupBy("ProductId").ToList();
+                Assert.NotNull(result);
+                Assert.Equal(2, result.Count);
+
+                var product1 = result.First(r => r.ProductId == 1);
+                Assert.Equal(31500m, product1.SumTotalAmount);
+                Assert.Equal(3, product1.CountSales);
+
+                var product2 = result.First(r => r.ProductId == 2);
+                Assert.Equal(750m, product2.SumTotalAmount);
+            }
+        }
+
+        [Fact]
+        public void Test85_Builder_OrderBy_Ascending_Real()
+        {
+            var expected = new[] { "Alpha Souza", "Beta Lima", "Delta Rocha", "Gamma Costa" };
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Resume = "sort test group", Active = true };
+                var result = repos.QueryBuilder(filter, filterConjunction: true).OrderBy("Name").ToList();
+                var list = result.ToList();
+                Assert.Equal(4, list.Count);
+                for (int i = 0; i < expected.Length; i++)
+                    Assert.Equal(expected[i], list[i].Name);
+            }
+        }
+
+        [Fact]
+        public void Test86_Builder_OrderBy_Descending_Real()
+        {
+            var expected = new[] { "Gamma Costa", "Delta Rocha", "Beta Lima", "Alpha Souza" };
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Resume = "sort test group", Active = true };
+                var result = repos.QueryBuilder(filter, filterConjunction: true).OrderBy("Name").Descending().ToList();
+                var list = result.ToList();
+                Assert.Equal(4, list.Count);
+                for (int i = 0; i < expected.Length; i++)
+                    Assert.Equal(expected[i], list[i].Name);
+            }
+        }
+
+        #endregion
     }
 }

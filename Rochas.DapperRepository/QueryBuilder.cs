@@ -1,16 +1,13 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Rochas.DapperRepository.Base;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.DapperRepository.Specification.Interfaces;
 
 namespace Rochas.DapperRepository
 {
-	public class QueryBuilder<T> where T : class
+	public class QueryBuilder<T> : IQueryBuilder<T> where T : class
 	{
-		#region Declarations
-
-		private readonly GenericRepository<T> _repository;
+		private readonly IGenericRepository<T> _repository;
 		private readonly T _filter;
 		private readonly bool _loadComposition;
 		private readonly bool _filterConjunction;
@@ -18,11 +15,7 @@ namespace Rochas.DapperRepository
 		private string _groupAttributes;
 		private bool _orderDescending;
 
-		#endregion
-
-		#region Constructors
-
-		internal QueryBuilder(GenericRepository<T> repository, T filter, bool loadComposition = false, bool filterConjunction = false)
+		public QueryBuilder(IGenericRepository<T> repository, T filter, bool loadComposition = false, bool filterConjunction = false)
 		{
 			_repository = repository;
 			_filter = filter;
@@ -30,45 +23,37 @@ namespace Rochas.DapperRepository
 			_filterConjunction = filterConjunction;
 		}
 
-		#endregion
-
-		#region Builder Methods
-
-		public QueryBuilder<T> OrderBy(string sortAttribute, bool descending = false)
+		public IQueryBuilder<T> OrderBy(string sortAttribute, bool descending = false)
 		{
 			_sortAttributes = sortAttribute;
 			_orderDescending = descending;
 			return this;
 		}
 
-		public QueryBuilder<T> OrderBy(string[] sortAttributes, bool descending = false)
+		public IQueryBuilder<T> OrderBy(string[] sortAttributes, bool descending = false)
 		{
 			_sortAttributes = string.Join(",", sortAttributes);
 			_orderDescending = descending;
 			return this;
 		}
 
-		public QueryBuilder<T> GroupBy(string groupAttribute)
+		public IQueryBuilder<T> GroupBy(string groupAttribute)
 		{
 			_groupAttributes = groupAttribute;
 			return this;
 		}
 
-		public QueryBuilder<T> GroupBy(string[] groupAttributes)
+		public IQueryBuilder<T> GroupBy(string[] groupAttributes)
 		{
 			_groupAttributes = string.Join(",", groupAttributes);
 			return this;
 		}
 
-		public QueryBuilder<T> Descending()
+		public IQueryBuilder<T> Descending()
 		{
 			_orderDescending = true;
 			return this;
 		}
-
-		#endregion
-
-		#region Terminal Methods
 
 		public TaskAwaiter<ICollection<T>> GetAwaiter()
 		{
@@ -85,10 +70,6 @@ namespace Rochas.DapperRepository
 			return ExecuteAsync().GetAwaiter().GetResult();
 		}
 
-		#endregion
-
-		#region Private Methods
-
 		private async Task<ICollection<T>> ExecuteAsync()
 		{
 			return await _repository.QueryWithBuilder(
@@ -99,7 +80,5 @@ namespace Rochas.DapperRepository
 				_orderDescending,
 				_groupAttributes);
 		}
-
-		#endregion
 	}
 }

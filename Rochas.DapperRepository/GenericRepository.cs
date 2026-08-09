@@ -198,10 +198,10 @@ namespace Rochas.DapperRepository
 			return result;
 		}
 
-		public async Task<ICollection<T>> Query(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
+		public async Task<ICollection<T>> Query(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, string groupAttributes = null)
 		{
 			var result = new List<T>();
-			var queryResult = await QueryObjects(filter, PersistenceAction.Query, loadComposition, recordsLimit, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending);
+			var queryResult = await QueryObjects(filter, PersistenceAction.Query, loadComposition, recordsLimit, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, groupAttributes: groupAttributes);
 			if (queryResult != null)
 				foreach (var item in queryResult)
 					result.Add(item as T);
@@ -209,10 +209,10 @@ namespace Rochas.DapperRepository
 			return result;
 		}
 
-		public ICollection<T> QuerySync(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
+		public ICollection<T> QuerySync(T filter, bool loadComposition = false, int recordsLimit = 0, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, string groupAttributes = null)
 		{
 			var result = new List<T>();
-			var queryResult = QueryObjectsSync(filter, PersistenceAction.Query, loadComposition, recordsLimit, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending);
+			var queryResult = QueryObjectsSync(filter, PersistenceAction.Query, loadComposition, recordsLimit, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, groupAttributes: groupAttributes);
 			if (queryResult != null)
 				foreach (var item in queryResult)
 					result.Add(item as T);
@@ -351,12 +351,12 @@ namespace Rochas.DapperRepository
 			return QueryPaginated(filter, page, pageSize, loadComposition, filterConjunction, sortAttributes, orderDescending).GetAwaiter().GetResult();
 		}
 
-		public QueryBuilder<T> QueryBuilder(T filter, bool loadComposition = false, bool filterConjunction = false)
+		public IQueryBuilder<T> QueryBuilder(T filter, bool loadComposition = false, bool filterConjunction = false)
 		{
 			return new QueryBuilder<T>(this, filter, loadComposition, filterConjunction);
 		}
 
-		public QueryPaginatedBuilder<T> QueryPaginatedBuilder(T filter, bool loadComposition = false, bool filterConjunction = false)
+		public IQueryPaginatedBuilder<T> QueryPaginatedBuilder(T filter, bool loadComposition = false, bool filterConjunction = false)
 		{
 			return new QueryPaginatedBuilder<T>(this, filter, loadComposition, filterConjunction);
 		}
@@ -365,7 +365,7 @@ namespace Rochas.DapperRepository
 
 		#region Helper Methods
 
-		internal async Task<ICollection<T>> QueryWithBuilder(T filter, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending, string groupAttributes)
+		public async Task<ICollection<T>> QueryWithBuilder(T filter, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending, string groupAttributes)
 		{
 			var result = new List<T>();
 			var queryResult = await QueryObjects(filter, PersistenceAction.Query, loadComposition, filterConjunction: filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, groupAttributes: groupAttributes);
@@ -376,7 +376,7 @@ namespace Rochas.DapperRepository
 			return result;
 		}
 
-		internal async Task<PaginatedResult<T>> QueryPaginatedWithBuilder(T filter, int page, int pageSize, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending)
+		public async Task<PaginatedResult<T>> QueryPaginatedWithBuilder(T filter, int page, int pageSize, bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending)
 		{
 			var totalCount = await CountObject(filter as object);
 
