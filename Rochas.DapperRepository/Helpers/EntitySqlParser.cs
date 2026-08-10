@@ -43,7 +43,9 @@ namespace Rochas.DapperRepository.Helpers
                 var nameSpacePrefix = entityType.Namespace.Substring(0, entityType.Namespace.IndexOf("."));
 
                 var entityProps = entityType.GetProperties()
-                                            .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace.StartsWith(nameSpacePrefix))).ToArray();
+                                            .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace.StartsWith(nameSpacePrefix)))
+                                            .Where(p => p.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType))
+                                            .ToArray();
 
                 // Model validation
                 if (!EntityReflector.VerifyTableAnnotation(entityType))
@@ -73,7 +75,10 @@ namespace Rochas.DapperRepository.Helpers
                         sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}");
 
                     if (!string.IsNullOrEmpty(sortAttributes))
-                        ParseOrdinationAttributes(attributeColumnRelation, sortAttributes, orderDescending, ref sqlInstruction);
+                    {
+                        var columnMapping = EntityReflector.GetColumnMapping(entityType, engine);
+                        ParseOrdinationAttributes(columnMapping, sortAttributes, orderDescending, ref sqlInstruction);
+                    }
                     else
                         sqlInstruction = string.Format(sqlInstruction, string.Empty);
                 }
@@ -101,7 +106,9 @@ namespace Rochas.DapperRepository.Helpers
                 var nameSpacePrefix = entityType.Namespace.Substring(0, entityType.Namespace.IndexOf("."));
 
                 var entityProps = entityType.GetProperties()
-                                            .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace.StartsWith(nameSpacePrefix))).ToArray();
+                                            .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace.StartsWith(nameSpacePrefix)))
+                                            .Where(p => p.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType))
+                                            .ToArray();
 
                 if (!EntityReflector.VerifyTableAnnotation(entityType))
                     throw new InvalidOperationException("Entity table annotation not found.");
@@ -121,7 +128,10 @@ namespace Rochas.DapperRepository.Helpers
                     sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}");
 
                     if (!string.IsNullOrEmpty(sortAttributes))
-                        ParseOrdinationAttributes(attributeColumnRelation, sortAttributes, orderDescending, ref sqlInstruction);
+                    {
+                        var columnMapping = EntityReflector.GetColumnMapping(entityType, engine);
+                        ParseOrdinationAttributes(columnMapping, sortAttributes, orderDescending, ref sqlInstruction);
+                    }
                     else
                         sqlInstruction = string.Format(sqlInstruction, string.Empty);
 
@@ -274,6 +284,30 @@ namespace Rochas.DapperRepository.Helpers
                                            string.Format(SQLStatements.SQL_Action_OrderResult,
                                                          columnList,
                                                          orderDescending ? "DESC" : "ASC"));
+        }
+
+        private static void ParseOrdinationAttributes(Dictionary<string, string> columnMapping, string sortAttributes, bool orderDescending, ref string sqlInstruction)
+        {
+            string columnList = string.Empty;
+            string[] ordinationAttributes = sortAttributes.Split(',');
+
+            for (int contAtrib = 0; contAtrib < ordinationAttributes.Length; contAtrib++)
+            {
+                var propName = ordinationAttributes[contAtrib].Trim();
+
+                if (columnMapping.TryGetValue(propName, out var columnName))
+                    columnList = string.Concat(columnList, columnName, ", ");
+            }
+
+            if (columnList.Length > 2)
+            {
+                columnList = columnList.Substring(0, columnList.Length - 2);
+
+                sqlInstruction = string.Format(sqlInstruction,
+                                               string.Format(SQLStatements.SQL_Action_OrderResult,
+                                                             columnList,
+                                                             orderDescending ? "DESC" : "ASC"));
+            }
         }
 
         private static Dictionary<string, string> GetSqlParameters(Dictionary<object, object> entitySqlData, DatabaseEngine engine, PersistenceAction action, IDictionary<object, object> entitySqlFilter, int recordLimit, bool filterConjunction, string[] showAttributes, string keyColumnName, IDictionary<string, object[]> rangeValues, string groupAttributes, bool readUncommited = false, Dictionary<string, object> sqlParameters = null)
@@ -516,7 +550,9 @@ namespace Rochas.DapperRepository.Helpers
                     if (((filterColumnValue != null)
                             && (filterColumnValue.ToString() != SqlDefaultValue.Null)
                             && (filterColumnValue.ToString() != SqlDefaultValue.Zero)
-                            && (filterColumnValue.ToString() != "''"))
+                            && (filterColumnValue.ToString() != "''")
+                            && !(filterColumnValue is Guid guidVal && guidVal == Guid.Empty)
+                            && !(filterColumnValue is DateTime dtVal && dtVal == DateTime.MinValue))
                         || rangeFilter)
                     {
                         var filterColumnNameLower = filterColumnName.ToString().ToLower();

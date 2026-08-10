@@ -56,7 +56,7 @@ namespace Rochas.DapperRepository.Helpers
         {
             public ChannelAction Action { get; set; }
             public object CacheKey { get; set; }
-            public object? CacheItem { get; set; }
+            public object CacheItem { get; set; }
             public bool DeleteAll { get; set; }
             public DateTime Timestamp { get; set; } = DateTime.UtcNow;
         }

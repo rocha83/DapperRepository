@@ -39,7 +39,7 @@ namespace Rochas.DapperRepository.Base
 
         public DataBaseConnection(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(dbConnection.ConnectionString, logPath, replicaConnStrings)
         {
-            engine = DatabaseEngine.MySQL;
+            engine = DatabaseEngine.PostgreSQL;
             connection = dbConnection;
 
             keepConnection = keepConnected;
@@ -160,6 +160,15 @@ namespace Rochas.DapperRepository.Base
 
             result = await connection.QueryAsync(entityType, sqlInstruction, parameters);
 
+            return result;
+        }
+
+        protected async Task<int> ExecuteCountAsync(string sqlInstruction, Dictionary<string, object> parameters = null)
+        {
+            if (connection.State != ConnectionState.Open)
+                Connect();
+
+            var result = await connection.QuerySingleOrDefaultAsync<int>(sqlInstruction, parameters);
             return result;
         }
 
