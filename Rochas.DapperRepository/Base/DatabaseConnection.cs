@@ -29,6 +29,7 @@ namespace Rochas.DapperRepository.Base
 
         private static void DumpSql(string sql)
         {
+#if DEBUG
             try
             {
                 var path = System.IO.Path.Combine(
@@ -37,6 +38,7 @@ namespace Rochas.DapperRepository.Base
                     $"[{DateTime.Now:HH:mm:ss}] {sql}\n\n");
             }
             catch { }
+#endif
         }
 
         protected bool keepConnection = false;
