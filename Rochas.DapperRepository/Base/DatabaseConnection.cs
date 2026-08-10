@@ -6,6 +6,7 @@ using System.Data.SQLite;
 using System.Threading.Tasks;
 using Dapper;
 using MySqlConnector;
+using Rochas.DapperRepository.Helpers;
 using Rochas.DapperRepository.Helpers.SQL;
 using Rochas.DapperRepository.Exceptions;
 using Rochas.DapperRepository.Specification.Enums;
@@ -112,6 +113,7 @@ namespace Rochas.DapperRepository.Base
                             break;
                         case DatabaseEngine.SQLite:
                             connection = new SQLiteConnection();
+                            GuidStringHandler.EnsureRegistered();
                             break;
                     }
 

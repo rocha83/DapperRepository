@@ -393,7 +393,7 @@ namespace Rochas.DapperRepository.Test
 
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                var result = repos.SearchPaginatedSync("paginated", page: 1, pageSize: 2);
+                var result = repos.SearchSync("paginated", 1, 2);
 
                 Assert.NotNull(result);
                 Assert.True(result.Items.Any());
@@ -425,7 +425,7 @@ namespace Rochas.DapperRepository.Test
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
-                var result = await repos.SearchPaginated("paginated", page: 1, pageSize: 10);
+                var result = await repos.Search("paginated", 1, 10);
 
                 Assert.NotNull(result);
                 Assert.True(result.Items.Any());
@@ -1477,6 +1477,242 @@ namespace Rochas.DapperRepository.Test
                 Assert.Equal(4, list.Count);
                 for (int i = 0; i < expected.Length; i++)
                     Assert.Equal(expected[i], list[i].Name);
+            }
+        }
+
+        #endregion
+
+        #region v1.7.6 Tests - Collection Exclusion, QueryRaw, FillComposition Fixes
+
+        [Fact]
+        public void Test87_InvoiceTable_Create()
+        {
+            var tableScript = @"CREATE TABLE IF NOT EXISTS [sample_invoice_entity] (
+                [id] INTEGER PRIMARY KEY,
+                [invoice_number] varchar(50) NOT NULL,
+                [customer_id] int NOT NULL,
+                [total_amount] decimal(18,2) NOT NULL,
+                [active] bit NOT NULL)";
+
+            var itemTableScript = @"CREATE TABLE IF NOT EXISTS [sample_invoice_item_entity] (
+                [id] INTEGER PRIMARY KEY,
+                [invoice_id] int NOT NULL,
+                [product_name] varchar(200) NOT NULL,
+                [quantity] int NOT NULL,
+                [unit_price] decimal(18,2) NOT NULL,
+                [line_total] decimal(18,2) NOT NULL)";
+
+            using (var repos = new GenericRepository<SampleInvoiceEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.Initialize(tableScript);
+                repos.Initialize(itemTableScript);
+            }
+        }
+
+        [Fact]
+        public void Test88_Invoice_IReadOnlyCollection_Excluded_From_Insert()
+        {
+            using (var repos = new GenericRepository<SampleInvoiceEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var invoice = new SampleInvoiceEntity
+                {
+                    InvoiceNumber = "INV-001",
+                    CustomerId = 1,
+                    Active = true
+                };
+                invoice.AddItem(new SampleInvoiceItemEntity
+                {
+                    ProductName = "Product A",
+                    Quantity = 2,
+                    UnitPrice = 50m,
+                    LineTotal = 100m
+                });
+                invoice.AddItem(new SampleInvoiceItemEntity
+                {
+                    ProductName = "Product B",
+                    Quantity = 1,
+                    UnitPrice = 75m,
+                    LineTotal = 75m
+                });
+
+                repos.AddSync(invoice);
+
+                var loaded = repos.GetSync(invoice.Id);
+                Assert.NotNull(loaded);
+                Assert.Equal("INV-001", loaded.InvoiceNumber);
+                Assert.Equal(1, loaded.CustomerId);
+                Assert.Equal(175m, loaded.TotalAmount);
+            }
+        }
+
+        [Fact]
+        public void Test89_Invoice_IReadOnlyCollection_Not_In_Update_SQL()
+        {
+            using (var repos = new GenericRepository<SampleInvoiceEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var invoice = new SampleInvoiceEntity
+                {
+                    InvoiceNumber = "INV-002",
+                    CustomerId = 2,
+                    Active = true
+                };
+                repos.AddSync(invoice);
+
+                invoice.InvoiceNumber = "INV-002-UPDATED";
+                var filter = new SampleInvoiceEntity { Id = invoice.Id };
+                repos.UpdateSync(invoice, filter);
+
+                var loaded = repos.GetSync(invoice.Id);
+                Assert.NotNull(loaded);
+                Assert.Equal("INV-002-UPDATED", loaded.InvoiceNumber);
+            }
+        }
+
+        [Fact]
+        public void Test90_InvoiceItem_Insert_And_Query()
+        {
+            using (var repos = new GenericRepository<SampleInvoiceItemEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var item = new SampleInvoiceItemEntity
+                {
+                    InvoiceId = 1,
+                    ProductName = "Widget",
+                    Quantity = 5,
+                    UnitPrice = 20m,
+                    LineTotal = 100m
+                };
+                repos.AddSync(item);
+
+                var loaded = repos.GetSync(item.Id);
+                Assert.NotNull(loaded);
+                Assert.Equal("Widget", loaded.ProductName);
+                Assert.Equal(5, loaded.Quantity);
+                Assert.Equal(100m, loaded.LineTotal);
+            }
+        }
+
+        [Fact]
+        public void Test91_QueryRaw_Select_All()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QueryRawSync("SELECT * FROM sample_entity WHERE active = 1", new Dictionary<string, object>());
+                Assert.NotNull(result);
+                Assert.True(result.Count > 0);
+            }
+        }
+
+        [Fact]
+        public void Test92_QueryRaw_With_Parameters()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var parameters = new Dictionary<string, object> { { "@name", "Alpha Souza" } };
+                var result = repos.QueryRawSync("SELECT * FROM sample_entity WHERE name = @name", parameters);
+                Assert.NotNull(result);
+                Assert.Single(result);
+                Assert.Equal("Alpha Souza", result.First().Name);
+            }
+        }
+
+        [Fact]
+        public void Test93_QueryRaw_Rejects_NON_Select()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                Assert.Throws<ArgumentException>(() =>
+                    repos.QueryRawSync("DROP TABLE sample_entity", new Dictionary<string, object>()));
+            }
+        }
+
+        [Fact]
+        public void Test94_QueryRaw_Rejects_Semicolon()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                Assert.Throws<ArgumentException>(() =>
+                    repos.QueryRawSync("SELECT * FROM sample_entity; DROP TABLE sample_entity", new Dictionary<string, object>()));
+            }
+        }
+
+        [Fact]
+        public void Test95_QueryRaw_Rejects_Comments()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                Assert.Throws<ArgumentException>(() =>
+                    repos.QueryRawSync("SELECT * FROM sample_entity -- injection", new Dictionary<string, object>()));
+            }
+        }
+
+        [Fact]
+        public void Test96_QueryRaw_Rejects_Null_Parameters()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                Assert.Throws<ArgumentException>(() =>
+                    repos.QueryRawSync("SELECT * FROM sample_entity", null));
+            }
+        }
+
+        [Fact]
+        public void Test97_FillComposition_NullFK_DoesNotNRE()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.QuerySync(filter);
+                Assert.NotNull(result);
+                Assert.True(result.Count > 0);
+
+                foreach (var entity in result)
+                {
+                    var loaded = repos.GetSync(entity.Id);
+                    Assert.NotNull(loaded);
+                    Assert.NotNull(loaded.Name);
+                }
+            }
+        }
+
+        [Fact]
+        public void Test98_GroupBy_Builder_Complex()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Resume = "sort test group", Active = true };
+                var result = repos.Query(filter, filterConjunction: true)
+                    .GroupBy(new[] { "Resume" })
+                    .ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Count >= 1);
+            }
+        }
+
+        [Fact]
+        public void Test99_OrderBy_Builder_MultiColumn()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.Query(filter)
+                    .OrderBy(new[] { "Age", "Name" })
+                    .ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Count > 0);
+            }
+        }
+
+        [Fact]
+        public void Test100_Builder_GroupBy_OrderBy_Combined()
+        {
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new SampleEntity { Active = true };
+                var result = repos.Query(filter)
+                    .GroupBy(new[] { "Resume" })
+                    .OrderBy(new[] { "Name" })
+                    .ToList();
+                Assert.NotNull(result);
             }
         }
 

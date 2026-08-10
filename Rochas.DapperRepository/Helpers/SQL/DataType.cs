@@ -15,6 +15,7 @@ namespace Rochas.DapperRepository.Helpers.SQL
         public const string Double = "System.Double";
         public const string Decimal = "System.Decimal";
         public const string Boolean = "System.Boolean";
+        public const string Guid = "System.Guid";
 
         #endregion
     }
