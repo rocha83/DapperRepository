@@ -251,7 +251,7 @@ namespace Rochas.DapperRepository.Helpers
                 }
 
                 if (columnValue.GetType().IsEnum)
-                    columnValue = string.Concat("'", columnValue.ToString(), "'");
+                    columnValue = Convert.ToInt32(columnValue);
         }
             else
             {

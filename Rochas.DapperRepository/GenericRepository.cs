@@ -781,7 +781,7 @@ namespace Rochas.DapperRepository
 						if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance,
 																	childProps, relationAttrib.ForeignKeyAttribute))
 						{
-							childEntityInstance = QueryObjectsSync(childEntityInstance, PersistenceAction.Query, true);
+							childEntityInstance = QueryObjectsSync(childEntityInstance, PersistenceAction.Query, false);
 						}
 
 						break;
@@ -837,8 +837,8 @@ namespace Rochas.DapperRepository
 
 				if (childEntityInstance != null)
 				{
-					var childEntityType = childEntityInstance.GetType();
-					if (!childEntityType.Name.Contains("List"))
+                    var childEntityType = childEntityInstance.GetType();
+                    if (!(childEntityInstance is IList) && !childEntityType.Name.Contains("List") && !childEntityType.Name.Contains("ReadOnlyCollection"))
 					{
 						var childProps = childEntityType.GetProperties();
 						action = EntitySqlParser.SetPersistenceAction(childEntityInstance, EntityReflector.GetKeyColumn(childProps));
@@ -1004,7 +1004,7 @@ namespace Rochas.DapperRepository
 				if (base.transactionControl != null)
 					base.CommitTransaction();
 
-				if (!keepConnection) base.Disconnect();
+				base.Disconnect();
 
 				CleanCacheableData(entity);
 			}
@@ -1012,6 +1012,7 @@ namespace Rochas.DapperRepository
 			{
 				if (base.transactionControl != null)
 					base.CancelTransaction();
+				base.Disconnect();
 			}
 		}
 

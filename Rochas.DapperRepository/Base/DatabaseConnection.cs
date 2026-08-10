@@ -21,6 +21,24 @@ namespace Rochas.DapperRepository.Base
         private readonly string insertCommand = SQLStatements.SQL_ReservedWord_INSERT;
         private readonly string countCommand = SQLStatements.SQL_ReservedWord_COUNT;
 
+        /// <summary>
+        /// Inspector callback: receives the SQL text before each command execution.
+        /// Set this to diagnose SQL generation issues.
+        /// </summary>
+        public static Action<string>? SqlInspector { get; set; }
+
+        private static void DumpSql(string sql)
+        {
+            try
+            {
+                var path = System.IO.Path.Combine(
+                    System.IO.Path.GetTempPath(), "orm_sql_dump.log");
+                System.IO.File.AppendAllText(path,
+                    $"[{DateTime.Now:HH:mm:ss}] {sql}\n\n");
+            }
+            catch { }
+        }
+
         protected bool keepConnection = false;
         protected DatabaseEngine engine;
         protected IDbConnection connection;
@@ -66,6 +84,8 @@ namespace Rochas.DapperRepository.Base
                 && (transactionControl != null))
             {
                 transactionControl.Commit();
+                transactionControl.Dispose();
+                transactionControl = null;
                 keepConnection = false;
             }
         }
@@ -76,6 +96,8 @@ namespace Rochas.DapperRepository.Base
                 && (transactionControl != null))
             {
                 transactionControl.Rollback();
+                transactionControl.Dispose();
+                transactionControl = null;
                 keepConnection = false;
             }
         }
@@ -135,10 +157,14 @@ namespace Rochas.DapperRepository.Base
 
         protected bool Disconnect()
         {
-            if (connection.State == ConnectionState.Open)
+            if ((connection != null) && (connection.State == ConnectionState.Open))
+            {
                 connection.Close();
+                connection.Dispose();
+                connection = null;
+            }
 
-            return (connection.State == ConnectionState.Closed);
+            return true;
         }
 
         protected IEnumerable<object> ExecuteQuery(Type entityType, string sqlInstruction, Dictionary<string, object> parameters = null)
@@ -180,6 +206,7 @@ namespace Rochas.DapperRepository.Base
 
             int executionReturn = 0;
 
+            DumpSql(sqlInstruction);
 
             if (connection.State == ConnectionState.Open)
             {
@@ -213,6 +240,8 @@ namespace Rochas.DapperRepository.Base
             IDbCommand sqlCommand;
 
             int executionReturn = 0;
+
+            DumpSql(sqlInstruction);
 
             if (connection.State == ConnectionState.Open)
             {
