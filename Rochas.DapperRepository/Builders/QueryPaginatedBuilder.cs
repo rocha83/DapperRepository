@@ -6,7 +6,7 @@ using Rochas.DapperRepository.Specification.Enums;
 using Rochas.DapperRepository.Specification.Interfaces;
 using Rochas.DapperRepository.Specification.Models;
 
-namespace Rochas.DapperRepository
+namespace Rochas.DapperRepository.Builders
 {
     public class QueryPaginatedBuilder<T> : IQueryPaginatedBuilder<T> where T : class
     {

@@ -16,6 +16,7 @@ using Rochas.DapperRepository.Specification.Enums;
 using Rochas.DapperRepository.Specification.Interfaces;
 using Rochas.DapperRepository.Specification.Annotations;
 using System.Collections.Concurrent;
+using Rochas.DapperRepository.Builders;
 
 namespace Rochas.DapperRepository
 {

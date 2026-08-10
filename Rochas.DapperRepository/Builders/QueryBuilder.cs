@@ -5,7 +5,7 @@ using Rochas.DapperRepository.Specification.Enums;
 using Rochas.DapperRepository.Specification.Interfaces;
 using Rochas.DapperRepository.Specification.Models;
 
-namespace Rochas.DapperRepository
+namespace Rochas.DapperRepository.Builders
 {
 	public class QueryBuilder<T> : IQueryBuilder<T> where T : class
 	{

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Rochas.DapperRepository.Specification.Enums;
 using Rochas.DapperRepository.Specification.Interfaces;
 
-namespace Rochas.DapperRepository
+namespace Rochas.DapperRepository.Builders
 {
     public class QuerySyncBuilder<T> : IQuerySyncBuilder<T> where T : class
     {
@@ -52,7 +52,7 @@ namespace Rochas.DapperRepository
 
         public IQueryPaginatedBuilder<T> Paginate(int page = 1, int pageSize = 20)
         {
-            return new QueryPaginatedBuilder<T>((IGenericRepository<T>)_repository, _filter, _loadComposition, _filterConjunction,
+            return new QueryPaginatedBuilder<T>(_repository, _filter, _loadComposition, _filterConjunction,
                 _sortAttributes, _orderDescending, _groupAttributes, _aggregates, page, pageSize);
         }
 
