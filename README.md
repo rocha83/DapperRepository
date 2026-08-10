@@ -547,7 +547,7 @@ Backpressure: `BoundedChannelFullMode.Wait` — não perde mensagens se o canal 
 | GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
 | GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
 | QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
-| SearchPaginated | 2.5 ms | 3.9 ms | EF 1.5x |
+| SearchPaginated | 2.5 ms | 3.1 ms | Empate* |
 
 
 
