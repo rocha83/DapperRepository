@@ -550,3 +550,4 @@ Backpressure: `BoundedChannelFullMode.Wait` — não perde mensagens se o canal 
 | SearchPaginated | 2.5 ms | 3.9 ms | EF 1.5x |
 
 
+
