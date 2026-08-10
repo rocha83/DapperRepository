@@ -535,14 +535,17 @@ Backpressure: `BoundedChannelFullMode.Wait` — não perde mensagens se o canal 
 | Cenário | EF Core | DapperRepository | Vitória |
 |---------|---------|------------------|---------|
 | InsertIndividual | 3.3 ms | 3.1 ms | ORM 1.1x |
+| BulkInsert_100 | 32.7 ms | 33.5 ms | Empate |
 | GetById | 558 μs | 507 μs | ORM 1.1x |
+| Update_Individual | 2.9 ms | 3.9 ms | EF 1.3x |
+| Delete_Individual | 3.2 ms | 3.5 ms | Empate |
+| CountSync | 504 μs | 870 μs | EF 1.7x |
 | Search_Filterable | 1.0 ms | 1.2 ms | Empate |
 | Sort_5000_rows_ORDER_BY | 62 ms | 39 ms | ORM 1.6x |
 | Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
 | GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
 | GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
 | GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
-| CountSync | 504 μs | 870 μs | EF 1.7x |
-| Update_Individual | 2.9 ms | 3.9 ms | EF 1.3x |
 | QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
+| SearchPaginated | 2.5 ms | 3.9 ms | EF 1.5x |
 
