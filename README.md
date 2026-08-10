@@ -259,16 +259,30 @@ var result = repository.QuerySync(filter)
 
 ---
 
-## 🔗 Leitura automática da composição usando `[RelatedEntity]`
+## 🔗 Composição com `[RelatedEntity]`
+
+### Leitura (loadComposition)
 ```csharp
-repos.Query(filterEntity, loadComposition: true);
+// Carrega entidade com filhos automaticamente
+var entity = await repos.Get(key, loadComposition: true);
+var entity = repos.GetSync(key, loadComposition: true);
+
+// Query com composição
+var result = await repos.Query(filter, loadComposition: true);
 ```
 
-Configuração de relacionamentos ( 1-1 ,  1->N ,  N<-1 ,  N<->N ):
+### Persistência (persistComposition)
+```csharp
+// Salva entidade pai + filhos em cascata
+await repos.Add(entity, persistComposition: true);
+await repos.Update(entity, filter, persistComposition: true);
+```
+
+### Configuração de relacionamentos (1-1, 1→N, N←1, N↔N)
 ```csharp
 [RelatedEntity(Cardinality = RelationCardinality.OneToOne, 
                ForeignKeyAttribute = "ParentId")] 
-public <ChildEntity> Child { get; set; }
+public ChildEntity Child { get; set; }
 
 [RelatedEntity(Cardinality = RelationCardinality.OneToMany, 
                ForeignKeyAttribute = "ParentId")] 
