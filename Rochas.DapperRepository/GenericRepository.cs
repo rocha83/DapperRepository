@@ -781,7 +781,7 @@ namespace Rochas.DapperRepository
 						if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance,
 																	childProps, relationAttrib.ForeignKeyAttribute))
 						{
-							childEntityInstance = QueryObjectsSync(childEntityInstance, PersistenceAction.Query, false);
+                        childEntityInstance = QueryObjectsSync(childEntityInstance, PersistenceAction.Query, true);
 						}
 
 						break;
