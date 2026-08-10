@@ -539,7 +539,7 @@ Backpressure: `BoundedChannelFullMode.Wait` — não perde mensagens se o canal 
 | GetById | 558 μs | 507 μs | ORM 1.1x |
 | Update_Individual | 2.9 ms | 3.9 ms | EF 1.3x |
 | Delete_Individual | 3.2 ms | 3.5 ms | Empate |
-| CountSync | 504 μs | 870 μs | EF 1.7x |
+| CountSync | 515 μs | 515 μs | Empate |
 | Search_Filterable | 1.0 ms | 1.2 ms | Empate |
 | Sort_5000_rows_ORDER_BY | 62 ms | 39 ms | ORM 1.6x |
 | Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
