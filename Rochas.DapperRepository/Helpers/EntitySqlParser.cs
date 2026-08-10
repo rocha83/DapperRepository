@@ -40,12 +40,7 @@ namespace Rochas.DapperRepository.Helpers
                 Dictionary<object, object> attributeColumnRelation;
 
                 var entityType = entity.GetType();
-                var nameSpacePrefix = entityType.Namespace.Substring(0, entityType.Namespace.IndexOf("."));
-
-                var entityProps = entityType.GetProperties()
-                                            .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace.StartsWith(nameSpacePrefix)))
-                                            .Where(p => p.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType))
-                                            .ToArray();
+                var entityProps = EntityReflector.GetEntityProperties(entityType);
 
                 // Model validation
                 if (!EntityReflector.VerifyTableAnnotation(entityType))
@@ -103,12 +98,7 @@ namespace Rochas.DapperRepository.Helpers
                 Dictionary<object, object> attributeColumnRelation;
 
                 var entityType = entity.GetType();
-                var nameSpacePrefix = entityType.Namespace.Substring(0, entityType.Namespace.IndexOf("."));
-
-                var entityProps = entityType.GetProperties()
-                                            .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace.StartsWith(nameSpacePrefix)))
-                                            .Where(p => p.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType))
-                                            .ToArray();
+                var entityProps = EntityReflector.GetEntityProperties(entityType);
 
                 if (!EntityReflector.VerifyTableAnnotation(entityType))
                     throw new InvalidOperationException("Entity table annotation not found.");

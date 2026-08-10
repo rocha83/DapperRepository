@@ -31,6 +31,7 @@ namespace Rochas.DapperRepository.Helpers
         private static readonly ConcurrentDictionary<PropertyInfo, ColumnAttribute> ColumnAnnotations = new();
         private static readonly ConcurrentDictionary<PropertyInfo, RelatedEntityAttribute> RelatedEntityAttributes = new();
         private static readonly ConcurrentDictionary<Type, Dictionary<string, string>> ColumnMappingCache = new();
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> EntityPropsCache = new();
 
         /// <summary>
         /// Retorna mapeamentoPropertyName → columnName cacheado por tipo de entidade.
@@ -41,12 +42,7 @@ namespace Rochas.DapperRepository.Helpers
             return ColumnMappingCache.GetOrAdd(entityType, t =>
             {
                 var mapping = new Dictionary<string, string>();
-                var nameSpacePrefix = t.Namespace.Substring(0, t.Namespace.IndexOf("."));
-
-                var props = t.GetProperties()
-                    .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace.StartsWith(nameSpacePrefix)))
-                    .Where(p => p.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType))
-                    .ToArray();
+                var props = GetEntityProperties(t);
 
                 foreach (var prop in props)
                 {
@@ -66,6 +62,23 @@ namespace Rochas.DapperRepository.Helpers
                 }
 
                 return mapping;
+            });
+        }
+
+        /// <summary>
+        /// Retorna array de PropertyInfo filtrado por tipo de entidade (cacheado).
+        /// Exclui propriedades de classe do mesmo namespace e collections.
+        /// </summary>
+        public static PropertyInfo[] GetEntityProperties(Type entityType)
+        {
+            return EntityPropsCache.GetOrAdd(entityType, t =>
+            {
+                var nameSpacePrefix = t.Namespace.Substring(0, t.Namespace.IndexOf("."));
+
+                return t.GetProperties()
+                    .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace?.StartsWith(nameSpacePrefix) == true))
+                    .Where(p => p.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType))
+                    .ToArray();
             });
         }
 
