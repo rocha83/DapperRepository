@@ -186,6 +186,8 @@ namespace Rochas.DapperRepository.Base
             if (connection.State != ConnectionState.Open)
                 Connect();
 
+            DumpSql(sqlInstruction);
+
             result = await connection.QueryAsync(entityType, sqlInstruction, parameters);
 
             return result;
