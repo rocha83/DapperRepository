@@ -279,6 +279,7 @@ namespace Rochas.DapperRepository.Helpers
 
         public static bool IsEmptyObjectValue(object value)
         {
+            if (value == null) return true;
 			var strVal = value.ToString().Trim();
 			return string.IsNullOrWhiteSpace(strVal)
                 || (double.TryParse(strVal, out double fake) && (fake == 0));

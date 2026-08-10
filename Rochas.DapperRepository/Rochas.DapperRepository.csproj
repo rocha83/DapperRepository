@@ -11,11 +11,11 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable elastic tokenized search bulk persistence parser crud poco orm cqrs builder pattern fluent api</PackageTags>
-    <Version>1.7.4</Version>
+    <Version>1.7.5</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
-    <PackageReleaseNotes>v1.7.4: Query() returns IQueryBuilder (awaitable, fluent OrderBy/GroupBy); QueryPaginated() returns IQueryPaginatedBuilder; QueryRaw/QueryRawSync with SQL injection prevention (SELECT only, no semicolons, no comments, no DDL/DML); OrderBy and GroupBy accept string[]; RelationalColumn and DataAggregationColumn for ETL/DW fact queries; DataAggregationColumn excluded from WHERE; null-safe range filter; Pluggable cache providers (ICacheProvider); parameterized queries; reflection caching; [Key] attribute for PK + _id suffix convention for FK detection. v1.6.8: date range by value type; null-safe ranges; empty string exclusion; KeyColumns cache by entity type; array skip. v1.6.6: [Table] and [Column] optional; enum as string literals; empty strings as ''; PostgreSQL compliant.</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.7.5: Fix critical NullReferenceException in EntityReflector.IsEmptyObjectValue when null values passed during FillComposition (eager loading); Query() returns IQueryBuilder; QueryPaginated() returns IQueryPaginatedBuilder; QueryRaw/QueryRawSync with SQL injection prevention; OrderBy and GroupBy accept string[]; awaitable builders; RelationalColumn/DataAggregationColumn for ETL/DW; Pluggable cache providers; parameterized queries. v1.6.8: date range by value type; null-safe ranges; empty string exclusion; KeyColumns cache by entity type. v1.6.6: [Table] and [Column] optional; enum as string literals; PostgreSQL compliant.</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
 
