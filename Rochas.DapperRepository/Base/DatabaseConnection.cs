@@ -106,11 +106,14 @@ namespace Rochas.DapperRepository.Base
 
         public void Dispose()
         {
-            if (connection != null)
-                connection.Dispose();
-
             if (transactionControl != null)
-                transactionControl.Dispose();
+            {
+                try { transactionControl.Rollback(); } catch { }
+                try { transactionControl.Dispose(); } catch { }
+            }
+
+            if (connection != null)
+                try { connection.Dispose(); } catch { }
 
             GC.ReRegisterForFinalize(this);
         }

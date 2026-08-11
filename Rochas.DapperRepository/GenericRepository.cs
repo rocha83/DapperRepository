@@ -29,6 +29,8 @@ namespace Rochas.DapperRepository
 		bool _readUncommited;
 		bool _useCache;
 		bool _snakeCaseNaming;
+		[ThreadStatic]
+		static HashSet<Type> _visitedTypes;
 
 		#endregion
 
@@ -740,6 +742,25 @@ namespace Rochas.DapperRepository
 			return CountObject(filterEntity).Result;
 		}
 		private void FillComposition(object loadedEntity, PropertyInfo[] entityProps)
+		{
+			// Cycle detection: prevents infinite recursion when entities reference each other
+			var entityType = loadedEntity.GetType();
+			if (_visitedTypes == null)
+				_visitedTypes = new HashSet<Type>();
+			if (!_visitedTypes.Add(entityType))
+				return;
+
+			try
+			{
+				FillCompositionInternal(loadedEntity, entityProps);
+			}
+			finally
+			{
+				_visitedTypes.Remove(entityType);
+			}
+		}
+
+		private void FillCompositionInternal(object loadedEntity, PropertyInfo[] entityProps)
 		{
 			var childEntities = EntityReflector.GetRelatedEntities(entityProps);
 
