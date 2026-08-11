@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using Microsoft.Data.SqlClient;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using System.Threading.Tasks;
 using Dapper;
 using MySqlConnector;
@@ -25,7 +25,7 @@ namespace Rochas.DapperRepository.Base
         /// Inspector callback: receives the SQL text before each command execution.
         /// Set this to diagnose SQL generation issues.
         /// </summary>
-        public static Action<string>? SqlInspector { get; set; }
+        public static Action<string> SqlInspector { get; set; }
 
         private static void DumpSql(string sql)
         {
@@ -150,7 +150,7 @@ namespace Rochas.DapperRepository.Base
                             connection = new NpgsqlConnection();
                             break;
                         case DatabaseEngine.SQLite:
-                            connection = new SQLiteConnection();
+                            connection = new SqliteConnection();
                             GuidStringHandler.EnsureRegistered();
                             break;
                     }
@@ -339,7 +339,7 @@ namespace Rochas.DapperRepository.Base
                             newSqlParameter = new SqlParameter(param.Key.ToString(), param.Value);
                             break;
                         case DatabaseEngine.SQLite:
-                            newSqlParameter = new SQLiteParameter(param.Key.ToString(), param.Value);
+                            newSqlParameter = new SqliteParameter(param.Key.ToString(), param.Value);
                             break;
                     }
 

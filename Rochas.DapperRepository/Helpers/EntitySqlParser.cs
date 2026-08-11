@@ -753,7 +753,7 @@ namespace Rochas.DapperRepository.Helpers
                 || string.IsNullOrEmpty(relationList))
                 relationList = relation;
             else if (!relationList.Contains(relation))
-                relationList += relation;
+                relationList += " " + relation;
         }
 
         private static void SetAggregationSqlParameters(KeyValuePair<object, object> itemChildKeyPair, string tableName, string entityAttributeName, DatabaseEngine engine, ref string columnList)

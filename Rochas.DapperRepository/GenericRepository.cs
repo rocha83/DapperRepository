@@ -8,7 +8,7 @@ using System.Text.Json;
 using System.Reflection;
 using System.IO;
 using System.Data;
-using System.Data.SQLite;
+using Microsoft.Data.Sqlite;
 using Rochas.DapperRepository.Base;
 using Rochas.DapperRepository.Helpers;
 using Rochas.DapperRepository.Specification.Models;
@@ -75,7 +75,8 @@ namespace Rochas.DapperRepository
 				if (File.Exists(databaseFileName))
 					File.Delete(databaseFileName);
 
-				SQLiteConnection.CreateFile(databaseFileName);
+				using (var fileConnection = new SqliteConnection($"Data Source={databaseFileName}"))
+					fileConnection.Open();
 			}
 
 			Connect();

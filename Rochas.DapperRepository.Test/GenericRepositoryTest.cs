@@ -13,7 +13,7 @@ namespace Rochas.DapperRepository.Test
     public class GenericRepositoryTest
     {
         private string databaseFileName = "MockDatabase.sqlite";
-        private string connString = "Data Source=MockDatabase.sqlite;Version=3;New=True;";
+        private string connString = "Data Source=MockDatabase.sqlite;Mode=ReadWriteCreate;";
 
         #region Mock Repository Initialization
 
