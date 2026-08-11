@@ -62,7 +62,14 @@ namespace Rochas.DapperRepository.Base
 
         public DatabaseConnection(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(dbConnection.ConnectionString, logPath, replicaConnStrings)
         {
-            engine = DatabaseEngine.PostgreSQL;
+            engine = dbConnection switch
+            {
+                Microsoft.Data.Sqlite.SqliteConnection => DatabaseEngine.SQLite,
+                MySqlConnector.MySqlConnection => DatabaseEngine.MySQL,
+                Microsoft.Data.SqlClient.SqlConnection => DatabaseEngine.SQLServer,
+                Npgsql.NpgsqlConnection => DatabaseEngine.PostgreSQL,
+                _ => DatabaseEngineDetector.Detect(dbConnection.ConnectionString)
+            };
             connection = dbConnection;
 
             keepConnection = keepConnected;
