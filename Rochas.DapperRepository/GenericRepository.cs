@@ -30,7 +30,7 @@ namespace Rochas.DapperRepository
 		bool _useCache;
 		bool _snakeCaseNaming;
 		[ThreadStatic]
-		static Dictionary<(Type, object?), int> _visitedIdentities;
+		static Dictionary<Type, int> _visitedTypes;
 
 		#endregion
 
@@ -743,22 +743,18 @@ namespace Rochas.DapperRepository
 		}
 		private void FillComposition(object loadedEntity, PropertyInfo[] entityProps)
 		{
-			// Cycle detection by entity identity (type + primary key).
-			// Prevents infinite recursion on circular references (e.g. Product ↔ ProductSpecificationValue)
-			// while allowing legitimate nested loads (e.g. ProductCategory → Children).
-			// Tolerance of 2 allows parent→child→parent in composed loads (e.g. FK tree via ParentId).
+			// Cycle detection by type with tolerance 2.
+			// Prevents infinite recursion on circular references while
+			// allowing legitimate nested loads (ParentId trees, FK bounce-backs).
 			var entityType = loadedEntity.GetType();
-			var keyProp = EntityReflector.GetKeyColumn(entityProps);
-			var keyValue = keyProp?.GetValue(loadedEntity);
-			var identity = (entityType, keyValue);
 
-			if (_visitedIdentities == null)
-				_visitedIdentities = new Dictionary<(Type, object?), int>();
+			if (_visitedTypes == null)
+				_visitedTypes = new Dictionary<Type, int>();
 
-			if (_visitedIdentities.TryGetValue(identity, out int count) && count >= 2)
+			if (_visitedTypes.TryGetValue(entityType, out int count) && count >= 2)
 				return;
 
-			_visitedIdentities[identity] = count + 1;
+			_visitedTypes[entityType] = count + 1;
 
 			try
 			{
@@ -766,10 +762,10 @@ namespace Rochas.DapperRepository
 			}
 			finally
 			{
-				if (_visitedIdentities[identity] <= 1)
-					_visitedIdentities.Remove(identity);
+				if (_visitedTypes[entityType] <= 1)
+					_visitedTypes.Remove(entityType);
 				else
-					_visitedIdentities[identity]--;
+					_visitedTypes[entityType]--;
 			}
 		}
 
