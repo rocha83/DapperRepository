@@ -1742,6 +1742,43 @@ namespace Rochas.DapperRepository.Test
                 }
             }
         }
+
+        [Fact]
+        public void Test102_SelfOneToOne_DoesNotOverflow()
+        {
+            // Self-referencing OneToOne via ChildId.
+            // SampleEntity OneToOne → SampleEntity → cycle → tolerance 2 must prevent overflow.
+            var parent = new SampleEntity()
+            {
+                DocNumber = 77701,
+                CreationDate = DateTime.Now,
+                Name = "Self Parent",
+                Active = true
+            };
+            var child = new SampleEntity()
+            {
+                DocNumber = 77702,
+                CreationDate = DateTime.Now,
+                Name = "Self Child",
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(parent);
+                child.ChildId = parent.Id;
+                repos.AddSync(child);
+                repos.UpdateSync(child);
+
+                // Load child with composition — should resolve OneToOne back to parent without overflow
+                var result = repos.GetSync(child.Id, loadComposition: true);
+
+                Assert.NotNull(result);
+                Assert.NotNull(result.SelfReferencedEntity);
+                Assert.Equal(parent.Id, result.SelfReferencedEntity.Id);
+                Assert.Equal("Self Parent", result.SelfReferencedEntity.Name);
+            }
+        }
         #endregion
     }
 }

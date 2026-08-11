@@ -66,6 +66,10 @@ namespace Rochas.DapperRepository.Test
                        ForeignKeyAttribute = "ChildId")]
         public SampleManyForeignEntity ManyToOneForeignEntity { get; set; }
 
+        [RelatedEntity(Cardinality = RelationCardinality.OneToOne,
+                       ForeignKeyAttribute = "ChildId")]
+        public SampleEntity SelfReferencedEntity { get; set; }
+
         [RelatedEntity(Cardinality = RelationCardinality.OneToMany,
                        ForeignKeyAttribute = "ParentId")]
         public IList<SampleManyForeignEntity> OneToManyForeignEntities { get; set; }
