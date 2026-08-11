@@ -18,7 +18,7 @@ namespace Rochas.DapperRepository.Test
         #region Mock Repository Initialization
 
         [Fact]
-        public void Test01_Initialize()
+        public void Test001_Initialize()
         {
             var tableScript = @"CREATE TABLE [sample_entity](
                                              [id] INTEGER PRIMARY KEY,
@@ -66,7 +66,7 @@ namespace Rochas.DapperRepository.Test
         #region Single Entity Tests
 
         [Fact]
-        public void Test02_Add()
+        public void Test002_Add()
         {
             int result;
             var sampleEntity1 = new SampleEntity()
@@ -101,7 +101,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test03_AddComposition()
+        public void Test003_AddComposition()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -132,7 +132,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test04_GetByKey()
+        public void Test004_GetByKey()
         {
             SampleEntity result;
 
@@ -147,7 +147,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test05_GetByFilter()
+        public void Test005_GetByFilter()
         {
             SampleEntity result;
 
@@ -162,7 +162,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test06_Query()
+        public void Test006_Query()
         {
             ICollection<SampleEntity> result;
 
@@ -178,7 +178,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test07_QueryLimited()
+        public void Test007_QueryLimited()
         {
             ICollection<SampleEntity> result;
 
@@ -194,7 +194,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test08_QuerySorted()
+        public void Test008_QuerySorted()
         {
             ICollection<SampleEntity> result;
 
@@ -220,7 +220,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test09_QueryByDateRange()
+        public void Test009_QueryByDateRange()
         {
             ICollection<SampleEntity> result;
 
@@ -240,7 +240,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test10_QueryByAgeMajorThan()
+        public void Test010_QueryByAgeMajorThan()
         {
             ICollection<SampleEntity> result;
 
@@ -259,7 +259,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test11_Search()
+        public void Test011_Search()
         {
             ICollection<SampleEntity> result;
 
@@ -280,7 +280,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test12_BulkSearch()
+        public void Test012_BulkSearch()
         {
             ICollection<SampleEntity> result;
 
@@ -296,7 +296,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test13_Count()
+        public void Test013_Count()
         {
             int result = 0;
             var filter = new SampleEntity() { Name = "roberto" };
@@ -310,7 +310,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test14_Update()
+        public void Test014_Update()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -328,7 +328,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test15_UpdateComposition()
+        public void Test015_UpdateComposition()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -355,7 +355,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test16_Remove()
+        public void Test016_Remove()
         {
             int result = 0;
             var filter = new SampleEntity() { DocNumber = 12345 };
@@ -378,7 +378,7 @@ namespace Rochas.DapperRepository.Test
         #region Pagination Tests
 
         [Fact]
-        public void Test40_SearchPaginated()
+        public void Test040_SearchPaginated()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -399,7 +399,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test41_QueryPaginated()
+        public void Test041_QueryPaginated()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -414,7 +414,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test42_SearchPaginated_Async()
+        public void Test042_SearchPaginated_Async()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -427,7 +427,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test43_QueryPaginated_Async()
+        public void Test043_QueryPaginated_Async()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -441,7 +441,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test44_SearchPaginated_WithSort()
+        public void Test044_SearchPaginated_WithSort()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -454,7 +454,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test45_QueryPaginated_WithSort()
+        public void Test045_QueryPaginated_WithSort()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -471,7 +471,7 @@ namespace Rochas.DapperRepository.Test
         #region OneToOne Composite Entity Tests
 
         [Fact]
-        public void Test24_OneToOneCompositionAdd()
+        public void Test024_OneToOneCompositionAdd()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -495,7 +495,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test25_GetOneToOneCompositionByKey()
+        public void Test025_GetOneToOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -512,7 +512,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test26_QueryOneToOneComposition()
+        public void Test026_QueryOneToOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -534,7 +534,7 @@ namespace Rochas.DapperRepository.Test
         #region ManyToOne Composition Entity Tests
 
         [Fact]
-        public void Test27_ManyToOneCompositionAdd()
+        public void Test027_ManyToOneCompositionAdd()
         {
             int result;
 
@@ -571,7 +571,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test28_GetManyToOneCompositionByKey()
+        public void Test028_GetManyToOneCompositionByKey()
         {
             SampleEntity result;
 
@@ -588,7 +588,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test29_QueryManyToOneComposition()
+        public void Test029_QueryManyToOneComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -610,7 +610,7 @@ namespace Rochas.DapperRepository.Test
         #region OneToMany Composite Entity Tests
 
         [Fact]
-        public void Test30_OneToManyCompositionAdd()
+        public void Test030_OneToManyCompositionAdd()
         {
             int result;
             var sampleEntity = new SampleEntity()
@@ -640,7 +640,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test31_GetOneToManyCompositionByKey()
+        public void Test031_GetOneToManyCompositionByKey()
         {
             SampleEntity result;
 
@@ -658,7 +658,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test32_QueryOneToManyComposition()
+        public void Test032_QueryOneToManyComposition()
         {
             ICollection<SampleEntity> result;
 
@@ -682,7 +682,7 @@ namespace Rochas.DapperRepository.Test
         #region ManyToMany Composite Entity Tests
 
         [Fact]
-        public void Test33_IntermedyCompositionCreate()
+        public void Test033_IntermedyCompositionCreate()
         {
             int leftEntityResult;
             var sampleLeftEntity = new SampleEntity()
@@ -721,7 +721,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test34_IntermedyCompositionGet()
+        public void Test034_IntermedyCompositionGet()
         {
             using var leftEntityRepos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString);
             var leftEntityFilter = new SampleEntity() { DocNumber = 15678 };
@@ -746,7 +746,7 @@ namespace Rochas.DapperRepository.Test
         #region AddRange and BulkSqlCreateRange Tests
 
         [Fact]
-        public void Test35_AddRange()
+        public void Test035_AddRange()
         {
             var entities = new List<SampleManyForeignEntity>
             {
@@ -774,7 +774,7 @@ namespace Rochas.DapperRepository.Test
         #region Edge Cases
 
         [Fact]
-        public void Test36_GetByKey_EmptyKey_ReturnsNull()
+        public void Test036_GetByKey_EmptyKey_ReturnsNull()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -784,7 +784,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test37_GetByKey_NonExistentKey_ReturnsNull()
+        public void Test037_GetByKey_NonExistentKey_ReturnsNull()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -794,7 +794,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test38_SearchPaginated_PageSizeOne()
+        public void Test038_SearchPaginated_PageSizeOne()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -806,7 +806,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test39_QueryPaginated_EmptyFilter()
+        public void Test039_QueryPaginated_EmptyFilter()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -821,7 +821,7 @@ namespace Rochas.DapperRepository.Test
         #region v1.6.8 Fixes - End-to-End Tests
 
         [Fact]
-        public void Test46_EmptyStringFilter_ShouldNotAffectQuery()
+        public void Test046_EmptyStringFilter_ShouldNotAffectQuery()
         {
             var filter = new SampleEntity() { Name = "" };
 
@@ -834,7 +834,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test49_NullStringFilter_ShouldNotAffectQuery()
+        public void Test049_NullStringFilter_ShouldNotAffectQuery()
         {
             var filter = new SampleEntity() { Name = null, Resume = null };
 
@@ -847,7 +847,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test50_Count_EmptyStringFilter()
+        public void Test050_Count_EmptyStringFilter()
         {
             var filter = new SampleEntity() { Name = "" };
 
@@ -859,7 +859,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test51_MixedFilters_EmptyAndNonEmpty()
+        public void Test051_MixedFilters_EmptyAndNonEmpty()
         {
             var filter = new SampleEntity() { Name = "", Active = true };
 
@@ -873,7 +873,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test52_DateRange_EndToEnd()
+        public void Test052_DateRange_EndToEnd()
         {
             var filter = new SampleEntity()
             {
@@ -890,7 +890,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test53_ArrayProperty_Insert_SkipsArray()
+        public void Test053_ArrayProperty_Insert_SkipsArray()
         {
             var tableScript = @"CREATE TABLE IF NOT EXISTS [sample_array_entity] (
                                         [id] INTEGER PRIMARY KEY,
@@ -920,7 +920,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test54_ArrayProperty_Query_SkipsArray()
+        public void Test054_ArrayProperty_Query_SkipsArray()
         {
             var entity = new SampleArrayEntity()
             {
@@ -950,7 +950,7 @@ namespace Rochas.DapperRepository.Test
         #region QueryBuilder Tests
 
         [Fact]
-        public async Task Test55_QueryBuilder_FilterOnly()
+        public async Task Test055_QueryBuilder_FilterOnly()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -962,7 +962,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test56_QueryBuilder_FilterOnly_Await()
+        public async Task Test056_QueryBuilder_FilterOnly_Await()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -974,7 +974,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test57_QueryBuilder_OrderBy_SingleColumn()
+        public async Task Test057_QueryBuilder_OrderBy_SingleColumn()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -988,7 +988,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test58_QueryBuilder_OrderBy_Descending()
+        public async Task Test058_QueryBuilder_OrderBy_Descending()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1002,7 +1002,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test59_QueryBuilder_OrderBy_MultipleColumns()
+        public async Task Test059_QueryBuilder_OrderBy_MultipleColumns()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1014,7 +1014,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test60_QueryBuilder_OrderBy_Await()
+        public async Task Test060_QueryBuilder_OrderBy_Await()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1026,7 +1026,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test61_QueryBuilder_OrderBy_Descending_Await()
+        public async Task Test061_QueryBuilder_OrderBy_Descending_Await()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1040,7 +1040,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test62_QueryBuilder_EmptyFilter()
+        public async Task Test062_QueryBuilder_EmptyFilter()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1052,7 +1052,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test63_QueryBuilder_FilterConjunction()
+        public async Task Test063_QueryBuilder_FilterConjunction()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1067,7 +1067,7 @@ namespace Rochas.DapperRepository.Test
         #region QueryPaginatedBuilder Tests
 
         [Fact]
-        public void Test64_QueryPaginatedBuilder_Paginate()
+        public void Test064_QueryPaginatedBuilder_Paginate()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1080,7 +1080,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test65_QueryPaginatedBuilder_Paginate_Page2()
+        public void Test065_QueryPaginatedBuilder_Paginate_Page2()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1093,7 +1093,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test66_QueryPaginatedBuilder_OrderBy()
+        public void Test066_QueryPaginatedBuilder_OrderBy()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1106,7 +1106,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test67_QueryPaginatedBuilder_OrderBy_Descending()
+        public void Test067_QueryPaginatedBuilder_OrderBy_Descending()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1119,7 +1119,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test68_QueryPaginatedBuilder_OrderBy_Await()
+        public void Test068_QueryPaginatedBuilder_OrderBy_Await()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1131,7 +1131,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test69_QueryPaginatedBuilder_EmptyFilter()
+        public void Test069_QueryPaginatedBuilder_EmptyFilter()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1148,7 +1148,7 @@ namespace Rochas.DapperRepository.Test
         #region RelationalColumn Tests
 
         [Fact]
-        public void Test70_RelationalColumn_CreateTables()
+        public void Test070_RelationalColumn_CreateTables()
         {
             var dimProductScript = @"CREATE TABLE IF NOT EXISTS [dim_product] (
                                         [id] INTEGER PRIMARY KEY,
@@ -1185,7 +1185,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test71_RelationalColumn_InsertDimensionData()
+        public void Test071_RelationalColumn_InsertDimensionData()
         {
             var product1 = new DimProductEntity { ProductName = "Notebook Dell", Category = "Electronics", Price = 4500m };
             var product2 = new DimProductEntity { ProductName = "Mouse Logitech", Category = "Peripherals", Price = 150m };
@@ -1207,7 +1207,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test72_RelationalColumn_InsertFactData()
+        public void Test072_RelationalColumn_InsertFactData()
         {
             var sales = new FactSalesEntity
             {
@@ -1226,7 +1226,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test73_RelationalColumn_QueryWithJoin()
+        public void Test073_RelationalColumn_QueryWithJoin()
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1242,7 +1242,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test74_RelationalColumnQueryBuilder_OrderBy()
+        public async Task Test074_RelationalColumnQueryBuilder_OrderBy()
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1258,7 +1258,7 @@ namespace Rochas.DapperRepository.Test
         #region DataAggregationColumn Tests
 
         [Fact]
-        public void Test75_DataAggregationColumn_QueryWithAggregations()
+        public void Test075_DataAggregationColumn_QueryWithAggregations()
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1275,7 +1275,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test76_DataAggregationColumn_QueryBuilder_WithAggregations()
+        public async Task Test076_DataAggregationColumn_QueryBuilder_WithAggregations()
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1291,7 +1291,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test77_DataAggregationColumn_MaxMin()
+        public void Test077_DataAggregationColumn_MaxMin()
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1312,7 +1312,7 @@ namespace Rochas.DapperRepository.Test
         #region Real Grouping and Sorting Tests
 
         [Fact]
-        public void Test78_GroupSort_SetupFactData()
+        public void Test078_GroupSort_SetupFactData()
         {
             var row1 = new FactSalesEntity { SaleDate = "2024-02-01", ProductId = 1, CustomerId = 1, Quantity = 2, UnitPrice = 4500m, TotalAmount = 9000m };
             var row2 = new FactSalesEntity { SaleDate = "2024-02-02", ProductId = 2, CustomerId = 1, Quantity = 5, UnitPrice = 150m, TotalAmount = 750m };
@@ -1327,7 +1327,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test79_MainMethod_QuerySync_GroupBy_ProductId()
+        public void Test079_MainMethod_QuerySync_GroupBy_ProductId()
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1346,7 +1346,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test80_MainMethod_Query_GroupBy_ProductId()
+        public async Task Test080_MainMethod_Query_GroupBy_ProductId()
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1361,7 +1361,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test81_b_GroupSort_SetupSampleData()
+        public void Test081_b_GroupSort_SetupSampleData()
         {
             var names = new[] { "Alpha Souza", "Beta Lima", "Gamma Costa", "Delta Rocha" };
 
@@ -1392,7 +1392,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test82_MainMethod_QuerySync_OrderBy_Ascending()
+        public void Test082_MainMethod_QuerySync_OrderBy_Ascending()
         {
             var expected = new[] { "Alpha Souza", "Beta Lima", "Delta Rocha", "Gamma Costa" };
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
@@ -1407,7 +1407,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test83_MainMethod_QuerySync_OrderBy_Descending()
+        public void Test083_MainMethod_QuerySync_OrderBy_Descending()
         {
             var expected = new[] { "Gamma Costa", "Delta Rocha", "Beta Lima", "Alpha Souza" };
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
@@ -1422,7 +1422,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test84_Builder_GroupBy_ProductId()
+        public async Task Test084_Builder_GroupBy_ProductId()
         {
             using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1440,7 +1440,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test85_Builder_OrderBy_Ascending_Real()
+        public async Task Test085_Builder_OrderBy_Ascending_Real()
         {
             var expected = new[] { "Alpha Souza", "Beta Lima", "Delta Rocha", "Gamma Costa" };
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
@@ -1455,7 +1455,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test86_Builder_OrderBy_Descending_Real()
+        public async Task Test086_Builder_OrderBy_Descending_Real()
         {
             var expected = new[] { "Gamma Costa", "Delta Rocha", "Beta Lima", "Alpha Souza" };
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
@@ -1474,7 +1474,7 @@ namespace Rochas.DapperRepository.Test
         #region v1.7.6 Tests - Collection Exclusion, QueryRaw, FillComposition Fixes
 
         [Fact]
-        public void Test87_InvoiceTable_Create()
+        public void Test087_InvoiceTable_Create()
         {
             var tableScript = @"CREATE TABLE IF NOT EXISTS [sample_invoice_entity] (
                 [id] INTEGER PRIMARY KEY,
@@ -1499,7 +1499,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test88_Invoice_IReadOnlyCollection_Excluded_From_Insert()
+        public void Test088_Invoice_IReadOnlyCollection_Excluded_From_Insert()
         {
             using (var repos = new GenericRepository<SampleInvoiceEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1535,7 +1535,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test89_Invoice_IReadOnlyCollection_Not_In_Update_SQL()
+        public void Test089_Invoice_IReadOnlyCollection_Not_In_Update_SQL()
         {
             using (var repos = new GenericRepository<SampleInvoiceEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1558,7 +1558,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test90_InvoiceItem_Insert_And_Query()
+        public void Test090_InvoiceItem_Insert_And_Query()
         {
             using (var repos = new GenericRepository<SampleInvoiceItemEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1581,7 +1581,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test91_QueryRaw_Select_All()
+        public void Test091_QueryRaw_Select_All()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1592,7 +1592,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test92_QueryRaw_With_Parameters()
+        public void Test092_QueryRaw_With_Parameters()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1605,7 +1605,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test93_QueryRaw_Rejects_NON_Select()
+        public void Test093_QueryRaw_Rejects_NON_Select()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1615,7 +1615,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test94_QueryRaw_Rejects_Semicolon()
+        public void Test094_QueryRaw_Rejects_Semicolon()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1625,7 +1625,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test95_QueryRaw_Rejects_Comments()
+        public void Test095_QueryRaw_Rejects_Comments()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1635,7 +1635,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test96_QueryRaw_Rejects_Null_Parameters()
+        public void Test096_QueryRaw_Rejects_Null_Parameters()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1645,7 +1645,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test97_FillComposition_NullFK_DoesNotNRE()
+        public void Test097_FillComposition_NullFK_DoesNotNRE()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1664,7 +1664,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test98_GroupBy_Builder_Complex()
+        public async Task Test098_GroupBy_Builder_Complex()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1677,7 +1677,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public async Task Test99_OrderBy_Builder_MultiColumn()
+        public async Task Test099_OrderBy_Builder_MultiColumn()
         {
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
@@ -1703,7 +1703,7 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void ZZZ_FillComposition_CycleDetection_DoesNotOverflow()
+        public void Test101_FillComposition_CycleDetection_DoesNotOverflow()
         {
             // Create a sample entity with children that have a ManyToOne back-reference.
             // This creates a cyclic reference: SampleEntity ↔ SampleManyForeignEntity
