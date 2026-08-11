@@ -201,8 +201,6 @@ namespace Rochas.DapperRepository.Helpers
                             columnValue = SqlDefaultValue.Null;
                         break;
                     case SQL.DataType.Integer:
-                        if (((int)columnValue == int.MinValue) && !isRequired)
-                            columnValue = SqlDefaultValue.Null;
                         break;
                     case SQL.DataType.Long:
                         if (((long)columnValue == long.MinValue) && !isRequired)
@@ -231,19 +229,7 @@ namespace Rochas.DapperRepository.Helpers
                             columnValue = SqlDefaultValue.Null;
                         break;
                     case SQL.DataType.Float:
-                        if (((float)columnValue == 0) && !isRequired)
-                            columnValue = SqlDefaultValue.Null;
-                        else
-                            columnValue = columnValue.ToString().Replace(",", ".");
-
-                        break;
                     case SQL.DataType.Double:
-                        if (((double)columnValue == 0) && !isRequired)
-                            columnValue = SqlDefaultValue.Null;
-                        else
-                            columnValue = columnValue.ToString().Replace(",", ".");
-
-                        break;
                     case SQL.DataType.Decimal:
                         columnValue = columnValue.ToString().Replace(",", ".");
                         break;
