@@ -2,7 +2,7 @@
 
 namespace Rochas.DapperRepository.Base
 {
-    public abstract class DataBaseSettings
+    public abstract class DatabaseSettings
     {
         #region Declarations
 
@@ -27,7 +27,7 @@ namespace Rochas.DapperRepository.Base
 
         #region Constructors
 
-        protected DataBaseSettings(string connectionString, string logPath, params string[] replicaConnStrings)
+        protected DatabaseSettings(string connectionString, string logPath, params string[] replicaConnStrings)
         {
             _connString = connectionString;
 

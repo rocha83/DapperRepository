@@ -20,7 +20,7 @@ using Rochas.DapperRepository.Builders;
 
 namespace Rochas.DapperRepository
 {
-	public class GenericRepository<T> : DataBaseConnection, IDisposable, IGenericRepository<T> where T : class
+	public class GenericRepository<T> : DatabaseConnection, IDisposable, IGenericRepository<T> where T : class
 	{
 		#region Declarations
 

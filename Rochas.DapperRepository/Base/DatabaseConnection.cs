@@ -14,18 +14,12 @@ using Npgsql;
 
 namespace Rochas.DapperRepository.Base
 {
-    public class DataBaseConnection : DataBaseSettings, IDisposable
+    public class DatabaseConnection : DatabaseSettings, IDisposable
     {
         #region Declarations
 
         private readonly string insertCommand = SQLStatements.SQL_ReservedWord_INSERT;
         private readonly string countCommand = SQLStatements.SQL_ReservedWord_COUNT;
-
-        /// <summary>
-        /// Inspector callback: receives the SQL text before each command execution.
-        /// Set this to diagnose SQL generation issues.
-        /// </summary>
-        public static Action<string> SqlInspector { get; set; }
 
         private static void DumpSql(string sql)
         {
@@ -50,7 +44,7 @@ namespace Rochas.DapperRepository.Base
 
         #region Constructors
 
-        public DataBaseConnection(DatabaseEngine databaseEngine, string connectionString, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(connectionString, logPath, replicaConnStrings)
+        public DatabaseConnection(DatabaseEngine databaseEngine, string connectionString, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(connectionString, logPath, replicaConnStrings)
         {
             engine = databaseEngine;
 
@@ -61,12 +55,12 @@ namespace Rochas.DapperRepository.Base
         /// <summary>
         /// Infers the <see cref="DatabaseEngine"/> from the connection string.
         /// </summary>
-        public DataBaseConnection(string connectionString, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings)
+        public DatabaseConnection(string connectionString, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings)
             : this(DatabaseEngineDetector.Detect(connectionString), connectionString, logPath, keepConnected, replicaConnStrings)
         {
         }
 
-        public DataBaseConnection(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(dbConnection.ConnectionString, logPath, replicaConnStrings)
+        public DatabaseConnection(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(dbConnection.ConnectionString, logPath, replicaConnStrings)
         {
             engine = DatabaseEngine.PostgreSQL;
             connection = dbConnection;
