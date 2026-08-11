@@ -338,42 +338,59 @@ namespace Rochas.DapperRepository.Test
 
         #endregion
 
-        #region Array Property Skip (Fix 5)
+        #region Array Property Persistence (Fix 1.9.3)
 
         [Fact]
-        public void ArrayProperty_ShouldNotAppearInQuery()
+        public void ArrayProperty_ShouldAppearInQuery_ButNotInWhereFilter()
         {
             var filter = new SampleArrayEntity() { Name = "test" };
             var result = EntitySqlParser.ParseEntity(filter, DatabaseEngine.SQLite, PersistenceAction.Query, filter);
             result = result.Trim();
 
+            // Array entra no SELECT (coluna hash_codes), mas não vira condição WHERE.
             Assert.Contains("name", result);
-            Assert.DoesNotContain("hash_codes", result);
+            Assert.Contains("hash_codes", result);
+            Assert.DoesNotContain("hash_codes", result.Substring(result.IndexOf("WHERE", StringComparison.OrdinalIgnoreCase)));
         }
 
         [Fact]
-        public void ArrayProperty_ShouldNotAppearInInsert()
+        public void ArrayProperty_ShouldAppearInInsert_AsCSV()
         {
-            var entity = new SampleArrayEntity() { Name = "test", Active = true };
+            var entity = new SampleArrayEntity() { Name = "test", HashCodes = new uint[] { 1, 2, 3 }, Active = true };
             var result = EntitySqlParser.ParseEntity(entity, DatabaseEngine.SQLite, PersistenceAction.Add);
             result = result.Trim();
 
             Assert.StartsWith("INSERT INTO", result);
             Assert.Contains("name", result);
-            Assert.DoesNotContain("hash_codes", result);
+            Assert.Contains("hash_codes", result);
+            Assert.Contains("'1,2,3'", result);
         }
 
         [Fact]
-        public void ArrayProperty_ShouldNotAppearInUpdate()
+        public void ArrayProperty_ShouldAppearInUpdate_ButNotInWhereFilter()
         {
-            var entity = new SampleArrayEntity() { Name = "updated" };
+            var entity = new SampleArrayEntity() { Name = "updated", HashCodes = new uint[] { 4, 5 }, Active = true };
             var filter = new SampleArrayEntity() { Id = 1 };
             var result = EntitySqlParser.ParseEntity(entity, DatabaseEngine.SQLite, PersistenceAction.Update, filter);
             result = result.Trim();
 
             Assert.StartsWith("UPDATE", result);
             Assert.Contains("name", result);
-            Assert.DoesNotContain("hash_codes", result);
+            Assert.Contains("hash_codes", result);
+            Assert.Contains("'4,5'", result);
+            Assert.DoesNotContain("hash_codes", result.Substring(result.IndexOf("WHERE", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [Fact]
+        public void ByteArrayProperty_ShouldAppearInInsert_AsBase64()
+        {
+            var entity = new SampleArrayEntity() { Name = "blob", BlobData = new byte[] { 0x01, 0x02, 0xFE }, Active = true };
+            var result = EntitySqlParser.ParseEntity(entity, DatabaseEngine.SQLite, PersistenceAction.Add);
+            result = result.Trim();
+
+            Assert.StartsWith("INSERT INTO", result);
+            Assert.Contains("blob_data", result);
+            Assert.Contains("'AQL+'", result);
         }
 
         #endregion

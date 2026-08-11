@@ -497,6 +497,10 @@ namespace Rochas.DapperRepository.Helpers
                     string columnNameStr = string.Empty;
 
                     var itemChildKeyPair = (KeyValuePair<object, object>)filter.Value;
+                    if (itemChildKeyPair.Value is System.Array)
+                    {
+                        continue;
+                    }
                     if (itemChildKeyPair.Key is DataAggregationColumn)
                     {
                         continue;

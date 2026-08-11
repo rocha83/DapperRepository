@@ -891,12 +891,15 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test053_ArrayProperty_Insert_SkipsArray()
+        public void Test053_ArrayProperty_Insert_PersistsCSV()
         {
-            var tableScript = @"CREATE TABLE IF NOT EXISTS [sample_array_entity] (
+            var tableScript = @"DROP TABLE IF EXISTS [sample_array_entity];
+                                CREATE TABLE IF NOT EXISTS [sample_array_entity] (
                                         [id] INTEGER PRIMARY KEY,
                                         [name] [varchar](200) NULL,
-                                        [hash_codes] [blob] NULL,
+                                        [hash_codes] TEXT NULL,
+                                        [tags] TEXT NULL,
+                                        [blob_data] TEXT NULL,
                                         [active] [bit] NOT NULL)";
 
             using (var repos = new GenericRepository<SampleArrayEntity>(DatabaseEngine.SQLite, connString))
@@ -908,6 +911,8 @@ namespace Rochas.DapperRepository.Test
             {
                 Name = "array test",
                 HashCodes = new uint[] { 12345, 67890 },
+                Tags = new string[] { "alpha", "beta", "gama" },
+                BlobData = new byte[] { 0x01, 0x02, 0xFE, 0xFF, 0x00 },
                 Active = true
             };
 
@@ -918,15 +923,31 @@ namespace Rochas.DapperRepository.Test
             }
 
             Assert.True(id > 0);
+
+            using (var repos = new GenericRepository<SampleArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QuerySync(new SampleArrayEntity { Id = id }).ToList();
+                Assert.NotNull(result);
+                var loaded = result.FirstOrDefault();
+                Assert.NotNull(loaded);
+                Assert.NotNull(loaded.HashCodes);
+                Assert.Equal(new uint[] { 12345, 67890 }, loaded.HashCodes);
+                Assert.NotNull(loaded.Tags);
+                Assert.Equal(new string[] { "alpha", "beta", "gama" }, loaded.Tags);
+                Assert.NotNull(loaded.BlobData);
+                Assert.Equal(new byte[] { 0x01, 0x02, 0xFE, 0xFF, 0x00 }, loaded.BlobData);
+            }
         }
 
         [Fact]
-        public void Test054_ArrayProperty_Query_SkipsArray()
+        public void Test054_ArrayProperty_Query_ReadsCSV()
         {
             var entity = new SampleArrayEntity()
             {
                 Name = "query array test",
                 HashCodes = new uint[] { 11111, 22222 },
+                Tags = new string[] { "x1", "x2" },
+                BlobData = new byte[] { 0x0A, 0x0B, 0x0C },
                 Active = true
             };
 
@@ -943,6 +964,32 @@ namespace Rochas.DapperRepository.Test
                 Assert.NotNull(result);
                 Assert.True(result.Any());
                 Assert.Equal("query array test", result.First().Name);
+                Assert.NotNull(result.First().HashCodes);
+                Assert.Equal(new uint[] { 11111, 22222 }, result.First().HashCodes);
+                Assert.NotNull(result.First().Tags);
+                Assert.Equal(new string[] { "x1", "x2" }, result.First().Tags);
+                Assert.NotNull(result.First().BlobData);
+                Assert.Equal(new byte[] { 0x0A, 0x0B, 0x0C }, result.First().BlobData);
+            }
+        }
+
+        [Fact]
+        public void Test054b_ArrayProperty_Filter_IgnoresArrays()
+        {
+            // Filtro com array preenchido não deve gerar condição WHERE espúria.
+            var filter = new SampleArrayEntity()
+            {
+                Name = "query array test",
+                HashCodes = new uint[] { 999, 888 },
+                Tags = new string[] { "zz" },
+                BlobData = new byte[] { 0x01 }
+            };
+
+            using (var repos = new GenericRepository<SampleArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QuerySync(filter).ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Any());
             }
         }
 

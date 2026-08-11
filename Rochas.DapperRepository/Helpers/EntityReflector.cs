@@ -65,7 +65,9 @@ namespace Rochas.DapperRepository.Helpers
 
         /// <summary>
         /// Retorna array de PropertyInfo filtrado por tipo de entidade (cacheado).
-        /// Exclui propriedades de classe do mesmo namespace e collections.
+        /// Exclui propriedades de classe do mesmo namespace, collections complexas e
+        /// arrays de bytes (blob). Permite arrays 1-D de primitivos (uint[], int[],
+        /// string[] etc.), persistidos como CSV em coluna TEXT.
         /// </summary>
         public static PropertyInfo[] GetEntityProperties(Type entityType)
         {
@@ -75,9 +77,28 @@ namespace Rochas.DapperRepository.Helpers
 
                 return t.GetProperties()
                     .Where(p => !(p.PropertyType.IsClass && p.PropertyType.Namespace?.StartsWith(nameSpacePrefix) == true))
-                    .Where(p => p.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType))
+                    .Where(p => p.PropertyType == typeof(string)
+                                || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType)
+                                || IsPersistableArray(p.PropertyType))
                     .ToArray();
             });
+        }
+
+        /// <summary>
+        /// Indica se o tipo é um array 1-D persistível em coluna TEXT.
+        /// Primitivos (uint[], int[], string[]...) viram CSV; byte[] vira base64.
+        /// Exclui byte[][] e arrays multidimensionais (estruturas complexas).
+        /// </summary>
+        private static bool IsPersistableArray(Type type)
+        {
+            if (!type.IsArray || type.GetArrayRank() != 1) return false;
+            if (type == typeof(byte[][])) return false;
+
+            var elementType = type.GetElementType();
+            return elementType == typeof(byte)
+                || elementType == typeof(string)
+                || elementType == typeof(decimal)
+                || (elementType.IsPrimitive && elementType != typeof(char));
         }
 
         public static Dictionary<object, object> GetPropertiesValueList(object entity, Type entityType, PropertyInfo[] entityProperties, PersistenceAction action, DatabaseEngine? engine = null)
@@ -101,9 +122,7 @@ namespace Rochas.DapperRepository.Helpers
                     var isNotMapped = IsNotMappedCache.GetOrAdd(prop, p =>
                         p.GetCustomAttributes().Any(atb => atb is NotMappedAttribute));
 
-                    var isArrayType = prop.PropertyType.IsArray
-                                   && prop.PropertyType != typeof(byte[])
-                                   && prop.PropertyType != typeof(byte[][]);
+                    var isArrayType = prop.PropertyType == typeof(byte[][]);
 
                     var relationalAnnotation = prop.GetCustomAttribute(typeof(RelationalColumn)) as RelationalColumn;
                     var aggregationAnnotation = prop.GetCustomAttribute(typeof(DataAggregationColumn)) as DataAggregationColumn;
@@ -193,6 +212,40 @@ namespace Rochas.DapperRepository.Helpers
             if (columnValue != null)
             {
                 var isRequired = column.GetCustomAttributes().Any(atb => atb is RequiredAttribute);
+
+                // byte[] é persistido como base64 em coluna TEXT (bancos sem blob nativo
+                // em campos mapeados pela ORM). byte[][] é pulado em GetPropertiesValueList
+                // e nunca chega aqui.
+                if (columnValue is byte[] byteArray)
+                {
+                    if (action == PersistenceAction.Add || action == PersistenceAction.Update)
+                    {
+                        columnValue = string.Concat("'", Convert.ToBase64String(byteArray), "'");
+                        return columnValue;
+                    }
+
+                    return columnValue;
+                }
+
+                // Arrays 1-D de primitivos (uint[], int[], string[]...) são persistidos
+                // como CSV em coluna TEXT ("1,2,3"). Na persistência o valor vira texto
+                // CSV; em filtros (Query/Get/Count) o array cru permanece para
+                // SetFilterSqlParameters ignorá-lo no WHERE.
+                if (columnValue.GetType().IsArray && columnValue.GetType().GetArrayRank() == 1)
+                {
+                    var elementType = columnValue.GetType().GetElementType();
+                    if (elementType != typeof(byte)
+                        && (action == PersistenceAction.Add || action == PersistenceAction.Update))
+                    {
+                        var csv = string.Join(",", ((IEnumerable)columnValue)
+                            .Cast<object>()
+                            .Select(v => Convert.ToString(v, CultureInfo.InvariantCulture)));
+                        columnValue = string.Concat("'", csv.Replace("'", "\""), "'");
+                        return columnValue;
+                    }
+
+                    return columnValue;
+                }
 
                 switch (columnValue.GetType().ToString())
                 {

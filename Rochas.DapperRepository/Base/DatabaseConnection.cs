@@ -132,6 +132,9 @@ namespace Rochas.DapperRepository.Base
             if (!string.IsNullOrEmpty(_connString) || !string.IsNullOrEmpty(optionalConnConfig))
             {
                 if (connection == null)
+                {
+                    PrimitiveArrayTypeHandler.EnsureRegistered();
+                    ByteArrayBase64Handler.EnsureRegistered();
                     switch (engine)
                     {
                         case DatabaseEngine.MySQL:
@@ -148,6 +151,7 @@ namespace Rochas.DapperRepository.Base
                             GuidStringHandler.EnsureRegistered();
                             break;
                     }
+                }
 
                 if ((connection.State != ConnectionState.Open) && (connection.State != ConnectionState.Connecting))
                 {

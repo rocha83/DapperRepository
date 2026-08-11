@@ -18,6 +18,12 @@ namespace Rochas.DapperRepository.Test
         [Column("hash_codes")]
         public uint[] HashCodes { get; set; }
 
+        [Column("tags")]
+        public string[] Tags { get; set; }
+
+        [Column("blob_data")]
+        public byte[] BlobData { get; set; }
+
         [Column("active")]
         public bool Active { get; set; }
     }
