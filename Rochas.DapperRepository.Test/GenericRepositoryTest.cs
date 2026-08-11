@@ -53,12 +53,26 @@ namespace Rochas.DapperRepository.Test
                                                              [right_side_id] [int] NOT NULL,
                                                              [active] [bit] NOT NULL)";
 
+            var guidTableScript = @"CREATE TABLE [sample_guid_entity] (
+                                               [id] [varchar](36) PRIMARY KEY,
+                                               [name] [varchar](200) NULL,
+                                               [active] [bit] NOT NULL)";
+
+            var guidArrayTableScript = @"CREATE TABLE [sample_guid_array_entity] (
+                                                   [id] [varchar](36) PRIMARY KEY,
+                                                   [name] [varchar](200) NULL,
+                                                   [tags] [text] NULL,
+                                                   [hash_codes] [text] NULL,
+                                                   [active] [bit] NOT NULL)";
+
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 repos.Initialize(tableScript, databaseFileName);
                 repos.Initialize(oneForeignTableScript);
                 repos.Initialize(manyForeignTableScript);
                 repos.Initialize(intermedyForeignTableScript);
+                repos.Initialize(guidTableScript);
+                repos.Initialize(guidArrayTableScript);
             }
         }
 
@@ -990,6 +1004,258 @@ namespace Rochas.DapperRepository.Test
                 var result = repos.QuerySync(filter).ToList();
                 Assert.NotNull(result);
                 Assert.True(result.Any());
+            }
+        }
+
+        #endregion
+
+        #region Guid Primary Key Tests
+
+        [Fact]
+        public void Test054c_GuidPk_Add_AutoGeneratesGuid()
+        {
+            var entity = new SampleGuidEntity()
+            {
+                Name = "guid auto test",
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            Assert.NotEqual(Guid.Empty, entity.Id);
+        }
+
+        [Fact]
+        public void Test054d_GuidPk_GetById_ReturnsEntity()
+        {
+            var entity = new SampleGuidEntity()
+            {
+                Name = "guid get test",
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var loaded = repos.GetSync(entity.Id);
+                Assert.NotNull(loaded);
+                Assert.Equal(entity.Id, loaded.Id);
+                Assert.Equal("guid get test", loaded.Name);
+            }
+        }
+
+        [Fact]
+        public void Test054e_GuidPk_Query_ByFilter_ReturnsEntity()
+        {
+            var entity = new SampleGuidEntity()
+            {
+                Name = "guid query test",
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            var filter = new SampleGuidEntity() { Id = entity.Id };
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QuerySync(filter).ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Any());
+                Assert.Equal(entity.Id, result.First().Id);
+                Assert.Equal("guid query test", result.First().Name);
+            }
+        }
+
+        [Fact]
+        public void Test054f_GuidPk_Update_ById()
+        {
+            var entity = new SampleGuidEntity()
+            {
+                Name = "guid before update",
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            var filter = new SampleGuidEntity() { Id = entity.Id };
+            entity.Name = "guid after update";
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.UpdateSync(entity, filter);
+            }
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var loaded = repos.GetSync(entity.Id);
+                Assert.NotNull(loaded);
+                Assert.Equal("guid after update", loaded.Name);
+            }
+        }
+
+        [Fact]
+        public void Test054g_GuidPk_Delete_ById()
+        {
+            var entity = new SampleGuidEntity()
+            {
+                Name = "guid delete test",
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            var filter = new SampleGuidEntity() { Id = entity.Id };
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.RemoveSync(filter);
+            }
+
+            using (var repos = new GenericRepository<SampleGuidEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var loaded = repos.GetSync(entity.Id);
+                Assert.Null(loaded);
+            }
+        }
+
+        #endregion
+
+        #region Guid + Array Search Tests
+
+        [Fact]
+        public void Test054h_GuidArray_Add_PersistsArrays()
+        {
+            var entity = new SampleGuidArrayEntity()
+            {
+                Name = "guid array test",
+                Tags = new string[] { "alpha", "beta", "gama" },
+                HashCodes = new uint[] { 100, 200 },
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            Assert.NotEqual(Guid.Empty, entity.Id);
+        }
+
+        [Fact]
+        public void Test054i_GuidArray_Get_ReadsArrays()
+        {
+            var entity = new SampleGuidArrayEntity()
+            {
+                Name = "guid array get",
+                Tags = new string[] { "x", "y" },
+                HashCodes = new uint[] { 777 },
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            using (var repos = new GenericRepository<SampleGuidArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var loaded = repos.GetSync(entity.Id);
+                Assert.NotNull(loaded);
+                Assert.Equal(entity.Id, loaded.Id);
+                Assert.Equal(new string[] { "x", "y" }, loaded.Tags);
+                Assert.Equal(new uint[] { 777 }, loaded.HashCodes);
+            }
+        }
+
+        [Fact]
+        public void Test054j_GuidArray_Search_ByTags_Like()
+        {
+            var entity = new SampleGuidArrayEntity()
+            {
+                Name = "search by tags",
+                Tags = new string[] { "red", "blue", "green" },
+                HashCodes = new uint[] { 1 },
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            using (var repos = new GenericRepository<SampleGuidArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.SearchSync("blue").ToList();
+                Assert.NotNull(result);
+                Assert.True(result.Any(r => r.Id == entity.Id));
+            }
+        }
+
+        [Fact]
+        public void Test054k_GuidArray_Search_ByTags_MatchesSingleElement()
+        {
+            var entity1 = new SampleGuidArrayEntity()
+            {
+                Name = "multi tags a",
+                Tags = new string[] { "fast", "slow" },
+                Active = true
+            };
+            var entity2 = new SampleGuidArrayEntity()
+            {
+                Name = "multi tags b",
+                Tags = new string[] { "fast", "quiet" },
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity1);
+                repos.AddSync(entity2);
+            }
+
+            using (var repos = new GenericRepository<SampleGuidArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.SearchSync("fast").ToList();
+                Assert.Equal(2, result.Count);
+            }
+        }
+
+        [Fact]
+        public void Test054l_GuidArray_Search_ByTags_NoMatch_ReturnsEmpty()
+        {
+            var entity = new SampleGuidArrayEntity()
+            {
+                Name = "no match",
+                Tags = new string[] { "one", "two" },
+                Active = true
+            };
+
+            using (var repos = new GenericRepository<SampleGuidArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                repos.AddSync(entity);
+            }
+
+            using (var repos = new GenericRepository<SampleGuidArrayEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.SearchSync("nonexistent").ToList();
+                Assert.True(result.All(r => r.Id != entity.Id));
             }
         }
 

@@ -497,8 +497,25 @@ namespace Rochas.DapperRepository.Helpers
                     string columnNameStr = string.Empty;
 
                     var itemChildKeyPair = (KeyValuePair<object, object>)filter.Value;
-                    if (itemChildKeyPair.Value is System.Array)
+                    if (itemChildKeyPair.Value is Array arrValue && !(itemChildKeyPair.Value is byte[]))
                     {
+                        if (arrValue.Length == 1 && arrValue.GetValue(0) is string likePattern
+                            && likePattern.StartsWith("%") && likePattern.EndsWith("%"))
+                        {
+                            string colName = itemChildKeyPair.Key is PropertyInfo pi
+                                ? pi.Name
+                                : itemChildKeyPair.Key is RelationalColumn rc ? rc.ColumnName
+                                : itemChildKeyPair.Key?.ToString();
+
+                            if (colName != null && (action == PersistenceAction.Query || action == PersistenceAction.Count))
+                            {
+                                var sqlCol = string.Format("{0}.{1}", QuoteIdentifier(tableName, engine), QuoteIdentifier(colName, engine));
+                                var paramName = $"@p{paramCounter++}";
+                                sqlParameters.Add(paramName, likePattern);
+                                columnFilterList += string.Format("{0} LIKE {1}", sqlCol, paramName)
+                                    + ((filterConjunction) ? SqlOperator.And : SqlOperator.Or);
+                            }
+                        }
                         continue;
                     }
                     if (itemChildKeyPair.Key is DataAggregationColumn)
