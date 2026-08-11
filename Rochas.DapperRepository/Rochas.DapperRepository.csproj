@@ -11,11 +11,11 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable elastic tokenized search bulk persistence parser crud poco orm cqrs builder pattern fluent api</PackageTags>
-    <Version>1.8.5</Version>
+    <Version>1.8.6</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
-    <PackageReleaseNotes>v1.8.5 - Cycle-safe composition loading; [FIX] FillComposition cycle detection prevents infinite recursion on circular RelatedEntity references (e.g. Product ↔ ProductSpecificationValue, parent-child bidirectional, self-referencing trees); [FIX] DataBaseConnection.Dispose transaction-before-connection order; [PERF] SQL Dump only in DEBUG builds</PackageReleaseNotes>
+    <PackageReleaseNotes>v1.8.6 - Builder Pattern and ORM Hardening: [NEW] IQueryBuilder, IQuerySyncBuilder, IQueryPaginatedBuilder with fluent API; [NEW] OrderBy/OrderByDescending with params string[]; [NEW] GroupBy with aggregates support; [NEW] Paginate() on IQueryPaginatedBuilder; [NEW] ToList() on IQuerySyncBuilder and IQueryPaginatedBuilder; [NEW] GuidStringHandler centralized with EnsureRegistered(); [NEW] Enum values serialized as int; [FIX] FillComposition cycle detection by entity identity (type + PK) prevents infinite recursion on circular RelatedEntity references; [FIX] FillComposition OneToMany null guard when FK not resolvable; [FIX] DataBaseConnection.Dispose transaction-before-connection order with uncommitted transaction rollback safety; [FIX] Transaction Dispose prevents database locks; [FIX] Disconnect with Dispose and connection null; [FIX] PersistComposition always disconnects after commit; [FIX] FillComposition recursion support; [FIX] ParseComposition supports ReadOnlyCollection; [FIX] Enum to int conversion; [FIX] BaseEntity default constructor sets CreatedAt; [PERF] EntityPropsCache - cached filtered PropertyInfo[] per entity type; [PERF] ColumnMappingCache for sort/group SQL generation; [PERF] SQL Dump only in DEBUG builds</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
 

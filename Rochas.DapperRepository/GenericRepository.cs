@@ -30,7 +30,7 @@ namespace Rochas.DapperRepository
 		bool _useCache;
 		bool _snakeCaseNaming;
 		[ThreadStatic]
-		static HashSet<Type> _visitedTypes;
+		static Dictionary<(Type, object?), int> _visitedIdentities;
 
 		#endregion
 
@@ -743,12 +743,22 @@ namespace Rochas.DapperRepository
 		}
 		private void FillComposition(object loadedEntity, PropertyInfo[] entityProps)
 		{
-			// Cycle detection: prevents infinite recursion when entities reference each other
+			// Cycle detection by entity identity (type + primary key).
+			// Prevents infinite recursion on circular references (e.g. Product ↔ ProductSpecificationValue)
+			// while allowing legitimate nested loads (e.g. ProductCategory → Children).
+			// Tolerance of 2 allows parent→child→parent in composed loads (e.g. FK tree via ParentId).
 			var entityType = loadedEntity.GetType();
-			if (_visitedTypes == null)
-				_visitedTypes = new HashSet<Type>();
-			if (!_visitedTypes.Add(entityType))
+			var keyProp = EntityReflector.GetKeyColumn(entityProps);
+			var keyValue = keyProp?.GetValue(loadedEntity);
+			var identity = (entityType, keyValue);
+
+			if (_visitedIdentities == null)
+				_visitedIdentities = new Dictionary<(Type, object?), int>();
+
+			if (_visitedIdentities.TryGetValue(identity, out int count) && count >= 2)
 				return;
+
+			_visitedIdentities[identity] = count + 1;
 
 			try
 			{
@@ -756,7 +766,10 @@ namespace Rochas.DapperRepository
 			}
 			finally
 			{
-				_visitedTypes.Remove(entityType);
+				if (_visitedIdentities[identity] <= 1)
+					_visitedIdentities.Remove(identity);
+				else
+					_visitedIdentities[identity]--;
 			}
 		}
 
@@ -804,6 +817,10 @@ namespace Rochas.DapperRepository
 																	childProps, relationAttrib.ForeignKeyAttribute))
 						{
                         childEntityInstance = QueryObjectsSync(childEntityInstance, PersistenceAction.Query, true);
+						}
+						else
+						{
+							childEntityInstance = null; // FK not resolvable — skip
 						}
 
 						break;
