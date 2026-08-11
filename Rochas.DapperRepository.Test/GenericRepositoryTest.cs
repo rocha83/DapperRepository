@@ -1702,6 +1702,46 @@ namespace Rochas.DapperRepository.Test
             }
         }
 
+        [Fact]
+        public void ZZZ_FillComposition_CycleDetection_DoesNotOverflow()
+        {
+            // Create a sample entity with children that have a ManyToOne back-reference.
+            // This creates a cyclic reference: SampleEntity ↔ SampleManyForeignEntity
+            // FillComposition must detect and break the cycle without stack overflow.
+            var entity = new SampleEntity()
+            {
+                DocNumber = 99999,
+                CreationDate = DateTime.Now,
+                Name = "Cycle Test Entity",
+                Active = true,
+                OneToManyForeignEntities = new List<SampleManyForeignEntity>
+                {
+                    new SampleManyForeignEntity { Code = 1, Title = "Child 1", CreationDate = DateTime.Now, Active = true },
+                    new SampleManyForeignEntity { Code = 2, Title = "Child 2", CreationDate = DateTime.Now, Active = true }
+                }
+            };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var rowsAffected = repos.AddSync(entity, persistComposition: true);
+
+                Assert.True(rowsAffected > 0);
+
+                // Reload with composition — should not stack overflow
+                var result = repos.GetSync(entity.Id, loadComposition: true);
+
+                Assert.NotNull(result);
+                Assert.Equal(entity.Id, result.Id);
+                Assert.NotNull(result.OneToManyForeignEntities);
+                Assert.True(result.OneToManyForeignEntities.Count >= 1);
+
+                foreach (var child in result.OneToManyForeignEntities)
+                {
+                    Assert.NotNull(child);
+                    Assert.True(child.ParentId == result.Id);
+                }
+            }
+        }
         #endregion
     }
 }

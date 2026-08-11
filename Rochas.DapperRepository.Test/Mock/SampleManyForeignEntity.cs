@@ -33,6 +33,10 @@ namespace Rochas.DapperRepository.Test
 
         #region Public Navigation Properties
         
+        [RelatedEntity(Cardinality = RelationCardinality.ManyToOne,
+                       ForeignKeyAttribute = "ParentId")]
+        public SampleEntity ParentEntity { get; set; }
+
         [RelatedEntity(Cardinality = RelationCardinality.ManyToMany,
                        IntermediaryEntity = typeof(SampleIntermedyForeignEntity),
                        IntermediaryKeyAttribute = "RightSideId",
