@@ -23,6 +23,7 @@ namespace Rochas.DapperRepository.Test
             var tableScript = @"CREATE TABLE [sample_entity](
                                              [id] INTEGER PRIMARY KEY,
                                              [child_id] [int] NULL,
+                                             [parent_id] [int] NULL,
                                              [doc_number] [int] NOT NULL,
 	                                         [creation_date] [datetime] NOT NULL,
 	                                         [name] [varchar](200) NOT NULL,
@@ -1744,10 +1745,10 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
-        public void Test102_SelfOneToOne_DoesNotOverflow()
+        public void Test102_SelfManyToOne_HierarchicalTree_DoesNotOverflow()
         {
-            // Self-referencing OneToOne via ChildId.
-            // SampleEntity OneToOne → SampleEntity → cycle → tolerance 2 must prevent overflow.
+            // Self-referencing ManyToOne via ParentId (hierarchical tree).
+            // Child.ParentId → Parent.Id. Cycle tolerance + ParentId tree must not overflow.
             var parent = new SampleEntity()
             {
                 DocNumber = 77701,
@@ -1766,14 +1767,15 @@ namespace Rochas.DapperRepository.Test
             using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
             {
                 repos.AddSync(parent);
-                child.ChildId = parent.Id;
+                child.ParentId = parent.Id;
                 repos.AddSync(child);
-                repos.UpdateSync(child);
 
-                // Load child with composition — should resolve OneToOne back to parent without overflow
+                // Load child with composition — SelfReferencedEntity must resolve to the parent
+                // (WHERE Id = child.ParentId) without stack overflow.
                 var result = repos.GetSync(child.Id, loadComposition: true);
 
                 Assert.NotNull(result);
+                Assert.Equal(child.Id, result.Id);
                 Assert.NotNull(result.SelfReferencedEntity);
                 Assert.Equal(parent.Id, result.SelfReferencedEntity.Id);
                 Assert.Equal("Self Parent", result.SelfReferencedEntity.Name);

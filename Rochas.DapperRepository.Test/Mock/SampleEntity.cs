@@ -20,6 +20,9 @@ namespace Rochas.DapperRepository.Test
         [Column("child_id")]
         public int ChildId { get; set; }
 
+        [Column("parent_id")]
+        public int ParentId { get; set; }
+
         [Column("doc_number")]
         public long DocNumber { get; set; }
 
@@ -66,8 +69,8 @@ namespace Rochas.DapperRepository.Test
                        ForeignKeyAttribute = "ChildId")]
         public SampleManyForeignEntity ManyToOneForeignEntity { get; set; }
 
-        [RelatedEntity(Cardinality = RelationCardinality.OneToOne,
-                       ForeignKeyAttribute = "ChildId")]
+        [RelatedEntity(Cardinality = RelationCardinality.ManyToOne,
+                       ForeignKeyAttribute = "ParentId")]
         public SampleEntity SelfReferencedEntity { get; set; }
 
         [RelatedEntity(Cardinality = RelationCardinality.OneToMany,

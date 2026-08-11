@@ -65,14 +65,14 @@ namespace Rochas.DapperRepository.Helpers
                     attributeColumnRelation = EntityReflector.GetPropertiesValueList(entity, entityType, entityProps, persistenceAction, engine);
 
                     if (!string.IsNullOrEmpty(groupAttributes))
-                        ParseGroupingAttributes(attributeColumnRelation, groupAttributes, ref sqlInstruction);
+                        ParseGroupingAttributes(attributeColumnRelation, groupAttributes, engine, ref sqlInstruction);
                     else
                         sqlInstruction = string.Format(sqlInstruction, string.Empty, "{0}");
 
                     if (!string.IsNullOrEmpty(sortAttributes))
                     {
                         var columnMapping = EntityReflector.GetColumnMapping(entityType, engine);
-                        ParseOrdinationAttributes(columnMapping, sortAttributes, orderDescending, ref sqlInstruction);
+                        ParseOrdinationAttributes(columnMapping, sortAttributes, orderDescending, engine, ref sqlInstruction);
                     }
                     else
                         sqlInstruction = string.Format(sqlInstruction, string.Empty);
@@ -120,7 +120,7 @@ namespace Rochas.DapperRepository.Helpers
                     if (!string.IsNullOrEmpty(sortAttributes))
                     {
                         var columnMapping = EntityReflector.GetColumnMapping(entityType, engine);
-                        ParseOrdinationAttributes(columnMapping, sortAttributes, orderDescending, ref sqlInstruction);
+                        ParseOrdinationAttributes(columnMapping, sortAttributes, orderDescending, engine, ref sqlInstruction);
                     }
                     else
                         sqlInstruction = string.Format(sqlInstruction, string.Empty);
@@ -185,7 +185,7 @@ namespace Rochas.DapperRepository.Helpers
                 case PersistenceAction.Add:
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Create,
-                                                   sqlResult["TableName"],
+                                                   QuoteIdentifier(sqlResult["TableName"], engine),
                                                    sqlResult["ColumnList"],
                                                    sqlResult["ValueList"]);
 
@@ -194,7 +194,7 @@ namespace Rochas.DapperRepository.Helpers
                 case PersistenceAction.Update:
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Edit,
-                                                   sqlResult["TableName"],
+                                                   QuoteIdentifier(sqlResult["TableName"], engine),
                                                    sqlResult["ColumnValueList"],
                                                    sqlResult["ColumnFilterList"]);
 
@@ -203,7 +203,7 @@ namespace Rochas.DapperRepository.Helpers
                 case PersistenceAction.Remove:
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Delete,
-                                                   sqlResult["TableName"],
+                                                   QuoteIdentifier(sqlResult["TableName"], engine),
                                                    sqlResult["ColumnFilterList"]);
 
                     break;
@@ -211,7 +211,7 @@ namespace Rochas.DapperRepository.Helpers
 
                     sqlInstruction = String.Format(SQLStatements.SQL_Action_Query,
                                                    sqlResult["ColumnList"],
-                                                   sqlResult["TableName"],
+                                                   QuoteIdentifier(sqlResult["TableName"], engine),
                                                    sqlResult["RelationList"],
                                                    sqlResult["ColumnFilterList"],
                                                    "{0}", "{1}", "{2}");
@@ -222,7 +222,21 @@ namespace Rochas.DapperRepository.Helpers
             return sqlInstruction;
         }
 
-        private static void ParseGroupingAttributes(Dictionary<object, object> attributeColumnRelation, string groupAttributes, ref string sqlInstruction)
+        private static string QuoteIdentifier(string name, DatabaseEngine engine)
+        {
+            if (engine != DatabaseEngine.PostgreSQL) return name;
+            if (string.IsNullOrWhiteSpace(name)) return name;
+            return string.Join(".", name.Split('.').Select(p => $"\"{p}\""));
+        }
+
+        private static string BooleanLiteral(object value, DatabaseEngine engine)
+        {
+            if (value is bool boolVal)
+                return (engine == DatabaseEngine.PostgreSQL) ? (boolVal ? "TRUE" : "FALSE") : (boolVal ? "1" : "0");
+            return value.ToString();
+        }
+
+        private static void ParseGroupingAttributes(Dictionary<object, object> attributeColumnRelation, string groupAttributes, DatabaseEngine engine, ref string sqlInstruction)
         {
             string columnList = string.Empty;
             string complementaryColumnList = string.Empty;
@@ -233,10 +247,10 @@ namespace Rochas.DapperRepository.Helpers
 
             foreach (var rel in attributeColumnRelation)
                 if (Array.IndexOf(groupingAttributes, rel.Key) > -1)
-                    columnList += string.Format("{0}, ", ((KeyValuePair<object, object>)rel.Value).Key);
+                    columnList += string.Format("{0}, ", QuoteIdentifier(((KeyValuePair<object, object>)rel.Value).Key.ToString(), engine));
                 else
                     if (!rel.Key.Equals("TableName"))
-                    complementaryColumnList += string.Format("{0}, ", ((KeyValuePair<object, object>)rel.Value).Key);
+                    complementaryColumnList += string.Format("{0}, ", QuoteIdentifier(((KeyValuePair<object, object>)rel.Value).Key.ToString(), engine));
 
             if (!string.IsNullOrEmpty(columnList) && (columnList.Length > 2))
                 columnList = columnList.Substring(0, columnList.Length - 2);
@@ -249,34 +263,8 @@ namespace Rochas.DapperRepository.Helpers
                                                          "{0}");
         }
 
-        private static void ParseOrdinationAttributes(Dictionary<object, object> attributeColumnRelation, string sortAttributes, bool orderDescending, ref string sqlInstruction)
-        {
-            string columnList = string.Empty;
-            string[] ordinationAttributes = sortAttributes.Split(',');
 
-            for (int contAtrib = 0; contAtrib < ordinationAttributes.Length; contAtrib++)
-            {
-                ordinationAttributes[contAtrib] = ordinationAttributes[contAtrib].Trim();
-
-                var attribToOrder = attributeColumnRelation.FirstOrDefault(rca => ordinationAttributes[contAtrib].Equals(rca.Key));
-                var columnToOrder = ((KeyValuePair<object, object>)attribToOrder.Value).Key;
-
-                if (!(columnToOrder is RelationalColumn))
-                    columnList = string.Concat(columnList, columnToOrder, ", ");
-                else
-                    columnList = string.Concat(columnList, string.Format("{0}.{1}", ((RelationalColumn)columnToOrder).TableName.ToLower(),
-                                                                                    ((RelationalColumn)columnToOrder).ColumnName), ", ");
-            }
-
-            columnList = columnList.Substring(0, columnList.Length - 2);
-
-            sqlInstruction = string.Format(sqlInstruction,
-                                           string.Format(SQLStatements.SQL_Action_OrderResult,
-                                                         columnList,
-                                                         orderDescending ? "DESC" : "ASC"));
-        }
-
-        private static void ParseOrdinationAttributes(Dictionary<string, string> columnMapping, string sortAttributes, bool orderDescending, ref string sqlInstruction)
+        private static void ParseOrdinationAttributes(Dictionary<string, string> columnMapping, string sortAttributes, bool orderDescending, DatabaseEngine engine, ref string sqlInstruction)
         {
             string columnList = string.Empty;
             string[] ordinationAttributes = sortAttributes.Split(',');
@@ -286,7 +274,7 @@ namespace Rochas.DapperRepository.Helpers
                 var propName = ordinationAttributes[contAtrib].Trim();
 
                 if (columnMapping.TryGetValue(propName, out var columnName))
-                    columnList = string.Concat(columnList, columnName, ", ");
+                    columnList = string.Concat(columnList, QuoteIdentifier(columnName, engine), ", ");
             }
 
             if (columnList.Length > 2)
@@ -327,7 +315,7 @@ namespace Rochas.DapperRepository.Helpers
                         entityColumnName = ((KeyValuePair<object, object>)item.Value).Key.ToString();
 
                         if (!string.IsNullOrWhiteSpace(groupAttributes) && groupAttributes.Contains(entityAttributeName))
-                            columnList += string.Format("{0}.{1}, ", tableName, entityColumnName);
+                            columnList += string.Format("{0}.{1}, ", QuoteIdentifier(tableName, engine), QuoteIdentifier(entityColumnName, engine));
                     }
 
                     if (item.Key.Equals("TableName"))
@@ -337,11 +325,11 @@ namespace Rochas.DapperRepository.Helpers
                     }
                     else if (itemChildKeyPair.Key is RelationalColumn)
                     {
-                        SetRelationalSqlParameters(itemChildKeyPair, tableName, ref columnList, ref relationList);
+                        SetRelationalSqlParameters(itemChildKeyPair, tableName, engine, ref columnList, ref relationList);
                     }
                     else if (itemChildKeyPair.Key is DataAggregationColumn)
                     {
-                        SetAggregationSqlParameters(itemChildKeyPair, tableName, entityAttributeName, ref columnList);
+                        SetAggregationSqlParameters(itemChildKeyPair, tableName, entityAttributeName, engine, ref columnList);
                     }
                     else
                     {
@@ -352,7 +340,7 @@ namespace Rochas.DapperRepository.Helpers
 
             if (entitySqlFilter != null)
             {
-                SetFilterSqlParameters(entitySqlFilter, tableName, action, rangeValues, ref columnFilterList, filterConjunction, sqlParameters, keyColumnName);
+                SetFilterSqlParameters(entitySqlFilter, tableName, action, rangeValues, ref columnFilterList, filterConjunction, sqlParameters, keyColumnName, engine);
             }
 
             FillSqlParametersResult(returnDictionary, action, ref columnList, ref valueList, ref columnValueList, ref columnFilterList, ref relationList, readUncommited);
@@ -449,8 +437,8 @@ namespace Rochas.DapperRepository.Helpers
             switch (action)
             {
                 case PersistenceAction.Add:
-                    columnList += string.Format("{0}, ", entityColumnName);
-                    valueList += string.Format("{0}, ", entityColumnValue);
+                    columnList += string.Format("{0}, ", QuoteIdentifier(entityColumnName, engine));
+                    valueList += string.Format("{0}, ", BooleanLiteral(entityColumnValue, engine));
 
                     break;
                 case PersistenceAction.Query:
@@ -462,7 +450,7 @@ namespace Rochas.DapperRepository.Helpers
                         || showAttributes.Length > 0 && Array.IndexOf(showAttributes, entityAttributeName) > -1)
                     {
                         var columnAlias = isCustomColumn ? string.Format(" AS {0}", entityAttributeName) : string.Empty;
-                        columnList += string.Format("{0}.{1}{2}, ", tableName, entityColumnName, columnAlias);
+                        columnList += string.Format("{0}.{1}{2}, ", QuoteIdentifier(tableName, engine), QuoteIdentifier(entityColumnName, engine), columnAlias);
                     }
 
                     break;
@@ -472,7 +460,7 @@ namespace Rochas.DapperRepository.Helpers
                         || showAttributes.Length > 0 && Array.IndexOf(showAttributes, entityAttributeName) > -1)
                     {
                         var columnAlias = isCustomColumn ? string.Format(" AS {0}", entityAttributeName) : string.Empty;
-                        columnList += string.Format("{0}.{1}{2}, ", tableName, entityColumnName, columnAlias);
+                        columnList += string.Format("{0}.{1}{2}, ", QuoteIdentifier(tableName, engine), QuoteIdentifier(entityColumnName, engine), columnAlias);
                     }
 
                     break;
@@ -480,7 +468,7 @@ namespace Rochas.DapperRepository.Helpers
 
                     if (entityColumnName.Equals(keyColumnName))
                         columnList += string.Format(SQLStatements.SQL_Action_CountAggregation,
-                                                    tableName, entityColumnName, entityAttributeName);
+                                                    QuoteIdentifier(tableName, engine), QuoteIdentifier(entityColumnName, engine), entityAttributeName);
 
                     break;
                 default: // Alteração e Exclusão
@@ -489,14 +477,14 @@ namespace Rochas.DapperRepository.Helpers
                         if (entityColumnValue == null)
                             entityColumnValue = SqlDefaultValue.Null;
 
-                        columnValueList += string.Format("{0} = {1}, ", entityColumnName, entityColumnValue);
+                        columnValueList += string.Format("{0} = {1}, ", QuoteIdentifier(entityColumnName, engine), BooleanLiteral(entityColumnValue, engine));
                     }
 
                     break;
             }
         }
 
-        private static void SetFilterSqlParameters(IDictionary<object, object> entitySqlFilter, string tableName, PersistenceAction action, IDictionary<string, object[]> rangeValues, ref string columnFilterList, bool filterConjunction, Dictionary<string, object> sqlParameters = null, string keyColumnName = null)
+        private static void SetFilterSqlParameters(IDictionary<object, object> entitySqlFilter, string tableName, PersistenceAction action, IDictionary<string, object[]> rangeValues, ref string columnFilterList, bool filterConjunction, Dictionary<string, object> sqlParameters = null, string keyColumnName = null, DatabaseEngine engine = DatabaseEngine.SQLite)
         {
             int paramCounter = 0;
             foreach (var filter in entitySqlFilter)
@@ -516,7 +504,7 @@ namespace Rochas.DapperRepository.Helpers
                     else if (!(itemChildKeyPair.Key is RelationalColumn))
                     {
                         columnName = itemChildKeyPair.Key;
-                        filterColumnName = string.Concat(tableName, ".", columnName);
+                        filterColumnName = string.Format("{0}.{1}", QuoteIdentifier(tableName, engine), QuoteIdentifier(columnName.ToString(), engine));
                         filterColumnValue = itemChildKeyPair.Value;
                     }
                     else
@@ -525,7 +513,7 @@ namespace Rochas.DapperRepository.Helpers
 
                         if ((action == PersistenceAction.Query) && relationConfig.Filterable)
                         {
-                            filterColumnName = string.Concat(relationConfig.TableName.ToLower(), ".", relationConfig.ColumnName);
+                            filterColumnName = string.Format("{0}.{1}", QuoteIdentifier(relationConfig.TableName, engine), QuoteIdentifier(relationConfig.ColumnName, engine));
                             filterColumnValue = itemChildKeyPair.Value;
                         }
                     }
@@ -550,7 +538,13 @@ namespace Rochas.DapperRepository.Helpers
                         var isForeignKey = filterColumnNameLower.EndsWith("_id") || filterColumnNameLower.EndsWith(".id");
 
                         bool compareRule = ((action == PersistenceAction.Query)
-                                            || (action == PersistenceAction.Count))
+                                             || (action == PersistenceAction.Count))
+                                         && !(filterColumnValue is bool)
+                                         && !(filterColumnValue is DateTime)
+                                         && !(filterColumnValue is DateTimeOffset)
+                                         && !(filterColumnValue is double)
+                                         && !(filterColumnValue is float)
+                                         && !(filterColumnValue is decimal)
                                          && !long.TryParse(filterColumnValue.ToString(), out long fake)
                                          && !filterColumnNameLower.Contains("date")
                                          && !isKeyColumn
@@ -582,11 +576,8 @@ namespace Rochas.DapperRepository.Helpers
                                               : string.Concat(SqlOperator.Equal, filterColumnValueStr);
                             }
 
-                            if (filterColumnValue.Equals(true))
-                                comparation = " = 1";
-
-                            if ((action == PersistenceAction.Update) && filterColumnValue.Equals(false))
-                                comparation = " = 0";
+                             if (filterColumnValue is bool)
+                                comparation = string.Concat(" = ", BooleanLiteral(filterColumnValue, engine));
 
                             if (!filterColumnValue.Equals(false))
                                 columnFilterList += filterColumnName + comparation +
@@ -594,7 +585,7 @@ namespace Rochas.DapperRepository.Helpers
                         }
                         else
                             SetRangeFilterSql(filter, rangeValues, columnNameStr, 
-                                              filterColumnName.ToString(), ref columnFilterList);
+                                              filterColumnName.ToString(), engine, ref columnFilterList);
                     }
                 }
 			}
@@ -618,7 +609,8 @@ namespace Rochas.DapperRepository.Helpers
 
         private static void SetRangeFilterSql(KeyValuePair<object, object> filter,
                                             IDictionary<string, object[]> rangeValues, 
-                                            string columnNameStr, string filterColumnName, 
+                                            string columnNameStr, string filterColumnName,
+                                            DatabaseEngine engine,
                                             ref string columnFilterList)
         {
             string rangeFrom = "'{0}'";
@@ -635,7 +627,7 @@ namespace Rochas.DapperRepository.Helpers
                 comparation = GetDateRangeComparation(rangeValues, columnNameStr, ref rangeFrom, ref rangeTo);
             
             if (!string.IsNullOrWhiteSpace(comparation))
-                columnFilterList += string.Concat(columnNameStr, " ", comparation, SqlOperator.And);
+                columnFilterList += string.Concat(QuoteIdentifier(columnNameStr, engine), " ", comparation, SqlOperator.And);
         }
 
         private static string GetNumericRangeComparation(IDictionary<string, object[]> rangeValues,
@@ -713,12 +705,12 @@ namespace Rochas.DapperRepository.Helpers
             return result;
         }
 
-        private static void SetRelationalSqlParameters(KeyValuePair<object, object> itemChildKeyPair, string tableName, ref string columnList, ref string relationList)
+        private static void SetRelationalSqlParameters(KeyValuePair<object, object> itemChildKeyPair, string tableName, DatabaseEngine engine, ref string columnList, ref string relationList)
         {
             string relation;
             RelationalColumn relationConfig = itemChildKeyPair.Key as RelationalColumn;
 
-            columnList += string.Format("{0}.{1} ", relationConfig.TableName.ToLower(), relationConfig.ColumnName);
+            columnList += string.Format("{0}.{1} ", QuoteIdentifier(relationConfig.TableName, engine), QuoteIdentifier(relationConfig.ColumnName, engine));
 
             if (!string.IsNullOrEmpty(relationConfig.ColumnAlias))
                 columnList += string.Format(SQLStatements.SQL_Action_ColumnAlias, relationConfig.ColumnAlias);
@@ -728,32 +720,32 @@ namespace Rochas.DapperRepository.Helpers
             if (relationConfig.JunctionType == RelationalJunctionType.Mandatory)
             {
                 relation = string.Format(SQLStatements.SQL_Action_RelationateMandatorily,
-                                                       relationConfig.TableName.ToLower(),
-                                                       string.Concat(tableName, ".", relationConfig.KeyColumn),
-                                                       string.Concat(relationConfig.TableName, ".",
-                                                       relationConfig.ForeignKeyColumn, " "));
+                                                       QuoteIdentifier(relationConfig.TableName, engine),
+                                                       string.Format("{0}.{1}", QuoteIdentifier(tableName, engine), QuoteIdentifier(relationConfig.KeyColumn, engine)),
+                                                       string.Format("{0}.{1}", QuoteIdentifier(relationConfig.TableName, engine),
+                                                       QuoteIdentifier(relationConfig.ForeignKeyColumn, engine)));
             }
             else
             {
                 if (!string.IsNullOrEmpty(relationConfig.IntermediaryColumnName))
                 {
                     relation = string.Format(SQLStatements.SQL_Action_RelationateOptionally,
-                                             relationConfig.IntermediaryColumnName.ToLower(),
-                                             string.Concat(tableName, ".", relationConfig.ForeignKeyColumn),
-                                             string.Concat(relationConfig.IntermediaryColumnName, ".",
-                                             relationConfig.ForeignKeyColumn));
+                                             QuoteIdentifier(relationConfig.IntermediaryColumnName, engine),
+                                             string.Format("{0}.{1}", QuoteIdentifier(tableName, engine), QuoteIdentifier(relationConfig.ForeignKeyColumn, engine)),
+                                             string.Format("{0}.{1}", QuoteIdentifier(relationConfig.IntermediaryColumnName, engine),
+                                             QuoteIdentifier(relationConfig.ForeignKeyColumn, engine)));
 
                     relation += string.Format(SQLStatements.SQL_Action_RelationateOptionally,
-                                              relationConfig.TableName,
-                                              string.Concat(relationConfig.IntermediaryColumnName, ".", relationConfig.KeyColumn),
-                                              string.Concat(relationConfig.TableName, ".", relationConfig.ForeignKeyColumn, " "));
+                                              QuoteIdentifier(relationConfig.TableName, engine),
+                                              string.Format("{0}.{1}", QuoteIdentifier(relationConfig.IntermediaryColumnName, engine), QuoteIdentifier(relationConfig.KeyColumn, engine)),
+                                              string.Format("{0}.{1}", QuoteIdentifier(relationConfig.TableName, engine), QuoteIdentifier(relationConfig.ForeignKeyColumn, engine)));
                 }
                 else
                 {
                     relation = string.Format(SQLStatements.SQL_Action_RelationateOptionally,
-                                             relationConfig.TableName,
-                                             string.Concat(tableName, ".", relationConfig.KeyColumn),
-                                             string.Concat(relationConfig.TableName, ".", relationConfig.ForeignKeyColumn));
+                                             QuoteIdentifier(relationConfig.TableName, engine),
+                                             string.Format("{0}.{1}", QuoteIdentifier(tableName, engine), QuoteIdentifier(relationConfig.KeyColumn, engine)),
+                                             string.Format("{0}.{1}", QuoteIdentifier(relationConfig.TableName, engine), QuoteIdentifier(relationConfig.ForeignKeyColumn, engine)));
                 }
             }
 
@@ -764,7 +756,7 @@ namespace Rochas.DapperRepository.Helpers
                 relationList += relation;
         }
 
-        private static void SetAggregationSqlParameters(KeyValuePair<object, object> itemChildKeyPair, string tableName, string entityAttributeName, ref string columnList)
+        private static void SetAggregationSqlParameters(KeyValuePair<object, object> itemChildKeyPair, string tableName, string entityAttributeName, DatabaseEngine engine, ref string columnList)
         {
             var annotation = itemChildKeyPair.Key as DataAggregationColumn;
 
@@ -772,23 +764,23 @@ namespace Rochas.DapperRepository.Helpers
             {
                 case DataAggregationType.Count:
                     columnList += string.Format(SQLStatements.SQL_Action_CountAggregation,
-                                                tableName, annotation.ColumnName, entityAttributeName);
+                                                QuoteIdentifier(tableName, engine), QuoteIdentifier(annotation.ColumnName, engine), entityAttributeName);
                     break;
                 case DataAggregationType.Sum:
                     columnList += string.Format(SQLStatements.SQL_Action_SummaryAggregation,
-                                                tableName, annotation.ColumnName, entityAttributeName);
+                                                QuoteIdentifier(tableName, engine), QuoteIdentifier(annotation.ColumnName, engine), entityAttributeName);
                     break;
                 case DataAggregationType.Average:
                     columnList += string.Format(SQLStatements.SQL_Action_AverageAggregation,
-                                                tableName, annotation.ColumnName, entityAttributeName);
+                                                QuoteIdentifier(tableName, engine), QuoteIdentifier(annotation.ColumnName, engine), entityAttributeName);
                     break;
                 case DataAggregationType.Minimum:
                     columnList += string.Format(SQLStatements.SQL_Action_MinimumAggregation,
-                                                tableName, annotation.ColumnName, entityAttributeName);
+                                                QuoteIdentifier(tableName, engine), QuoteIdentifier(annotation.ColumnName, engine), entityAttributeName);
                     break;
                 case DataAggregationType.Maximum:
                     columnList += string.Format(SQLStatements.SQL_Action_MaximumAggregation,
-                                                tableName, annotation.ColumnName, entityAttributeName);
+                                                QuoteIdentifier(tableName, engine), QuoteIdentifier(annotation.ColumnName, engine), entityAttributeName);
                     break;
             }
         }

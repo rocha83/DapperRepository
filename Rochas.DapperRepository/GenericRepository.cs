@@ -44,6 +44,18 @@ namespace Rochas.DapperRepository
 			_snakeCaseNaming = forceSnakeCase;
 		}
 
+		/// <summary>
+		/// Infers the <see cref="DatabaseEngine"/> from the connection string via
+		/// <see cref="DatabaseEngineDetector.Detect"/> instead of requiring it as an argument.
+		/// </summary>
+		public GenericRepository(string connectionString, string logPath = null, bool keepConnected = false, bool readUncommited = false, bool useCache = true, bool forceSnakeCase = false, params string[] replicaConnStrings)
+			: base(connectionString, logPath, keepConnected, replicaConnStrings)
+		{
+			_readUncommited = readUncommited;
+			_useCache = useCache;
+			_snakeCaseNaming = forceSnakeCase;
+		}
+
 		public GenericRepository(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, bool readUncommited = false, bool useCache = true, bool forceSnakeCase = false, params string[] replicaConnStrings)
 			: base(dbConnection, logPath, keepConnected, replicaConnStrings)
 		{
@@ -964,20 +976,22 @@ namespace Rochas.DapperRepository
 
 		private void SetParentChildEntity(object loadedEntity, PropertyInfo child, object childEntityInstance, bool childEntityIsList)
 		{
-			if (childEntityInstance != null)
-				if (!childEntityIsList)
-					child.SetValue(loadedEntity, childEntityInstance, null);
-				else
+			if (childEntityInstance == null) return;
+			if (!child.CanWrite) return;
+
+			if (!childEntityIsList)
+				child.SetValue(loadedEntity, childEntityInstance, null);
+			else
+			{
+				var childListInstance = (IList)childEntityInstance;
+				if (childListInstance.Count > 0)
 				{
-					var childListInstance = (IList)childEntityInstance;
-					if (childListInstance.Count > 0)
-					{
-						var childTypedList = EntityReflector.CreateTypedList(child);
-						foreach (var listItem in childListInstance)
-							childTypedList.Add(listItem);
-						child.SetValue(loadedEntity, childTypedList, null);
-					}
+					var childTypedList = EntityReflector.CreateTypedList(child);
+					foreach (var listItem in childListInstance)
+						childTypedList.Add(listItem);
+					child.SetValue(loadedEntity, childTypedList, null);
 				}
+			}
 		}
 
 		private void AddReplicas(object entity, PropertyInfo[] entityProps, int lastInsertedId, bool persistComposition)

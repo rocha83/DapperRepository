@@ -55,8 +55,6 @@ namespace Rochas.DapperRepository.Helpers
                         p.GetCustomAttribute(typeof(ColumnAttribute)) as ColumnAttribute);
 
                     var columnName = columnAnnotation?.Name ?? prop.Name;
-                    if (engine == DatabaseEngine.PostgreSQL)
-                        columnName = columnName.ToLower();
 
                     mapping[prop.Name] = columnName;
                 }
@@ -129,8 +127,6 @@ namespace Rochas.DapperRepository.Helpers
                         var columnAnnotation = ColumnAnnotations.GetOrAdd(prop, p =>
                             p.GetCustomAttribute(typeof(ColumnAttribute)) as ColumnAttribute);
                         columnKey = columnAnnotation?.Name ?? prop.Name;
-                        if (engine == DatabaseEngine.PostgreSQL)
-                            columnKey = columnKey.ToString().ToLower();
                     }
 
                     var columnValue = prop.GetValue(Convert.ChangeType(entity, entity.GetType()), null);
@@ -189,9 +185,6 @@ namespace Rochas.DapperRepository.Helpers
                     : $"{attr.Schema}.{attr.Name}";
             });
 
-            if (engine == DatabaseEngine.PostgreSQL)
-                name = name.ToLower();
-
             return name;
         }
 
@@ -216,7 +209,6 @@ namespace Rochas.DapperRepository.Helpers
                             columnValue = SqlDefaultValue.Null;
                         break;
                     case SQL.DataType.Boolean:
-                        columnValue = ((bool)columnValue) ? 1 : 0;
                         break;
                     case SQL.DataType.String:
                         var strValue = columnValue.ToString().Replace("'", "\"");

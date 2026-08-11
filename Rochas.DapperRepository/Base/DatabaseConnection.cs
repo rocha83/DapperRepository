@@ -58,6 +58,14 @@ namespace Rochas.DapperRepository.Base
             if (keepConnection) Connect();
         }
 
+        /// <summary>
+        /// Infers the <see cref="DatabaseEngine"/> from the connection string.
+        /// </summary>
+        public DataBaseConnection(string connectionString, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings)
+            : this(DatabaseEngineDetector.Detect(connectionString), connectionString, logPath, keepConnected, replicaConnStrings)
+        {
+        }
+
         public DataBaseConnection(IDbConnection dbConnection, string logPath = null, bool keepConnected = false, params string[] replicaConnStrings) : base(dbConnection.ConnectionString, logPath, replicaConnStrings)
         {
             engine = DatabaseEngine.PostgreSQL;
@@ -76,6 +84,9 @@ namespace Rochas.DapperRepository.Base
             if ((connection == null)
                 || (connection.State != ConnectionState.Open))
                 keepConnection = Connect();
+
+            if (transactionControl != null)
+                return;
 
             this.transactionControl = connection.BeginTransaction();
         }
@@ -207,6 +218,21 @@ namespace Rochas.DapperRepository.Base
             return result;
         }
 
+        private string GetLastIdSql()
+        {
+            switch (engine)
+            {
+                case DatabaseEngine.SQLite:
+                    return SQLStatements.SQL_Action_GetLastId_SQLite;
+                case DatabaseEngine.PostgreSQL:
+                    return SQLStatements.SQL_Action_GetLastId_PostgreSQL;
+                case DatabaseEngine.MySQL:
+                    return SQLStatements.SQL_Action_GetLastId_MySQL;
+                default:
+                    return SQLStatements.SQL_Action_GetLastId;
+            }
+        }
+
         protected int ExecuteCommand(string sqlInstruction, Dictionary<object, object> parameters = null)
         {
             IDbCommand sqlCommand;
@@ -225,14 +251,10 @@ namespace Rochas.DapperRepository.Base
                     if (sqlCommand.CommandText.StartsWith(insertCommand))
                     {
                         sqlCommand.ExecuteNonQuery();
-                        if (engine == DatabaseEngine.SQLite)
-                            sqlCommand.CommandText = SQLStatements.SQL_Action_GetLastId_SQLite;
-                        else
-                            sqlCommand.CommandText = SQLStatements.SQL_Action_GetLastId;
+                        sqlCommand.CommandText = GetLastIdSql();
                     }
 
-                    int scalarReturn;
-                    int.TryParse(sqlCommand.ExecuteScalar().ToString(), out scalarReturn);
+                    int.TryParse(sqlCommand.ExecuteScalar().ToString(), out int scalarReturn);
                     executionReturn = scalarReturn;
                 }
                 else
@@ -260,10 +282,7 @@ namespace Rochas.DapperRepository.Base
                     if (sqlCommand.CommandText.StartsWith(insertCommand))
                     {
                         sqlCommand.ExecuteNonQuery();
-                        if (engine == DatabaseEngine.SQLite)
-                            sqlCommand.CommandText = SQLStatements.SQL_Action_GetLastId_SQLite;
-                        else
-                            sqlCommand.CommandText = SQLStatements.SQL_Action_GetLastId;
+                        sqlCommand.CommandText = GetLastIdSql();
                     }
 
                     int.TryParse(sqlCommand.ExecuteScalar().ToString(), out int scalarReturn);
