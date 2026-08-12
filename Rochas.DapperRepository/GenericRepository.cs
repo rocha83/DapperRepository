@@ -472,7 +472,7 @@ namespace Rochas.DapperRepository
 			var result = new List<T>();
 			var queryResult = await QueryObjects(filter, PersistenceAction.Query, loadComposition,
 				filterConjunction: filterConjunction, sortAttributes: sortAttributes,
-				orderDescending: orderDescending, groupAttributes: groupAttributes);
+				orderDescending: orderDescending, groupAttributes: groupAttributes, aggregates: aggregates);
 			if (queryResult != null)
 				foreach (var item in queryResult)
 					result.Add(item as T);
@@ -489,7 +489,7 @@ namespace Rochas.DapperRepository
 		{
 			var totalCount = await CountObject(filter as object);
 			int offset = (page - 1) * pageSize;
-			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending);
+			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, aggregates: aggregates);
 
 			var items = new List<T>();
 			if (queryResult != null)
@@ -522,7 +522,7 @@ namespace Rochas.DapperRepository
 			return QueryObjectsSync(filter, PersistenceAction.Get, loadComposition)?.FirstOrDefault();
 		}
 
-		private async Task<IEnumerable<object>> QueryObjects(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
+		private async Task<IEnumerable<object>> QueryObjects(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false, Dictionary<string, DataAggregationType> aggregates = null)
 		{
 			IEnumerable<object> returnList = null;
 
@@ -533,7 +533,7 @@ namespace Rochas.DapperRepository
 			if (returnList == null)
 			{
 				var sqlParameters = new Dictionary<string, object>();
-				var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending, _readUncommited, sqlParameters);
+				var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending, _readUncommited, sqlParameters, aggregates);
 
             if (((connection != null) && keepConnection) || base.Connect())
 				{
@@ -559,9 +559,9 @@ namespace Rochas.DapperRepository
 			return returnList;
 		}
 
-		private IEnumerable<object> QueryObjectsSync(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false)
+		private IEnumerable<object> QueryObjectsSync(object filterEntity, PersistenceAction action, bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false, Dictionary<string, DataAggregationType> aggregates = null)
 		{
-			return QueryObjects(filterEntity, action, loadComposition, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending).GetAwaiter().GetResult();
+			return QueryObjects(filterEntity, action, loadComposition, recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending, aggregates).GetAwaiter().GetResult();
 		}
 
 		private async Task<int> QueryCountObjects(T filterEntity, bool filterConjunction = false)
@@ -594,11 +594,11 @@ namespace Rochas.DapperRepository
 			return result;
 		}
 
-		private async Task<IEnumerable<object>> QueryObjectsPaged(object filterEntity, PersistenceAction action, bool loadComposition = false, int totalCount = 0, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false)
+		private async Task<IEnumerable<object>> QueryObjectsPaged(object filterEntity, PersistenceAction action, bool loadComposition = false, int totalCount = 0, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, Dictionary<string, DataAggregationType> aggregates = null)
 		{
 			// Gera SQL com LIMIT/OFFSET nativo do banco (parametrizado)
 			var sqlParameters = new Dictionary<string, object>();
-			var sqlInstruction = EntitySqlParser.ParseEntityPaged(filterEntity, engine, action, filterEntity, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, readUncommited: _readUncommited, sqlParameters: sqlParameters);
+			var sqlInstruction = EntitySqlParser.ParseEntityPaged(filterEntity, engine, action, filterEntity, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, readUncommited: _readUncommited, sqlParameters: sqlParameters, aggregates: aggregates);
 
 			IEnumerable<object> returnList = null;
 

@@ -31,7 +31,7 @@ namespace Rochas.DapperRepository.Helpers
 		/// <param name="orderDescending">Flag to return ordering with descending order</param>
 		/// <param name="readUncommited">Flag to set uncommited transaction level queries</param>
 		/// <returns></returns>
-		public static string ParseEntity(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false, Dictionary<string, object> sqlParameters = null)
+		public static string ParseEntity(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int recordLimit = 0, bool filterConjunction = false, bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false, Dictionary<string, object> sqlParameters = null, Dictionary<string, DataAggregationType> aggregates = null)
         {
             try
             {
@@ -54,7 +54,7 @@ namespace Rochas.DapperRepository.Helpers
                     EntityReflector.ValidateListableAttributes(entityProps, showAttributes, out displayAttributes);
 
                 sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, persistenceAction, filterEntity,
-                                                   recordLimit, filterConjunction, displayAttributes, groupAttributes, readUncommited, sqlParameters);
+                                                   recordLimit, filterConjunction, displayAttributes, groupAttributes, readUncommited, sqlParameters, aggregates);
 
                 if ((persistenceAction != PersistenceAction.Add) && (persistenceAction != PersistenceAction.Update))
 				{
@@ -89,7 +89,7 @@ namespace Rochas.DapperRepository.Helpers
 		/// <summary>
 		/// Parse entity model object instance to SQL ANSI CRUD statements with OFFSET/FETCH pagination
 		/// </summary>
-		public static string ParseEntityPaged(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false, Dictionary<string, object> sqlParameters = null)
+		public static string ParseEntityPaged(object entity, DatabaseEngine engine, PersistenceAction persistenceAction, object filterEntity = null, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, bool readUncommited = false, Dictionary<string, object> sqlParameters = null, Dictionary<string, DataAggregationType> aggregates = null)
         {
             try
             {
@@ -107,7 +107,7 @@ namespace Rochas.DapperRepository.Helpers
                     throw new KeyNotFoundException("Entity key column annotation not found.");
 
                 sqlInstruction = GetSqlInstruction(entity, entityType, entityProps, engine, PersistenceAction.Query, filterEntity,
-                                                   0, filterConjunction, displayAttributes, null, readUncommited, sqlParameters);
+                                                   0, filterConjunction, displayAttributes, null, readUncommited, sqlParameters, aggregates);
 
                 if ((persistenceAction != PersistenceAction.Add) && (persistenceAction != PersistenceAction.Update))
 				{
@@ -160,7 +160,7 @@ namespace Rochas.DapperRepository.Helpers
 
         #region Helper Methods
 
-        private static string GetSqlInstruction(object entity, Type entityType, PropertyInfo[] entityProps, DatabaseEngine engine, PersistenceAction action, object filterEntity, int recordLimit, bool filterConjunction, string[] showAttributes, string groupAttributes, bool readUncommited = false, Dictionary<string, object> sqlParameters = null)
+        private static string GetSqlInstruction(object entity, Type entityType, PropertyInfo[] entityProps, DatabaseEngine engine, PersistenceAction action, object filterEntity, int recordLimit, bool filterConjunction, string[] showAttributes, string groupAttributes, bool readUncommited = false, Dictionary<string, object> sqlParameters = null, Dictionary<string, DataAggregationType> aggregates = null)
         {
             string sqlInstruction;
             Dictionary<object, object> sqlFilterData;
@@ -177,9 +177,13 @@ namespace Rochas.DapperRepository.Helpers
 
             var keyColumnName = EntityReflector.GetKeyColumnName(entityProps);
 
+            var columnMapping = (aggregates != null && aggregates.Count > 0)
+                ? EntityReflector.GetColumnMapping(entityType, engine)
+                : null;
+
             Dictionary<string, string> sqlResult = GetSqlParameters(sqlEntityData, engine, action, sqlFilterData,
                                                                         recordLimit, filterConjunction, showAttributes,
-                                                                        keyColumnName, rangeValues, groupAttributes, readUncommited, sqlParameters);
+                                                                        keyColumnName, rangeValues, groupAttributes, readUncommited, sqlParameters, aggregates, columnMapping);
             switch (action)
             {
                 case PersistenceAction.Add:
@@ -288,7 +292,7 @@ namespace Rochas.DapperRepository.Helpers
             }
         }
 
-        private static Dictionary<string, string> GetSqlParameters(Dictionary<object, object> entitySqlData, DatabaseEngine engine, PersistenceAction action, IDictionary<object, object> entitySqlFilter, int recordLimit, bool filterConjunction, string[] showAttributes, string keyColumnName, IDictionary<string, object[]> rangeValues, string groupAttributes, bool readUncommited = false, Dictionary<string, object> sqlParameters = null)
+        private static Dictionary<string, string> GetSqlParameters(Dictionary<object, object> entitySqlData, DatabaseEngine engine, PersistenceAction action, IDictionary<object, object> entitySqlFilter, int recordLimit, bool filterConjunction, string[] showAttributes, string keyColumnName, IDictionary<string, object[]> rangeValues, string groupAttributes, bool readUncommited = false, Dictionary<string, object> sqlParameters = null, Dictionary<string, DataAggregationType> aggregates = null, Dictionary<string, string> columnMapping = null)
         {
             var returnDictionary = new Dictionary<string, string>();
 
@@ -333,8 +337,18 @@ namespace Rochas.DapperRepository.Helpers
                     }
                     else
                     {
-                        SetPredicateSqlParameters(itemChildKeyPair, engine, action, tableName, keyColumnName, entityColumnName, entityAttributeName,
-                                                  recordLimit, showAttributes, ref columnList, ref valueList, ref columnValueList);
+                        if ((aggregates != null) && aggregates.TryGetValue(entityAttributeName, out var aggregationType)
+                            && (columnMapping != null) && columnMapping.TryGetValue(entityAttributeName, out var aggregationColumn))
+                        {
+                            SetAggregationSqlParameters(new KeyValuePair<object, object>(
+                                new DataAggregationColumn { ColumnName = aggregationColumn, AggregationType = aggregationType }, null),
+                                tableName, entityAttributeName, engine, ref columnList);
+                        }
+                        else
+                        {
+                            SetPredicateSqlParameters(itemChildKeyPair, engine, action, tableName, keyColumnName, entityColumnName, entityAttributeName,
+                                                      recordLimit, showAttributes, ref columnList, ref valueList, ref columnValueList);
+                        }
                     }
                 }
 

@@ -2095,5 +2095,36 @@ namespace Rochas.DapperRepository.Test
             }
         }
         #endregion
+
+        #region GroupBy Aggregates Dictionary Tests
+
+        [Fact]
+        public void Test103_GroupBy_Aggregates_Dictionary_SumAndCount()
+        {
+            using (var repos = new GenericRepository<FactSalesDictionaryEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var filter = new FactSalesDictionaryEntity();
+                var aggregates = new Dictionary<string, DataAggregationType>
+                {
+                    { "TotalAmount", DataAggregationType.Sum },
+                    { "Quantity", DataAggregationType.Count }
+                };
+
+                var result = repos.QuerySync(filter).GroupBy(new[] { "ProductId" }, aggregates).ToList();
+
+                Assert.NotNull(result);
+                Assert.Equal(2, result.Count);
+
+                var product1 = result.First(r => r.ProductId == 1);
+                Assert.Equal(31500m, product1.TotalAmount);
+                Assert.Equal(3, product1.Quantity);
+
+                var product2 = result.First(r => r.ProductId == 2);
+                Assert.Equal(750m, product2.TotalAmount);
+                Assert.Equal(1, product2.Quantity);
+            }
+        }
+
+        #endregion
     }
 }
