@@ -6,10 +6,12 @@ using Microsoft.Data.Sqlite;
 using System.Threading.Tasks;
 using Dapper;
 using MySqlConnector;
-using Rochas.DapperRepository.Helpers;
-using Rochas.DapperRepository.Helpers.SQL;
 using Rochas.DapperRepository.Exceptions;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.DapperRepository.Helpers;
+using Rochas.SqlWrapper.Helpers;
+using Rochas.SqlWrapper.Helpers.SQL;
+
+using Rochas.Data.Specification.Enums;
 using Npgsql;
 
 namespace Rochas.DapperRepository.Base

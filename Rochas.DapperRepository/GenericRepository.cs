@@ -11,16 +11,17 @@ using System.Data;
 using Microsoft.Data.Sqlite;
 using Rochas.DapperRepository.Base;
 using Rochas.DapperRepository.Helpers;
-using Rochas.DapperRepository.Specification.Models;
-using Rochas.DapperRepository.Specification.Enums;
-using Rochas.DapperRepository.Specification.Interfaces;
-using Rochas.DapperRepository.Specification.Annotations;
+using Rochas.SqlWrapper.Helpers;
+using Rochas.Data.Specification.Models;
+using Rochas.Data.Specification.Enums;
+using Rochas.Data.Specification.Interfaces;
+using Rochas.Data.Specification.Annotations;
 using System.Collections.Concurrent;
 using Rochas.DapperRepository.Builders;
 
 namespace Rochas.DapperRepository
 {
-	public class GenericRepository<T> : DatabaseConnection, IDisposable, IGenericRepository<T> where T : class
+	public class GenericRepository<T> : DatabaseConnection, IDisposable, IGenericRepository<T>, IGenericBwoqRepository<T> where T : class
 	{
 		#region Declarations
 
@@ -489,7 +490,7 @@ namespace Rochas.DapperRepository
 		{
 			var totalCount = await CountObject(filter as object);
 			int offset = (page - 1) * pageSize;
-			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, aggregates: aggregates);
+			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, groupAttributes: groupAttributes, aggregates: aggregates);
 
 			var items = new List<T>();
 			if (queryResult != null)
@@ -594,11 +595,11 @@ namespace Rochas.DapperRepository
 			return result;
 		}
 
-		private async Task<IEnumerable<object>> QueryObjectsPaged(object filterEntity, PersistenceAction action, bool loadComposition = false, int totalCount = 0, int offset = 0, int pageSize = 20, bool filterConjunction = false, string sortAttributes = null, bool orderDescending = false, Dictionary<string, DataAggregationType> aggregates = null)
+		private async Task<IEnumerable<object>> QueryObjectsPaged(object filterEntity, PersistenceAction action, bool loadComposition = false, int totalCount = 0, int offset = 0, int pageSize = 20, bool filterConjunction = false, string groupAttributes = null, string sortAttributes = null, bool orderDescending = false, Dictionary<string, DataAggregationType> aggregates = null)
 		{
 			// Gera SQL com LIMIT/OFFSET nativo do banco (parametrizado)
 			var sqlParameters = new Dictionary<string, object>();
-			var sqlInstruction = EntitySqlParser.ParseEntityPaged(filterEntity, engine, action, filterEntity, offset, pageSize, filterConjunction, sortAttributes: sortAttributes, orderDescending: orderDescending, readUncommited: _readUncommited, sqlParameters: sqlParameters, aggregates: aggregates);
+			var sqlInstruction = EntitySqlParser.ParseEntityPaged(filterEntity, engine, action, filterEntity, offset, pageSize, filterConjunction, groupAttributes: groupAttributes, sortAttributes: sortAttributes, orderDescending: orderDescending, readUncommited: _readUncommited, sqlParameters: sqlParameters, aggregates: aggregates);
 
 			IEnumerable<object> returnList = null;
 
@@ -1128,6 +1129,13 @@ namespace Rochas.DapperRepository
 			var exceptionContent = string.Format("Exception : {0}{1}{2} Content : {3}", JsonSerializer.Serialize(exception), Environment.NewLine, Environment.NewLine, JsonSerializer.Serialize(content));
 
 			File.WriteAllText(logFileName, exceptionContent);
+		}
+
+		// ── BWOQ QUERY (grammar Q/W/G/O/OD via Rochas.BWOQ) ──────────
+
+		public IBwoqQueryBuilder<T> QueryBwoq()
+		{
+			return new BwoqQueryBuilder<T>(this);
 		}
 
 		#endregion

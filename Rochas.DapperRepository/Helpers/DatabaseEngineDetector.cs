@@ -1,5 +1,5 @@
 using System;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Enums;
 
 namespace Rochas.DapperRepository.Helpers
 {
