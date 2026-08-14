@@ -837,7 +837,7 @@ namespace Rochas.DapperRepository
 		private void CleanCacheableData(object entity)
 		{
 			var isCacheable = (entity.GetType().GetCustomAttribute(typeof(CacheableAttribute)) != null);
-			if (isCacheable)
+			if (isCacheable && (_cacheProvider != null))
 				_cacheProvider.Del(entity, true);
 		}
 
