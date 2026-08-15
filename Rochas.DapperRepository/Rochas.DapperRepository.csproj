@@ -24,9 +24,9 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
     <PackageReference Include="MySqlConnector" Version="2.6.1" />
     <PackageReference Include="Npgsql" Version="8.0.9" />
-    <ProjectReference Include="..\..\DataSpecification\Rochas.Data.Specification\Rochas.Data.Specification.csproj" />
-    <ProjectReference Include="..\..\SqlWrapper\Rochas.SqlWrapper\Rochas.SqlWrapper.csproj" />
-    <ProjectReference Include="..\..\BWOQ\Rochas.BWOQ\Rochas.BWOQ.csproj" />
+    <PackageReference Include="Rochas.Data.Specification" Version="1.6.3" />
+    <PackageReference Include="Rochas.SqlWrapper" Version="1.1.2" />
+    <PackageReference Include="Rochas.BWOQ" Version="1.6.3" />
     <PackageReference Include="System.ComponentModel" Version="4.3.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.18" />

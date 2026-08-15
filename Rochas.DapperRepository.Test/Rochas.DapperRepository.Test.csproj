@@ -8,7 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.18" />
     <PackageReference Include="Rochas.Extensions" Version="1.2.6" />
+    <PackageReference Include="Rochas.Telemetry" Version="1.1.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.3">
       <PrivateAssets>all</PrivateAssets>
@@ -22,7 +24,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Rochas.DapperRepository\Rochas.DapperRepository.csproj" />
-    <ProjectReference Include="..\..\DataSpecification\Rochas.Data.Specification\Rochas.Data.Specification.csproj" />
+    <ProjectReference Include="..\..\CacheIndexer\Rochas.CacheIndexer\Rochas.CacheIndexer.csproj" />
+    <PackageReference Include="Rochas.Data.Specification" Version="1.6.3" />
   </ItemGroup>
 
 </Project>

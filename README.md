@@ -37,8 +37,8 @@ dotnet add package Rochas.DapperRepository
 
 ```csharp
 using Rochas.DapperRepository;
-using Rochas.DapperRepository.Specification.Annotations;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Annotations;
+using Rochas.Data.Specification.Enums;
 
 var connString = "Data Source=sample.db;Cache=Shared";
 
@@ -252,9 +252,21 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 in-memory + L2 distribute
 | QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
 | SearchPaginated | 2.5 ms | 3.1 ms | Tie* |
 
+### Benchmark — Channel vs Replica (Cluster Replication)
+
+**PersistenceChannel (CacheIndexer) vs DapperRepository native `replicaConnStrings`, 3-node SQLite cluster**
+
+| Scenario | Channel | Replica | Speedup |
+|----------|---------|---------|---------|
+| Single Invoice | 115 ms (8.7 inv/s) | 19 ms (52.6 inv/s) | Replica 6x faster* |
+| Bulk 100 | 585 ms (171 inv/s) | 9,479 ms (10.5 inv/s) | **Channel 16.2x** |
+| Bulk 1,000 | 6,679 ms (150 inv/s) | 70,835 ms (14.1 inv/s) | **Channel 10.6x** |
+
+> **\*Single Invoice**: Replica wins because there is no contention; the `AddSync` path hits one DB directly without lock overhead. **Bulk**: Channel wins because the PersistenceChannel decouples serialization from persistence via fan-out, while Replica's `Parallel.ForEach` + `Mutex` lock creates severe contention under load (P99 638 ms, Max 2,822 ms).
+
 ### Tests and coverage
 
-The `Rochas.DapperRepository.Test` project (xUnit, net9.0) contains **227 tests** covering async CRUD, composition, builders, GROUP BY/aggregates, pluggable cache, SQL parsers, type handlers and engine detection, with **80%** line coverage on the main assembly and **100%** on `Rochas.DapperRepository.Specification`.
+The `Rochas.DapperRepository.Test` project (xUnit, net9.0) contains **227 tests** covering async CRUD, composition, builders, GROUP BY/aggregates, pluggable cache, SQL parsers, type handlers and engine detection, with **80%** line coverage on the main assembly and **100%** on `Rochas.Data.Specification`.
 
 ---
 
@@ -291,8 +303,8 @@ dotnet add package Rochas.DapperRepository
 
 ```csharp
 using Rochas.DapperRepository;
-using Rochas.DapperRepository.Specification.Annotations;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Annotations;
+using Rochas.Data.Specification.Enums;
 
 var connString = "Data Source=sample.db;Cache=Shared";
 
@@ -506,9 +518,21 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 in-memory + L2 distribuí
 | QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
 | SearchPaginated | 2.5 ms | 3.1 ms | Empate* |
 
+### Benchmark — Channel vs Replica (Replicação em Cluster)
+
+**PersistenceChannel (CacheIndexer) vs DapperRepository nativo `replicaConnStrings`, cluster SQLite de 3 nós**
+
+| Cenário | Channel | Replica | Aceleração |
+|---------|---------|---------|------------|
+| Invoice Única | 115 ms (8,7 inv/s) | 19 ms (52,6 inv/s) | Replica 6x mais rápido* |
+| Bulk 100 | 585 ms (171 inv/s) | 9.479 ms (10,5 inv/s) | **Channel 16,2x** |
+| Bulk 1.000 | 6.679 ms (150 inv/s) | 70.835 ms (14,1 inv/s) | **Channel 10,6x** |
+
+> **\*Invoice Única**: Replica vence porque não há contenção; o caminho `AddSync` atinge um DB diretamente sem overhead de lock. **Bulk**: Channel vence porque o PersistenceChannel desacopla serialização de persistência via fan-out, enquanto o `Parallel.ForEach` + `Mutex` do Replica cria contenção severa sob carga (P99 638 ms, Max 2.822 ms).
+
 ### Testes e cobertura
 
-O projeto `Rochas.DapperRepository.Test` (xUnit, net9.0) contém **227 testes** cobrindo CRUD assíncrono, composição, builders, GROUP BY/agregações, cache plugável, parsers SQL, type handlers e detecção de engine, com **80%** de cobertura de linha no assembly principal e **100%** em `Rochas.DapperRepository.Specification`.
+O projeto `Rochas.DapperRepository.Test` (xUnit, net9.0) contém **227 testes** cobrindo CRUD assíncrono, composição, builders, GROUP BY/agregações, cache plugável, parsers SQL, type handlers e detecção de engine, com **80%** de cobertura de linha no assembly principal e **100%** em `Rochas.Data.Specification`.
 
 ---
 
@@ -545,8 +569,8 @@ dotnet add package Rochas.DapperRepository
 
 ```csharp
 using Rochas.DapperRepository;
-using Rochas.DapperRepository.Specification.Annotations;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Annotations;
+using Rochas.Data.Specification.Enums;
 
 var connString = "Data Source=sample.db;Cache=Shared";
 
@@ -760,9 +784,21 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 en memoria + L2 distribui
 | QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
 | SearchPaginated | 2.5 ms | 3.1 ms | Empate* |
 
+### Benchmark — Channel vs Replica (Replicación en Cluster)
+
+**PersistenceChannel (CacheIndexer) vs DapperRepository nativo `replicaConnStrings`, cluster SQLite de 3 nodos**
+
+| Escenario | Channel | Replica | Aceleración |
+|-----------|---------|---------|-------------|
+| Factura Individual | 115 ms (8,7 inv/s) | 19 ms (52,6 inv/s) | Replica 6x más rápido* |
+| Bulk 100 | 585 ms (171 inv/s) | 9.479 ms (10,5 inv/s) | **Channel 16,2x** |
+| Bulk 1.000 | 6.679 ms (150 inv/s) | 70.835 ms (14,1 inv/s) | **Channel 10,6x** |
+
+> **\*Factura Individual**: Replica gana porque no hay contención; la ruta `AddSync` accede a un DB directamente sin overhead de lock. **Bulk**: Channel gana porque el PersistenceChannel desacopla serialización de persistencia vía fan-out, mientras que el `Parallel.ForEach` + `Mutex` de Replica crea contención severa bajo carga (P99 638 ms, Max 2.822 ms).
+
 ### Pruebas y cobertura
 
-El proyecto `Rochas.DapperRepository.Test` (xUnit, net9.0) contiene **227 pruebas** que cubren CRUD asíncrono, composición, builders, GROUP BY/agregaciones, caché conectable, parsers SQL, type handlers y detección de engine, con **80%** de cobertura de línea en el ensamblado principal y **100%** en `Rochas.DapperRepository.Specification`.
+El proyecto `Rochas.DapperRepository.Test` (xUnit, net9.0) contiene **227 pruebas** que cubren CRUD asíncrono, composición, builders, GROUP BY/agregaciones, caché conectable, parsers SQL, type handlers y detección de engine, con **80%** de cobertura de línea en el ensamblado principal y **100%** en `Rochas.Data.Specification`.
 
 ---
 
@@ -799,8 +835,8 @@ dotnet add package Rochas.DapperRepository
 
 ```csharp
 using Rochas.DapperRepository;
-using Rochas.DapperRepository.Specification.Annotations;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Annotations;
+using Rochas.Data.Specification.Enums;
 
 var connString = "Data Source=sample.db;Cache=Shared";
 
@@ -1014,9 +1050,21 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 en mémoire + L2 distribu
 | QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
 | SearchPaginated | 2.5 ms | 3.1 ms | Égalité* |
 
+### Benchmark — Channel vs Replica (Réplication en Cluster)
+
+**PersistenceChannel (CacheIndexer) vs DapperRepository natif `replicaConnStrings`, cluster SQLite à 3 nœuds**
+
+| Scénario | Channel | Replica | Accélération |
+|----------|---------|---------|-------------|
+| Facture Individuelle | 115 ms (8,7 inv/s) | 19 ms (52,6 inv/s) | Replica 6x plus rapide* |
+| Bulk 100 | 585 ms (171 inv/s) | 9 479 ms (10,5 inv/s) | **Channel 16,2x** |
+| Bulk 1 000 | 6 679 ms (150 inv/s) | 70 835 ms (14,1 inv/s) | **Channel 10,6x** |
+
+> **\*Facture Individuelle**: Replica gagne car il n'y a pas de contention ; le chemin `AddSync` accède directement à une DB sans surcharge de lock. **Bulk**: Channel gagne car le PersistenceChannel découple sérialisation et persistance via fan-out, tandis que le `Parallel.ForEach` + `Mutex` de Replica crée une contention sévère sous charge (P99 638 ms, Max 2 822 ms).
+
 ### Tests et couverture
 
-Le projet `Rochas.DapperRepository.Test` (xUnit, net9.0) contient **227 tests** couvrant le CRUD asynchrone, la composition, les builders, le GROUP BY/les agrégats, le cache enfichable, les analyseurs SQL, les type handlers et la détection de moteur, avec **80 %** de couverture de lignes sur l'assemblage principal et **100 %** dans `Rochas.DapperRepository.Specification`.
+Le projet `Rochas.DapperRepository.Test` (xUnit, net9.0) contient **227 tests** couvrant le CRUD asynchrone, la composition, les builders, le GROUP BY/les agrégats, le cache enfichable, les analyseurs SQL, les type handlers et la détection de moteur, avec **80 %** de couverture de lignes sur l'assemblage principal et **100 %** dans `Rochas.Data.Specification`.
 
 ---
 
@@ -1053,8 +1101,8 @@ dotnet add package Rochas.DapperRepository
 
 ```csharp
 using Rochas.DapperRepository;
-using Rochas.DapperRepository.Specification.Annotations;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Annotations;
+using Rochas.Data.Specification.Enums;
 
 var connString = "Data Source=sample.db;Cache=Shared";
 
@@ -1268,6 +1316,18 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 in-memory + L2 verteilt
 | QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
 | SearchPaginated | 2.5 ms | 3.1 ms | Unentschieden* |
 
+### Benchmark — Channel vs Replica (Cluster-Replikation)
+
+**PersistenceChannel (CacheIndexer) vs DapperRepository nativ `replicaConnStrings`, 3-Knoten-SQLite-Cluster**
+
+| Szenario | Channel | Replica | Beschleunigung |
+|----------|---------|---------|----------------|
+| Einzelrechnung | 115 ms (8,7 Inv/s) | 19 ms (52,6 Inv/s) | Replica 6x schneller* |
+| Bulk 100 | 585 ms (171 Inv/s) | 9.479 ms (10,5 Inv/s) | **Channel 16,2x** |
+| Bulk 1.000 | 6.679 ms (150 Inv/s) | 70.835 ms (14,1 Inv/s) | **Channel 10,6x** |
+
+> **\*Einzelrechnung**: Replica gewinnt, da es keine Kontention gibt; der `AddSync`-Pfad erreicht eine DB direkt ohne Lock-Overhead. **Bulk**: Channel gewinnt, da PersistenceChannel Serialisierung und Persistenz über Fan-Out entkoppelt, während `Parallel.ForEach` + `Mutex` von Replica schwere Kontention unter Last erzeugt (P99 638 ms, Max 2.822 ms).
+
 ### Tests und Abdeckung
 
-Das Projekt `Rochas.DapperRepository.Test` (xUnit, net9.0) enthält **227 Tests**, die asynchrones CRUD, Komposition, Builder, GROUP BY/Aggregate, austauschbares Caching, SQL-Parser, Type-Handler und Engine-Erkennung abdecken, mit **80 %** Zeilenabdeckung der Hauptassembly und **100 %** in `Rochas.DapperRepository.Specification`.
+Das Projekt `Rochas.DapperRepository.Test` (xUnit, net9.0) enthält **227 Tests**, die asynchrones CRUD, Komposition, Builder, GROUP BY/Aggregate, austauschbares Caching, SQL-Parser, Type-Handler und Engine-Erkennung abdecken, mit **80 %** Zeilenabdeckung der Hauptassembly und **100 %** in `Rochas.Data.Specification`.
