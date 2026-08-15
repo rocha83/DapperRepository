@@ -551,4 +551,22 @@ Backpressure: `BoundedChannelFullMode.Wait` — não perde mensagens se o canal 
 
 
 
+---
+
+## ✅ Testes e Cobertura
+
+Suite de testes `xUnit` (net9.0) no projeto `Rochas.DapperRepository.Test`:
+
+- **Total de testes:** 227 (CRUD assíncrono, composição, builders, GROUP BY/agregações, cache plugável, parsers SQL, type handlers e engine detection)
+- **Cobertura de linha** (coverlet/cobertura):
+
+| Assembly | Cobertura de linha |
+|----------|--------------------|
+| `Rochas.DapperRepository` | 80% |
+| `Rochas.DapperRepository.Specification` | 100% |
+
+![coverage](https://img.shields.io/badge/line%20coverage-80%25%20%2F%20100%25-brightgreen)
+
+
+
 
