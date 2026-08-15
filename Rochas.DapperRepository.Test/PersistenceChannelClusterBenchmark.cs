@@ -540,6 +540,169 @@ public class PersistenceChannelClusterBenchmark : IDisposable
     }
 
     [Fact]
+    public async Task Channel_Bulk100_BatchSend()
+    {
+        ComponentObserver._errors = 0;
+        _svcObs.ClearObserverHistory();
+        var snap0 = _svcObs.ExportObserverHistory().LastOrDefault();
+        var gc0 = CaptureGc();
+        var th0 = CaptureThreads();
+
+        var invoices = new ClusterSaleInvoice[100];
+        for (int i = 0; i < 100; i++)
+            invoices[i] = CreateInvoice(i + 1);
+
+        long createAllocBefore = GC.GetTotalAllocatedBytes(false);
+        var gcAfterCreate = CaptureGc();
+
+        var broadcastTimes = new List<long>();
+        var workerTimes = new List<long>();
+        var dispatchTimes = new List<long>();
+
+        var sw = Stopwatch.StartNew();
+        for (int i = 0; i < 100; i++)
+        {
+            var bs = Stopwatch.StartNew();
+            _channelProvider.Put($"k{i}", invoices[i]);
+            broadcastTimes.Add(bs.ElapsedMilliseconds);
+        }
+        var sendDone = sw.ElapsedMilliseconds;
+
+        await Task.Delay(1500);
+
+        sw.Stop();
+        long createAllocAfter = GC.GetTotalAllocatedBytes(false);
+        var gc1 = CaptureGc();
+        var th1 = CaptureThreads();
+        var snap1 = _svcObs.ExportObserverHistory().LastOrDefault();
+
+        var mBroadcast = BuildPhaseMetric("Broadcast_Put", broadcastTimes);
+        var allocSendMB = (createAllocAfter - createAllocBefore) / (1024.0 * 1024.0);
+        var gcCreateDelta = gcAfterCreate.Gen0 - gc0.Gen0;
+
+        Console.WriteLine();
+        Console.WriteLine("═══════════════════════════════════════════════════════════");
+        Console.WriteLine(" Channel_Bulk100_BatchSend [Channel]");
+        Console.WriteLine("═══════════════════════════════════════════════════════════");
+        Console.WriteLine($" Records/node: 100 | Cluster: 300");
+        Console.WriteLine();
+        Console.WriteLine(" ─── Broadcast Timing (Put only, no creation) ───");
+        Console.WriteLine($" {mBroadcast.PhaseName,-42} Avg:{mBroadcast.AvgMs,7:F3}ms  P95:{mBroadcast.P95Ms,7:F3}ms  P99:{mBroadcast.P99Ms,7:F3}ms  Max:{mBroadcast.MaxMs,7:F3}ms");
+        Console.WriteLine($" {"Send Total (Put loop)",-42} {sendDone,7}ms");
+        Console.WriteLine($" {"Total Circuit (incl. wait)",-42} {sw.ElapsedMilliseconds,7}ms");
+        Console.WriteLine($" {"Throughput (Put/s)",-42} {100 * 1000.0 / Math.Max(sendDone, 1),7:F0} ops/sec");
+        Console.WriteLine();
+        Console.WriteLine(" ─── Allocation Analysis ───");
+        Console.WriteLine($" Broadcast alloc: {allocSendMB:F3}MB for 100 Put calls ({allocSendMB / 100 * 1024 * 1024:F0} bytes/op)");
+        Console.WriteLine($" ChannelMessage overhead: ~{(allocSendMB / 100 * 1024 * 1024):F0} bytes/op (object boxing + ChannelMessage)");
+        Console.WriteLine();
+        Console.WriteLine(" ─── GC Pressure ───");
+        Console.WriteLine($" Gen0: {gc0.Gen0}→{gc1.Gen0} (+{gc1.Gen0 - gc0.Gen0})  Gen1: {gc0.Gen1}→{gc1.Gen1} (+{gc1.Gen1 - gc0.Gen1})  Gen2: {gc0.Gen2}→{gc1.Gen2} (+{gc1.Gen2 - gc0.Gen2})");
+        var allocStartMB = gc0.AllocatedBytes / (1024.0 * 1024.0);
+        var allocEndMB = gc1.AllocatedBytes / (1024.0 * 1024.0);
+        Console.WriteLine($" Total Allocated: {allocStartMB:F1}MB→{allocEndMB:F1}MB (+{allocEndMB - allocStartMB:F1}MB)");
+        Console.WriteLine("═══════════════════════════════════════════════════════════");
+
+        Assert.Equal(100, mBroadcast.TotalOps);
+    }
+
+    [Fact]
+    public async Task Channel_Bulk100_GcPerPhase()
+    {
+        ComponentObserver._errors = 0;
+        _svcObs.ClearObserverHistory();
+        var gc0 = CaptureGc();
+        var alloc0 = GC.GetTotalAllocatedBytes(false);
+
+        var invoices = new ClusterSaleInvoice[100];
+        for (int i = 0; i < 100; i++)
+            invoices[i] = CreateInvoice(i + 1);
+
+        var gc1 = CaptureGc();
+        var alloc1 = GC.GetTotalAllocatedBytes(false);
+
+        var putTimes = new List<long>();
+        for (int i = 0; i < 100; i++)
+        {
+            var sw2 = Stopwatch.StartNew();
+            _channelProvider.Put($"k{i}", invoices[i]);
+            putTimes.Add(sw2.ElapsedMilliseconds);
+        }
+
+        var gc2 = CaptureGc();
+        var alloc2 = GC.GetTotalAllocatedBytes(false);
+
+        await Task.Delay(1500);
+
+        var gc3 = CaptureGc();
+        var alloc3 = GC.GetTotalAllocatedBytes(false);
+
+        Console.WriteLine();
+        Console.WriteLine("═══════════════════════════════════════════════════════════");
+        Console.WriteLine(" Channel_Bulk100_GcPerPhase [Channel]");
+        Console.WriteLine("═══════════════════════════════════════════════════════════");
+        Console.WriteLine();
+        Console.WriteLine(" ─── Allocation per Phase ───");
+        Console.WriteLine($" Phase 1 — Entity Create:  +{(alloc1 - alloc0) / 1024.0:F1}KB  Gen0 +{gc1.Gen0 - gc0.Gen0}");
+        Console.WriteLine($" Phase 2 — Put+Broadcast:  +{(alloc2 - alloc1) / 1024.0:F1}KB  Gen0 +{gc2.Gen0 - gc1.Gen0}");
+        Console.WriteLine($" Phase 3 — Worker+Dispatch: +{(alloc3 - alloc2) / 1024.0:F1}KB  Gen0 +{gc3.Gen0 - gc2.Gen0}");
+        Console.WriteLine($" ─────────────────────────────────────────────────");
+        Console.WriteLine($" TOTAL:                    +{(alloc3 - alloc0) / 1024.0:F1}KB  Gen0 +{gc3.Gen0 - gc0.Gen0}");
+        Console.WriteLine();
+        Console.WriteLine(" ─── Phase Timing ───");
+        Console.WriteLine($" Put+Broadcast (100x):  {putTimes.Sum()}ms  Avg:{putTimes.Average():F3}ms  Max:{putTimes.Max()}ms");
+        Console.WriteLine($" Wait+Dispatch:         ~{1500}ms (delay for worker pickup)");
+        Console.WriteLine("═══════════════════════════════════════════════════════════");
+
+        Assert.Equal(100, putTimes.Count);
+    }
+
+    [Fact]
+    public async Task Channel_Bulk100_ReuseEntity()
+    {
+        ComponentObserver._errors = 0;
+        _svcObs.ClearObserverHistory();
+        var gc0 = CaptureGc();
+        var alloc0 = GC.GetTotalAllocatedBytes(false);
+
+        var shared = CreateInvoice(1);
+        var putTimes = new List<long>();
+
+        var sw = Stopwatch.StartNew();
+        for (int i = 0; i < 100; i++)
+        {
+            var sw2 = Stopwatch.StartNew();
+            _channelProvider.Put($"k{i}", shared);
+            putTimes.Add(sw2.ElapsedMilliseconds);
+        }
+        await Task.Delay(1000);
+        sw.Stop();
+
+        var gc1 = CaptureGc();
+        var alloc1 = GC.GetTotalAllocatedBytes(false);
+
+        Console.WriteLine();
+        Console.WriteLine("═══════════════════════════════════════════════════════════");
+        Console.WriteLine(" Channel_Bulk100_ReuseEntity [Channel] — Zero-Creation Baseline");
+        Console.WriteLine("═══════════════════════════════════════════════════════════");
+        Console.WriteLine($" Same entity reused 100x → isolates pure Put+Broadcast overhead");
+        Console.WriteLine();
+        Console.WriteLine(" ─── Put Timing ───");
+        Console.WriteLine($" Put+Broadcast (100x):  {putTimes.Sum()}ms  Avg:{putTimes.Average():F3}ms  Max:{putTimes.Max()}ms");
+        Console.WriteLine($" Throughput (Put/s):    {100 * 1000.0 / Math.Max(putTimes.Sum(), 1):F0} ops/sec");
+        Console.WriteLine();
+        Console.WriteLine(" ─── Allocation (pure channel overhead) ───");
+        Console.WriteLine($" Total alloc: {(alloc1 - alloc0) / 1024.0:F1}KB  Gen0: +{gc1.Gen0 - gc0.Gen0}");
+        Console.WriteLine($" Per Put: {(alloc1 - alloc0) / 100.0:F0} bytes (ChannelMessage + string key)");
+        Console.WriteLine();
+        Console.WriteLine(" ─── Comparison ───");
+        Console.WriteLine($" ReuseEntity vs Bulk100 (create+put): shows how much alloc is entity creation vs channel");
+        Console.WriteLine("═══════════════════════════════════════════════════════════");
+
+        Assert.Equal(100, putTimes.Count);
+    }
+
+    [Fact]
     public async Task Channel_Bulk1000_Stress()
     {
         ComponentObserver._errors = 0;
