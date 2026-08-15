@@ -26,6 +26,7 @@
     <PackageReference Include="Npgsql" Version="8.0.9" />
     <ProjectReference Include="..\..\DataSpecification\Rochas.Data.Specification\Rochas.Data.Specification.csproj" />
     <ProjectReference Include="..\..\SqlWrapper\Rochas.SqlWrapper\Rochas.SqlWrapper.csproj" />
+    <ProjectReference Include="..\..\BWOQ\Rochas.BWOQ\Rochas.BWOQ.csproj" />
     <PackageReference Include="System.ComponentModel" Version="4.3.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.18" />
