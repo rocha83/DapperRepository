@@ -231,6 +231,27 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 in-memory + L2 distribute
     new DistributedCacheProvider("redis:6379")));
 ```
 
+### Benchmark — DapperRepository vs EF Core
+
+**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5,000 rows**
+
+| Scenario | EF Core | DapperRepository | Winner |
+|----------|---------|------------------|--------|
+| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
+| BulkInsert_100 | 32.8 ms | 33.5 ms | Tie |
+| GetById | 526 μs | 409 μs | ORM 1.3x |
+| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
+| Delete_Individual | 3.2 ms | 3.5 ms | Tie |
+| CountSync | 508 μs | 536 μs | Tie |
+| Search_Filterable | 1.0 ms | 1.2 ms | Tie |
+| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
+| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
+| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
+| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
+| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
+| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
+| SearchPaginated | 2.5 ms | 3.1 ms | Tie* |
+
 ### Tests and coverage
 
 The `Rochas.DapperRepository.Test` project (xUnit, net9.0) contains **227 tests** covering async CRUD, composition, builders, GROUP BY/aggregates, pluggable cache, SQL parsers, type handlers and engine detection, with **80%** line coverage on the main assembly and **100%** on `Rochas.DapperRepository.Specification`.
@@ -463,6 +484,27 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 in-memory + L2 distribuí
     new InMemoryCacheProvider(),
     new DistributedCacheProvider("redis:6379")));
 ```
+
+### 📊 Benchmark — DapperRepository vs EF Core
+
+**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5.000 linhas**
+
+| Cenário | EF Core | DapperRepository | Vitória |
+|---------|---------|------------------|---------|
+| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
+| BulkInsert_100 | 32.8 ms | 33.5 ms | Empate |
+| GetById | 526 μs | 409 μs | ORM 1.3x |
+| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
+| Delete_Individual | 3.2 ms | 3.5 ms | Empate |
+| CountSync | 508 μs | 536 μs | Empate |
+| Search_Filterable | 1.0 ms | 1.2 ms | Empate |
+| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
+| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
+| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
+| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
+| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
+| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
+| SearchPaginated | 2.5 ms | 3.1 ms | Empate* |
 
 ### Testes e cobertura
 
@@ -697,6 +739,27 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 en memoria + L2 distribui
     new DistributedCacheProvider("redis:6379")));
 ```
 
+### Benchmark — DapperRepository vs EF Core
+
+**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5.000 filas**
+
+| Escenario | EF Core | DapperRepository | Ganador |
+|-----------|---------|------------------|---------|
+| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
+| BulkInsert_100 | 32.8 ms | 33.5 ms | Empate |
+| GetById | 526 μs | 409 μs | ORM 1.3x |
+| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
+| Delete_Individual | 3.2 ms | 3.5 ms | Empate |
+| CountSync | 508 μs | 536 μs | Empate |
+| Search_Filterable | 1.0 ms | 1.2 ms | Empate |
+| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
+| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
+| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
+| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
+| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
+| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
+| SearchPaginated | 2.5 ms | 3.1 ms | Empate* |
+
 ### Pruebas y cobertura
 
 El proyecto `Rochas.DapperRepository.Test` (xUnit, net9.0) contiene **227 pruebas** que cubren CRUD asíncrono, composición, builders, GROUP BY/agregaciones, caché conectable, parsers SQL, type handlers y detección de engine, con **80%** de cobertura de línea en el ensamblado principal y **100%** en `Rochas.DapperRepository.Specification`.
@@ -930,6 +993,27 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 in-memory + L2 verteilt
     new DistributedCacheProvider("redis:6379")));
 ```
 
+### Benchmark — DapperRepository vs EF Core
+
+**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5.000 Zeilen**
+
+| Szenario | EF Core | DapperRepository | Sieger |
+|----------|---------|------------------|--------|
+| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
+| BulkInsert_100 | 32.8 ms | 33.5 ms | Unentschieden |
+| GetById | 526 μs | 409 μs | ORM 1.3x |
+| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
+| Delete_Individual | 3.2 ms | 3.5 ms | Unentschieden |
+| CountSync | 508 μs | 536 μs | Unentschieden |
+| Search_Filterable | 1.0 ms | 1.2 ms | Unentschieden |
+| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
+| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
+| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
+| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
+| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
+| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
+| SearchPaginated | 2.5 ms | 3.1 ms | Unentschieden* |
+
 ### Tests und Abdeckung
 
 Das Projekt `Rochas.DapperRepository.Test` (xUnit, net9.0) enthält **227 Tests**, die asynchrones CRUD, Komposition, Builder, GROUP BY/Aggregate, austauschbares Caching, SQL-Parser, Type-Handler und Engine-Erkennung abdecken, mit **80 %** Zeilenabdeckung der Hauptassembly und **100 %** in `Rochas.DapperRepository.Specification`.
@@ -1162,6 +1246,27 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 en mémoire + L2 distribu
     new InMemoryCacheProvider(),
     new DistributedCacheProvider("redis:6379")));
 ```
+
+### Benchmark — DapperRepository vs EF Core
+
+**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5 000 lignes**
+
+| Scénario | EF Core | DapperRepository | Gagnant |
+|----------|---------|------------------|---------|
+| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
+| BulkInsert_100 | 32.8 ms | 33.5 ms | Égalité |
+| GetById | 526 μs | 409 μs | ORM 1.3x |
+| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
+| Delete_Individual | 3.2 ms | 3.5 ms | Égalité |
+| CountSync | 508 μs | 536 μs | Égalité |
+| Search_Filterable | 1.0 ms | 1.2 ms | Égalité |
+| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
+| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
+| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
+| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
+| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
+| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
+| SearchPaginated | 2.5 ms | 3.1 ms | Égalité* |
 
 ### Tests et couverture
 
