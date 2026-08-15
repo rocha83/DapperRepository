@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Rochas.Data.Specification.Enums;
 
 namespace Rochas.DapperRepository.Helpers

@@ -2126,5 +2126,49 @@ namespace Rochas.DapperRepository.Test
         }
 
         #endregion
+
+        #region BWOQ Query Grammar Tests
+
+        [Fact]
+        public void Test104_BwoqQueryBuilder_OrderBySync()
+        {
+            var expected = new[] { "Alpha Souza", "Beta Lima", "Delta Rocha", "Gamma Costa" };
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QueryBwoq()
+                    .W("64::sort test group")
+                    .O("32")
+                    .ToQuerySync()
+                    .ToList();
+
+                Assert.Equal(4, result.Count);
+                for (int i = 0; i < expected.Length; i++)
+                    Assert.Equal(expected[i], result.ElementAt(i).Name);
+            }
+        }
+
+        [Fact]
+        public void Test105_BwoqQueryBuilder_GroupBy_Paginated()
+        {
+            using (var repos = new GenericRepository<FactSalesEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var result = repos.QueryBwoq()
+                    .G("64^", "4")
+                    .ToQuery(1, 10)
+                    .ToList();
+
+                Assert.NotNull(result);
+                Assert.Equal(2, result.Items.Count);
+
+                var product1 = result.Items.First(r => r.ProductId == 1);
+                Assert.Equal(31500m, product1.SumTotalAmount);
+                Assert.Equal(3, product1.CountSales);
+
+                var product2 = result.Items.First(r => r.ProductId == 2);
+                Assert.Equal(750m, product2.SumTotalAmount);
+            }
+        }
+
+        #endregion
     }
 }

@@ -4,6 +4,8 @@ using System.Linq;
 using Xunit;
 using Rochas.Data.Specification.Enums;
 using Rochas.DapperRepository.Helpers;
+using Rochas.SqlWrapper.Helpers;
+using Rochas.SqlWrapper.Helpers.SQL;
 
 namespace Rochas.DapperRepository.Test
 {

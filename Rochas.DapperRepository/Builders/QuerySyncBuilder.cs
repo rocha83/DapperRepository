@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Rochas.Data.Specification.Enums;
 using Rochas.Data.Specification.Interfaces;
 
