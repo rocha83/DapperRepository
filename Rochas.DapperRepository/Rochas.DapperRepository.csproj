@@ -15,6 +15,7 @@
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageReleaseNotes>v1.9.8 - Contracts moved to Rochas.Data.Specification (DataSpecification), replacing the internal Rochas.DapperRepository.Specification project. v1.9.5 - [NEW] GroupBy(groupAttributes, aggregates) now applies dictionary aggregates (SUM/COUNT/AVG/MIN/MAX) to grouped queries; aggregates were previously ignored by the query builder.</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
@@ -26,7 +27,7 @@
     <PackageReference Include="Npgsql" Version="8.0.9" />
     <PackageReference Include="Rochas.Data.Specification" Version="1.6.3" />
     <PackageReference Include="Rochas.SqlWrapper" Version="1.1.2" />
-    <PackageReference Include="Rochas.BWOQ" Version="1.6.3" />
+    <PackageReference Include="Rochas.BWOQ" Version="1.6.4" />
     <PackageReference Include="System.ComponentModel" Version="4.3.0" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.18" />
@@ -35,6 +36,10 @@
 
   <ItemGroup>
     <None Include="GNUv2_License.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="README.md">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
