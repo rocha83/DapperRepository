@@ -10,7 +10,7 @@ namespace Rochas.DapperRepository.Helpers
     /// <summary>
     /// Converte colunas TEXT (CSV) para arrays 1-D de primitivos (uint[], int[],
     /// string[] etc.) na leitura via Dapper. Complementa a serialização feita em
-    /// <see cref="EntityReflector.FormatSQLInputValue"/> na persistência.
+    /// <see cref="Rochas.SqlWrapper.Helpers.EntityReflector"/> na persistência.
     /// </summary>
     public sealed class PrimitiveArrayTypeHandler : SqlMapper.ITypeHandler
     {

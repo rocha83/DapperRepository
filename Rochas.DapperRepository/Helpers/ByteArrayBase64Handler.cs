@@ -6,7 +6,7 @@ namespace Rochas.DapperRepository.Helpers
 {
     /// <summary>
     /// Converte colunas TEXT (base64) para byte[] na leitura via Dapper.
-    /// Complementa a serialização feita em <see cref="EntityReflector.FormatSQLInputValue"/>
+    /// Complementa a serialização feita em <see cref="Rochas.SqlWrapper.Helpers.EntityReflector"/>
     /// na persistência: byte[] é salvo como base64 em coluna TEXT (bancos limitados
     /// sem blob nativo no mapeamento da ORM).
     /// </summary>

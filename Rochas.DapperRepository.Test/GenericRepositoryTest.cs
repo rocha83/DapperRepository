@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
-using Rochas.DapperRepository.Specification.Enums;
-using Rochas.DapperRepository.Specification.Models;
+using Rochas.Data.Specification.Enums;
+using Rochas.Data.Specification.Models;
 using Rochas.Extensions;
 
 namespace Rochas.DapperRepository.Test

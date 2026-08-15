@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Rochas.DapperRepository.Specification.Annotations;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Annotations;
+using Rochas.Data.Specification.Enums;
 
 namespace Rochas.DapperRepository.Test
 {

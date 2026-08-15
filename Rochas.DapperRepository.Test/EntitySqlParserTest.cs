@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Enums;
 using Rochas.DapperRepository.Helpers;
+using Rochas.SqlWrapper.Helpers;
 
 namespace Rochas.DapperRepository.Test
 {

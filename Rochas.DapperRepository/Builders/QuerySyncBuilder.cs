@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using Rochas.DapperRepository.Specification.Enums;
-using Rochas.DapperRepository.Specification.Interfaces;
+using Rochas.Data.Specification.Enums;
+using Rochas.Data.Specification.Interfaces;
 
 namespace Rochas.DapperRepository.Builders
 {

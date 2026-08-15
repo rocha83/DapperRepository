@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Rochas.DapperRepository.Specification.Annotations;
+using Rochas.Data.Specification.Annotations;
 
 namespace Rochas.DapperRepository.Test
 {

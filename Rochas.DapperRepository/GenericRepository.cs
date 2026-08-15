@@ -11,10 +11,11 @@ using System.Data;
 using Microsoft.Data.Sqlite;
 using Rochas.DapperRepository.Base;
 using Rochas.DapperRepository.Helpers;
-using Rochas.DapperRepository.Specification.Models;
-using Rochas.DapperRepository.Specification.Enums;
-using Rochas.DapperRepository.Specification.Interfaces;
-using Rochas.DapperRepository.Specification.Annotations;
+using Rochas.SqlWrapper.Helpers;
+using Rochas.Data.Specification.Models;
+using Rochas.Data.Specification.Enums;
+using Rochas.Data.Specification.Interfaces;
+using Rochas.Data.Specification.Annotations;
 using System.Collections.Concurrent;
 using Rochas.DapperRepository.Builders;
 

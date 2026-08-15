@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Xunit;
-using Rochas.DapperRepository.Specification.Annotations;
-using Rochas.DapperRepository.Specification.Enums;
-using Rochas.DapperRepository.Specification.Models;
+using Rochas.Data.Specification.Annotations;
+using Rochas.Data.Specification.Enums;
+using Rochas.Data.Specification.Models;
 
 namespace Rochas.DapperRepository.Test
 {

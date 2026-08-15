@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
-using Rochas.DapperRepository.Specification.Enums;
-using Rochas.DapperRepository.Specification.Annotations;
+using Rochas.Data.Specification.Enums;
+using Rochas.Data.Specification.Annotations;
 using System.ComponentModel.DataAnnotations;
 
 namespace Rochas.DapperRepository.Test
