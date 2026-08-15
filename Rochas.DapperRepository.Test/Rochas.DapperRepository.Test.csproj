@@ -22,7 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Rochas.DapperRepository\Rochas.DapperRepository.csproj" />
-    <ProjectReference Include="..\Rochas.DapperRepository.Specification\Rochas.DapperRepository.Specification.csproj" />
+    <ProjectReference Include="..\..\DataSpecification\Rochas.Data.Specification\Rochas.Data.Specification.csproj" />
   </ItemGroup>
 
 </Project>

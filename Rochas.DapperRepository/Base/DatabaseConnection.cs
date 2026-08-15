@@ -9,7 +9,7 @@ using MySqlConnector;
 using Rochas.DapperRepository.Helpers;
 using Rochas.DapperRepository.Helpers.SQL;
 using Rochas.DapperRepository.Exceptions;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Enums;
 using Npgsql;
 
 namespace Rochas.DapperRepository.Base

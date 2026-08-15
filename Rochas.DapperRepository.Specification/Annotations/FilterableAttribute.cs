@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Rochas.DapperRepository.Specification.Annotations
+namespace Rochas.Data.Specification.Annotations
 {
     public class FilterableAttribute : Attribute
     {

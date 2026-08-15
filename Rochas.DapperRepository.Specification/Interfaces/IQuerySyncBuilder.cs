@@ -1,7 +1,7 @@
-using System.Collections.Generic;
-using Rochas.DapperRepository.Specification.Enums;
+﻿using System.Collections.Generic;
+using Rochas.Data.Specification.Enums;
 
-namespace Rochas.DapperRepository.Specification.Interfaces
+namespace Rochas.Data.Specification.Interfaces
 {
     public interface IQuerySyncBuilder<T> where T : class
     {

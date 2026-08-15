@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Rochas.DapperRepository.Specification.Enums
+namespace Rochas.Data.Specification.Enums
 {
     public enum DataAggregationType
     {

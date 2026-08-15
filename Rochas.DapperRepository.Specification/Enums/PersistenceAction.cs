@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Rochas.DapperRepository.Specification.Enums
+namespace Rochas.Data.Specification.Enums
 {
     public enum PersistenceAction
     {

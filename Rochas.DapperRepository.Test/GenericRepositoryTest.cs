@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
-using Rochas.DapperRepository.Specification.Enums;
-using Rochas.DapperRepository.Specification.Models;
+using Rochas.Data.Specification.Enums;
+using Rochas.Data.Specification.Models;
 using Rochas.Extensions;
 
 namespace Rochas.DapperRepository.Test
@@ -990,7 +990,7 @@ namespace Rochas.DapperRepository.Test
         [Fact]
         public void Test054b_ArrayProperty_Filter_IgnoresArrays()
         {
-            // Filtro com array preenchido não deve gerar condição WHERE espúria.
+            // Filtro com array preenchido nÃ£o deve gerar condiÃ§Ã£o WHERE espÃºria.
             var filter = new SampleArrayEntity()
             {
                 Name = "query array test",
@@ -2020,7 +2020,7 @@ namespace Rochas.DapperRepository.Test
         public void Test101_FillComposition_CycleDetection_DoesNotOverflow()
         {
             // Create a sample entity with children that have a ManyToOne back-reference.
-            // This creates a cyclic reference: SampleEntity ↔ SampleManyForeignEntity
+            // This creates a cyclic reference: SampleEntity â†” SampleManyForeignEntity
             // FillComposition must detect and break the cycle without stack overflow.
             var entity = new SampleEntity()
             {
@@ -2041,7 +2041,7 @@ namespace Rochas.DapperRepository.Test
 
                 Assert.True(rowsAffected > 0);
 
-                // Reload with composition — should not stack overflow
+                // Reload with composition â€” should not stack overflow
                 var result = repos.GetSync(entity.Id, loadComposition: true);
 
                 Assert.NotNull(result);
@@ -2061,7 +2061,7 @@ namespace Rochas.DapperRepository.Test
         public void Test102_SelfManyToOne_HierarchicalTree_DoesNotOverflow()
         {
             // Self-referencing ManyToOne via ParentId (hierarchical tree).
-            // Child.ParentId → Parent.Id. Cycle tolerance + ParentId tree must not overflow.
+            // Child.ParentId â†’ Parent.Id. Cycle tolerance + ParentId tree must not overflow.
             var parent = new SampleEntity()
             {
                 DocNumber = 77701,
@@ -2083,7 +2083,7 @@ namespace Rochas.DapperRepository.Test
                 child.ParentId = parent.Id;
                 repos.AddSync(child);
 
-                // Load child with composition — SelfReferencedEntity must resolve to the parent
+                // Load child with composition â€” SelfReferencedEntity must resolve to the parent
                 // (WHERE Id = child.ParentId) without stack overflow.
                 var result = repos.GetSync(child.Id, loadComposition: true);
 

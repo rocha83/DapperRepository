@@ -1,6 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace Rochas.DapperRepository.Specification.Models
+namespace Rochas.Data.Specification.Models
 {
     public class PaginatedResult<T>
     {

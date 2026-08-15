@@ -8,8 +8,8 @@ using System.Reflection;
 using System.Data;
 using System.Collections;
 using System.Globalization;
-using Rochas.DapperRepository.Specification.Annotations;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Annotations;
+using Rochas.Data.Specification.Enums;
 using Rochas.DapperRepository.Exceptions;
 using Rochas.DapperRepository.Helpers.SQL;
 

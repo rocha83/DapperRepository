@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Rochas.DapperRepository.Specification.Enums;
-using Rochas.DapperRepository.Specification.Models;
+using Rochas.Data.Specification.Enums;
+using Rochas.Data.Specification.Models;
 
-namespace Rochas.DapperRepository.Specification.Interfaces
+namespace Rochas.Data.Specification.Interfaces
 {
     public interface IQueryBuilder<T> where T : class
     {

@@ -1,7 +1,7 @@
-using System.Collections.Generic;
-using Rochas.DapperRepository.Specification.Enums;
+﻿using System.Collections.Generic;
+using Rochas.Data.Specification.Enums;
 
-namespace Rochas.DapperRepository.Specification.Models
+namespace Rochas.Data.Specification.Models
 {
     public class GroupResult<TKey, TItem> where TItem : class
     {

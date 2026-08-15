@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Enums;
 using Rochas.DapperRepository.Helpers;
 
 namespace Rochas.DapperRepository.Test
@@ -347,7 +347,7 @@ namespace Rochas.DapperRepository.Test
             var result = EntitySqlParser.ParseEntity(filter, DatabaseEngine.SQLite, PersistenceAction.Query, filter);
             result = result.Trim();
 
-            // Array entra no SELECT (coluna hash_codes), mas não vira condição WHERE.
+            // Array entra no SELECT (coluna hash_codes), mas nÃ£o vira condiÃ§Ã£o WHERE.
             Assert.Contains("name", result);
             Assert.Contains("hash_codes", result);
             Assert.DoesNotContain("hash_codes", result.Substring(result.IndexOf("WHERE", StringComparison.OrdinalIgnoreCase)));

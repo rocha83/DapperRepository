@@ -1,9 +1,9 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Rochas.DapperRepository.Specification.Enums;
-using Rochas.DapperRepository.Specification.Interfaces;
-using Rochas.DapperRepository.Specification.Models;
+using Rochas.Data.Specification.Enums;
+using Rochas.Data.Specification.Interfaces;
+using Rochas.Data.Specification.Models;
 
 namespace Rochas.DapperRepository.Builders
 {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Rochas.DapperRepository.Exceptions;
 using Rochas.DapperRepository.Helpers;
-using Rochas.DapperRepository.Specification.Enums;
+using Rochas.Data.Specification.Enums;
 
 namespace Rochas.DapperRepository.Test
 {
