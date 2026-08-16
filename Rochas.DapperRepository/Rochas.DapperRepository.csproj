@@ -15,7 +15,7 @@
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile></PackageReadmeFile>
     <PackageReleaseNotes>v1.9.8 - Contracts moved to Rochas.Data.Specification (DataSpecification), replacing the internal Rochas.DapperRepository.Specification project. v1.9.5 - [NEW] GroupBy(groupAttributes, aggregates) now applies dictionary aggregates (SUM/COUNT/AVG/MIN/MAX) to grouped queries; aggregates were previously ignored by the query builder.</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
