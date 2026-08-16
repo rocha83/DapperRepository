@@ -1,4 +1,4 @@
-﻿# Rochas.DapperRepository
+# Rochas.DapperRepository
 
 [English](#english) | [Português](#português) | [Español](#español) | [Français](#français) | [Deutsch](#deutsch)
 
