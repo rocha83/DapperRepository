@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.18" />
+    <PackageReference Include="Npgsql" Version="8.0.9" />
     <PackageReference Include="Rochas.BWOQ" Version="1.6.4" />
     <PackageReference Include="Rochas.Extensions" Version="1.2.6" />
     <PackageReference Include="Rochas.Telemetry" Version="1.1.1" />
@@ -25,7 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Rochas.DapperRepository\Rochas.DapperRepository.csproj" />
-    <ProjectReference Include="..\..\CacheIndexer\Rochas.CacheIndexer\Rochas.CacheIndexer.csproj" />
+    <PackageReference Include="Rochas.CacheIndexer" Version="1.1.0" />
     <PackageReference Include="Rochas.Data.Specification" Version="1.6.3" />
   </ItemGroup>
 

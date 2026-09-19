@@ -11,12 +11,12 @@
     <RepositoryUrl>https://github.com/rocha83/DapperRepository</RepositoryUrl>
     <PackageProjectUrl>https://github.com/rocha83/DapperRepository</PackageProjectUrl>
     <PackageTags>dapper light lightweight generic repository entity entities database sql sqlserver mysql postgresql sqlite cache cacheable elastic tokenized search bulk persistence parser crud poco orm cqrs builder pattern fluent api</PackageTags>
-    <Version>1.9.8</Version>
+    <Version>2.0.0</Version>
     <Description>A lightweight generic entities cacheable repository using Dapper</Description>
     <PackageLicenseFile>GNUv2_License.txt</PackageLicenseFile>
     <PackageIcon>orm-icon.png</PackageIcon>
     <PackageReadmeFile></PackageReadmeFile>
-    <PackageReleaseNotes>v1.9.8 - Contracts moved to Rochas.Data.Specification (DataSpecification), replacing the internal Rochas.DapperRepository.Specification project. v1.9.5 - [NEW] GroupBy(groupAttributes, aggregates) now applies dictionary aggregates (SUM/COUNT/AVG/MIN/MAX) to grouped queries; aggregates were previously ignored by the query builder.</PackageReleaseNotes>
+    <PackageReleaseNotes>v2.0.0 - [NEW] PostgreSQL support in CompositeCommand (parameterized Query/Search Paginate, Add, Update and Remove now run on Npgsql: null maps to DBNull, Guid maps to text following GuidStringHandler); test project now consumes Rochas.CacheIndexer 1.1.0 from NuGet instead of a local ProjectReference. v1.9.8 - Contracts moved to Rochas.Data.Specification (DataSpecification), replacing the internal Rochas.DapperRepository.Specification project.</PackageReleaseNotes>
     <Title>Dapper Generic Repository</Title>
   </PropertyGroup>
 

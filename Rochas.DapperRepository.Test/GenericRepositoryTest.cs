@@ -2137,7 +2137,7 @@ namespace Rochas.DapperRepository.Test
             {
                 var result = repos.QueryBwoq()
                     .W("64::sort test group")
-                    .O("32")
+                    .O("64")
                     .ToQuerySync()
                     .ToList();
 

@@ -318,6 +318,17 @@ namespace Rochas.DapperRepository.Base
             await bulkCmd.WriteToServerAsync(entitiesTable);
         }
 
+        private static object ToPostgresValue(object value)
+        {
+            if (value == null)
+                return DBNull.Value;
+
+            if (value is Guid guid)
+                return guid.ToString("D");
+
+            return value;
+        }
+
         private IDbCommand CompositeCommand(string sqlInstruction, Dictionary<object, object> parameters = null)
         {
             var sqlCommand = connection.CreateCommand();
@@ -342,6 +353,9 @@ namespace Rochas.DapperRepository.Base
                             break;
                         case DatabaseEngine.SQLServer:
                             newSqlParameter = new SqlParameter(param.Key.ToString(), param.Value);
+                            break;
+                        case DatabaseEngine.PostgreSQL:
+                            newSqlParameter = new NpgsqlParameter(param.Key.ToString(), ToPostgresValue(param.Value));
                             break;
                         case DatabaseEngine.SQLite:
                             newSqlParameter = new SqliteParameter(param.Key.ToString(), param.Value);

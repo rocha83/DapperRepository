@@ -81,9 +81,9 @@ namespace Rochas.DapperRepository.Test
             };
             repos.AddSync(entity);
 
-            // BWOQ syntax: columnIndex::value (Name = column 32)
+            // BWOQ syntax: bitmask::value over BitWiseTable (Name = bit 6, mask 64)
             var results = repos.QueryBwoq()
-                .W("32::BWOQ Where Test")
+                .W("64::BWOQ Where Test")
                 .ToQuerySync()
                 .ToList();
 
@@ -117,10 +117,10 @@ namespace Rochas.DapperRepository.Test
             repos.AddSync(entity1);
             repos.AddSync(entity2);
 
-            // W: filter by Active (column 1024) = true, O: order by Name (column 32)
+            // W: filter by Active (bit 12, mask 4096) = true, O: order by Name (bit 6, mask 64)
             var results = repos.QueryBwoq()
-                .W("1024::true")
-                .O("32")
+                .W("4096::true")
+                .O("64")
                 .ToQuerySync()
                 .ToList();
 
