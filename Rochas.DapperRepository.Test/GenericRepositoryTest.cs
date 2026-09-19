@@ -1754,6 +1754,35 @@ namespace Rochas.DapperRepository.Test
         }
 
         [Fact]
+        public async Task Test084b_Builder_GroupBy_OnlyKeysAndAggregatesPopulated()
+        {
+            // Contrato: em consulta agrupada com agregados, SOMENTE as chaves de
+            // grupo e as expressões agregadas vêm preenchidas (demais props zeradas).
+            // Sem isso o SELECT leva colunas soltas e quebra no PostgreSQL (42803).
+            using (var repos = new GenericRepository<FactSalesDictionaryEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var aggregates = new Dictionary<string, DataAggregationType>
+                {
+                    { "TotalAmount", DataAggregationType.Sum },
+                    { "Quantity", DataAggregationType.Count }
+                };
+                var result = await repos.Query(new FactSalesDictionaryEntity()).GroupBy(new[] { "ProductId" }, aggregates);
+                Assert.NotNull(result);
+                Assert.Equal(2, result.Count);
+
+                var product1 = result.First(r => r.ProductId == 1);
+                Assert.Equal(31500m, product1.TotalAmount);
+                Assert.Equal(3, product1.Quantity);
+                Assert.Equal(0, product1.Id);
+
+                var product2 = result.First(r => r.ProductId == 2);
+                Assert.Equal(750m, product2.TotalAmount);
+                Assert.Equal(1, product2.Quantity);
+                Assert.Equal(0, product2.Id);
+            }
+        }
+
+        [Fact]
         public async Task Test085_Builder_OrderBy_Ascending_Real()
         {
             var expected = new[] { "Alpha Souza", "Beta Lima", "Delta Rocha", "Gamma Costa" };

@@ -161,12 +161,14 @@ The order of the methods does not matter; the builder collects the sorting and g
 var aggregates = new Dictionary<string, DataAggregationType>
 {
     { "Price", DataAggregationType.Sum },
-    { "Price", DataAggregationType.Average }
+    { "Id", DataAggregationType.Count }
 };
 var result = await repo.Query(filter).GroupBy(["Category"], aggregates);
 ```
 
 The builder generates the `SELECT ... GROUP BY ...` automatically with the requested aggregation functions (SUM, COUNT, MIN, MAX, AVG).
+
+With aggregates, the generated `SELECT` contains only the group keys and the aggregate expressions — required by PostgreSQL and SQL Server, which reject ungrouped bare columns.
 
 ### DW/ETL fact entities
 
@@ -427,12 +429,14 @@ A ordem dos métodos não importa; o builder coleta os atributos de ordenação 
 var aggregates = new Dictionary<string, DataAggregationType>
 {
     { "Price", DataAggregationType.Sum },
-    { "Price", DataAggregationType.Average }
+    { "Id", DataAggregationType.Count }
 };
 var result = await repo.Query(filter).GroupBy(["Category"], aggregates);
 ```
 
 O builder gera o `SELECT ... GROUP BY ...` automaticamente com as funções de agregação solicitadas (SUM, COUNT, MIN, MAX, AVG).
+
+Com agregações, o `SELECT` gerado contém só as chaves de grupo e as expressões agregadas — exigido pelo PostgreSQL e SQL Server, que rejeitam colunas soltas fora do agrupamento.
 
 ### Entidades fato DW/ETL
 
@@ -693,12 +697,14 @@ El orden de los métodos no importa; el builder recopila los atributos de ordena
 var aggregates = new Dictionary<string, DataAggregationType>
 {
     { "Price", DataAggregationType.Sum },
-    { "Price", DataAggregationType.Average }
+    { "Id", DataAggregationType.Count }
 };
 var result = await repo.Query(filter).GroupBy(["Category"], aggregates);
 ```
 
 El builder genera el `SELECT ... GROUP BY ...` automáticamente con las funciones de agregación solicitadas (SUM, COUNT, MIN, MAX, AVG).
+
+Con agregaciones, el `SELECT` generado solo contiene las claves de grupo y las expresiones agregadas — exigido por PostgreSQL y SQL Server, que rechazan columnas sueltas fuera del agrupamiento.
 
 ### Entidades de hecho DW/ETL
 
@@ -959,12 +965,14 @@ L'ordre des méthodes n'a pas d'importance ; le builder collecte les attributs d
 var aggregates = new Dictionary<string, DataAggregationType>
 {
     { "Price", DataAggregationType.Sum },
-    { "Price", DataAggregationType.Average }
+    { "Id", DataAggregationType.Count }
 };
 var result = await repo.Query(filter).GroupBy(["Category"], aggregates);
 ```
 
 Le builder génère automatiquement le `SELECT ... GROUP BY ...` avec les fonctions d'agrégation demandées (SUM, COUNT, MIN, MAX, AVG).
+
+Avec des agrégations, le `SELECT` généré ne contient que les clés de groupe et les expressions agrégées — exigé par PostgreSQL et SQL Server, qui rejettent les colonnes isolées hors regroupement.
 
 ### Entités de fait DW/ETL
 
@@ -1225,12 +1233,14 @@ Die Reihenfolge der Methoden spielt keine Rolle; der Builder sammelt die Sortier
 var aggregates = new Dictionary<string, DataAggregationType>
 {
     { "Price", DataAggregationType.Sum },
-    { "Price", DataAggregationType.Average }
+    { "Id", DataAggregationType.Count }
 };
 var result = await repo.Query(filter).GroupBy(["Category"], aggregates);
 ```
 
 Der Builder generiert automatisch das `SELECT ... GROUP BY ...` mit den angeforderten Aggregatfunktionen (SUM, COUNT, MIN, MAX, AVG).
+
+Mit Aggregationen enthält das generierte `SELECT` nur die Gruppierungsschlüssel und die Aggregatausdrücke — von PostgreSQL und SQL Server gefordert, die lose Spalten außerhalb der Gruppierung ablehnen.
 
 ### DW/ETL-Faktenentitäten
 
