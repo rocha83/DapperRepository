@@ -77,7 +77,7 @@ namespace Rochas.DapperRepository.Builders
 					_sortAttributes,
 					_orderDescending,
 					_groupAttributes,
-					_aggregates);
+					_aggregates).ConfigureAwait(false);
 			}
 
 			return await repo.QueryWithBuilder(
@@ -86,7 +86,7 @@ namespace Rochas.DapperRepository.Builders
 				_filterConjunction,
 				_sortAttributes,
 				_orderDescending,
-				_groupAttributes);
+				_groupAttributes).ConfigureAwait(false);
 		}
 	}
 }

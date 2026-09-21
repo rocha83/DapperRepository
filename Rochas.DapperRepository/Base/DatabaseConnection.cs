@@ -142,6 +142,7 @@ namespace Rochas.DapperRepository.Base
                 {
                     PrimitiveArrayTypeHandler.EnsureRegistered();
                     ByteArrayBase64Handler.EnsureRegistered();
+                    GuidStringHandler.EnsureRegistered();
                     switch (engine)
                     {
                         case DatabaseEngine.MySQL:
@@ -155,7 +156,6 @@ namespace Rochas.DapperRepository.Base
                             break;
                         case DatabaseEngine.SQLite:
                             connection = new SqliteConnection();
-                            GuidStringHandler.EnsureRegistered();
                             break;
                     }
                 }
@@ -223,6 +223,15 @@ namespace Rochas.DapperRepository.Base
             return result;
         }
 
+        protected int ExecuteCount(string sqlInstruction, Dictionary<string, object> parameters = null)
+        {
+            if (connection.State != ConnectionState.Open)
+                Connect();
+
+            var result = connection.QuerySingleOrDefault<int>(sqlInstruction, parameters);
+            return result;
+        }
+
         private string GetLastIdSql()
         {
             switch (engine)
@@ -235,6 +244,20 @@ namespace Rochas.DapperRepository.Base
                     return SQLStatements.SQL_Action_GetLastId_MySQL;
                 default:
                     return SQLStatements.SQL_Action_GetLastId;
+            }
+        }
+
+        /// <summary>Último id inserido; no PostgreSQL com PK client-side (sem sequência) o lastval não existe — o insert já valeu, retorna 1.</summary>
+        private int ExecuteLastIdOrDefault(IDbCommand sqlCommand)
+        {
+            try
+            {
+                int.TryParse(sqlCommand.ExecuteScalar().ToString(), out int scalarReturn);
+                return scalarReturn;
+            }
+            catch (PostgresException ex) when (engine == DatabaseEngine.PostgreSQL && ex.SqlState == "55000")
+            {
+                return 1;
             }
         }
 
@@ -259,8 +282,7 @@ namespace Rochas.DapperRepository.Base
                         sqlCommand.CommandText = GetLastIdSql();
                     }
 
-                    int.TryParse(sqlCommand.ExecuteScalar().ToString(), out int scalarReturn);
-                    executionReturn = scalarReturn;
+                    executionReturn = ExecuteLastIdOrDefault(sqlCommand);
                 }
                 else
                     executionReturn = sqlCommand.ExecuteNonQuery();
@@ -290,8 +312,7 @@ namespace Rochas.DapperRepository.Base
                         sqlCommand.CommandText = GetLastIdSql();
                     }
 
-                    int.TryParse(sqlCommand.ExecuteScalar().ToString(), out int scalarReturn);
-                    executionReturn = scalarReturn;
+                    executionReturn = ExecuteLastIdOrDefault(sqlCommand);
                 }
                 else
                     executionReturn = await connection.ExecuteAsync(sqlInstruction, transaction: transactionControl);

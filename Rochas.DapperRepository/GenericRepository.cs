@@ -77,34 +77,22 @@ namespace Rochas.DapperRepository
 
 		public ICollection<T> BulkSearch(object[] criterias, bool loadComposition = false, int recordsLimit = 0, string sortAttributes = null, bool orderDescending = false)
 		{
-			var taskList = new List<Task>();
 			ConcurrentDictionary<string, int> preResult = new ConcurrentDictionary<string, int>();
 
 			if (criterias != null)
 			{
 				foreach (var criteria in criterias)
 				{
-					keepConnection = true;
-
-					var newTask = Task.Run(async () =>
-					{
-						var queryResult = await Search(criteria, loadComposition);
-						if (queryResult != null)
-							foreach (var item in queryResult)
-							{
-								var jsonItem = JsonSerializer.Serialize(item);
-								if (!preResult.ContainsKey(jsonItem))
-									preResult.TryAdd(jsonItem, 1);
-								else
-									preResult[jsonItem] += 1;
-							}
-					});
-
-					taskList.Add(newTask);
+					var queryResult = SearchSync(criteria, loadComposition)
+						.OrderBy(sortAttributes != null ? new[] { sortAttributes } : Array.Empty<string>())
+						.ToList();
+					if (queryResult != null)
+						foreach (var item in queryResult)
+						{
+							var jsonItem = JsonSerializer.Serialize(item);
+							preResult.AddOrUpdate(jsonItem, 1, (key, value) => value + 1);
+						}
 				}
-
-				Task.WaitAll(taskList.ToArray());
-				connection.Close();
 			}
 
 			var typedResult = preResult.OrderByDescending(rs => rs.Value)
@@ -132,10 +120,7 @@ namespace Rochas.DapperRepository
 						queryResult.AsParallel().ForAll(item =>
 						{
 							var jsonItem = JsonSerializer.Serialize(item);
-							if (!preResult.ContainsKey(jsonItem))
-								preResult.TryAdd(jsonItem, 1);
-							else
-								preResult[jsonItem] += 1;
+							preResult.AddOrUpdate(jsonItem, 1, (key, value) => value + 1);
 						});
 				}
 			}
@@ -156,10 +141,10 @@ namespace Rochas.DapperRepository
 			pageSize = Math.Max(1, pageSize);
 
 			var filter = EntityReflector.GetFilterByFilterableColumns(typeof(T), typeof(T).GetProperties(), criteria);
-			var totalCount = await CountObject(filter as object);
+			var totalCount = await CountObject(filter as object).ConfigureAwait(false);
 
 			int offset = (page - 1) * pageSize;
-			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, sortAttributes: sortAttributes, orderDescending: orderDescending);
+			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, sortAttributes: sortAttributes, orderDescending: orderDescending).ConfigureAwait(false);
 
 			var items = new List<T>();
 			if (queryResult != null)
@@ -170,7 +155,23 @@ namespace Rochas.DapperRepository
 		}
 
 		public PaginatedResult<T> SearchSync(object criteria, int page, int pageSize, bool loadComposition = false, string sortAttributes = null, bool orderDescending = false)
-			=> Search(criteria, page, pageSize, loadComposition, sortAttributes, orderDescending).GetAwaiter().GetResult();
+		{
+			page = Math.Max(1, page);
+			pageSize = Math.Max(1, pageSize);
+
+			var filter = EntityReflector.GetFilterByFilterableColumns(typeof(T), typeof(T).GetProperties(), criteria);
+			var totalCount = CountObjectSync(filter as object);
+
+			int offset = (page - 1) * pageSize;
+			var queryResult = QueryObjectsPagedSync(filter, PersistenceAction.Query, loadComposition, totalCount, offset, pageSize, sortAttributes: sortAttributes, orderDescending: orderDescending);
+
+			var items = new List<T>();
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					items.Add(item as T);
+
+			return new PaginatedResult<T>(items, totalCount, page, pageSize);
+		}
 
 		#endregion
 
@@ -219,7 +220,7 @@ namespace Rochas.DapperRepository
 				Connect();
 
 			var result = new List<T>();
-			var queryResult = await ExecuteQueryAsync(typeof(T), sql, parameters);
+			var queryResult = await ExecuteQueryAsync(typeof(T), sql, parameters).ConfigureAwait(false);
 			if (queryResult != null)
 				foreach (var item in queryResult)
 					result.Add((T)item);
@@ -237,10 +238,10 @@ namespace Rochas.DapperRepository
 			if (connection == null || connection.State != ConnectionState.Open)
 				Connect();
 
-			var countResult = await ExecuteQueryAsync(typeof(T), countSql, parameters);
+			var countResult = await ExecuteQueryAsync(typeof(T), countSql, parameters).ConfigureAwait(false);
 			var totalCount = countResult != null ? countResult.Count() : 0;
 
-			var queryResult = await ExecuteQueryAsync(typeof(T), sql, parameters);
+			var queryResult = await ExecuteQueryAsync(typeof(T), sql, parameters).ConfigureAwait(false);
 
 			var items = new List<T>();
 			if (queryResult != null)
@@ -253,10 +254,45 @@ namespace Rochas.DapperRepository
 		}
 
 		public ICollection<T> QueryRawSync(string sql, Dictionary<string, object> parameters)
-			=> QueryRaw(sql, parameters).GetAwaiter().GetResult();
+		{
+			ValidateRawSql(sql, parameters);
+
+			if (connection == null || connection.State != ConnectionState.Open)
+				Connect();
+
+			var result = new List<T>();
+			var queryResult = ExecuteQuery(typeof(T), sql, parameters);
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					result.Add((T)item);
+
+			if (!keepConnection) base.Disconnect();
+
+			return result;
+		}
 
 		public PaginatedResult<T> QueryRawSync(string sql, string countSql, Dictionary<string, object> parameters, int page = 1, int pageSize = 20)
-			=> QueryRaw(sql, countSql, parameters, page, pageSize).GetAwaiter().GetResult();
+		{
+			ValidateRawSql(sql, parameters);
+			ValidateRawSql(countSql, parameters);
+
+			if (connection == null || connection.State != ConnectionState.Open)
+				Connect();
+
+			var countResult = ExecuteQuery(typeof(T), countSql, parameters);
+			var totalCount = countResult != null ? countResult.Count() : 0;
+
+			var queryResult = ExecuteQuery(typeof(T), sql, parameters);
+
+			var items = new List<T>();
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					items.Add((T)item);
+
+			if (!keepConnection) base.Disconnect();
+
+			return new PaginatedResult<T>(items, totalCount, page, pageSize);
+		}
 
 		private static void ValidateRawSql(string sql, Dictionary<string, object> parameters)
 		{
@@ -293,6 +329,20 @@ namespace Rochas.DapperRepository
 			var result = new List<T>();
 			var queryResult = await QueryObjects(filter, PersistenceAction.Query, loadComposition,
 				filterConjunction: filterConjunction, sortAttributes: sortAttributes,
+				orderDescending: orderDescending, groupAttributes: groupAttributes, aggregates: aggregates).ConfigureAwait(false);
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					result.Add(item as T);
+			return result;
+		}
+
+		internal ICollection<T> QueryWithBuilderSync(T filter, bool loadComposition, bool filterConjunction,
+			string sortAttributes, bool orderDescending, string groupAttributes,
+			Dictionary<string, DataAggregationType> aggregates = null)
+		{
+			var result = new List<T>();
+			var queryResult = QueryObjectsSync(filter, PersistenceAction.Query, loadComposition,
+				filterConjunction: filterConjunction, sortAttributes: sortAttributes,
 				orderDescending: orderDescending, groupAttributes: groupAttributes, aggregates: aggregates);
 			if (queryResult != null)
 				foreach (var item in queryResult)
@@ -303,15 +353,33 @@ namespace Rochas.DapperRepository
 		internal int CountWithBuilder(T filter, bool loadComposition, bool filterConjunction,
 			string sortAttributes, bool orderDescending, string groupAttributes,
 			Dictionary<string, DataAggregationType> aggregates = null)
-			=> QueryCountObjects(filter, filterConjunction).GetAwaiter().GetResult();
+			=> QueryCountObjects(filter, filterConjunction);
 
 		internal async Task<PaginatedResult<T>> QueryPaginatedWithBuilder(T filter, int page, int pageSize,
 			bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending,
 			string groupAttributes = null, Dictionary<string, DataAggregationType> aggregates = null)
 		{
-			var totalCount = await CountObject(filter as object);
+			var totalCount = await CountObject(filter as object).ConfigureAwait(false);
 			int offset = (page - 1) * pageSize;
 			var queryResult = await QueryObjectsPaged(filter, PersistenceAction.Query, loadComposition,
+				totalCount, offset, pageSize, filterConjunction, sortAttributes: sortAttributes,
+				orderDescending: orderDescending, groupAttributes: groupAttributes, aggregates: aggregates).ConfigureAwait(false);
+
+			var items = new List<T>();
+			if (queryResult != null)
+				foreach (var item in queryResult)
+					items.Add(item as T);
+
+			return new PaginatedResult<T>(items, totalCount, page, pageSize);
+		}
+
+		internal PaginatedResult<T> QueryPaginatedWithBuilderSync(T filter, int page, int pageSize,
+			bool loadComposition, bool filterConjunction, string sortAttributes, bool orderDescending,
+			string groupAttributes = null, Dictionary<string, DataAggregationType> aggregates = null)
+		{
+			var totalCount = CountObjectSync(filter as object);
+			int offset = (page - 1) * pageSize;
+			var queryResult = QueryObjectsPagedSync(filter, PersistenceAction.Query, loadComposition,
 				totalCount, offset, pageSize, filterConjunction, sortAttributes: sortAttributes,
 				orderDescending: orderDescending, groupAttributes: groupAttributes, aggregates: aggregates);
 

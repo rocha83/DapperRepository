@@ -73,16 +73,14 @@ namespace Rochas.DapperRepository.Builders
 
             if (_aggregates != null && _groupAttributes != null)
             {
-                return repo.QueryPaginatedWithBuilder(
+                return repo.QueryPaginatedWithBuilderSync(
                     _filter, p, ps, _loadComposition, _filterConjunction,
-                    _sortAttributes, _orderDescending, _groupAttributes, _aggregates)
-                    .GetAwaiter().GetResult();
+                    _sortAttributes, _orderDescending, _groupAttributes, _aggregates);
             }
 
-            return repo.QueryPaginatedWithBuilder(
+            return repo.QueryPaginatedWithBuilderSync(
                 _filter, p, ps, _loadComposition, _filterConjunction,
-                _sortAttributes, _orderDescending, _groupAttributes)
-                .GetAwaiter().GetResult();
+                _sortAttributes, _orderDescending, _groupAttributes);
         }
 
         public PaginatedResult<T> ToList()
@@ -95,9 +93,20 @@ namespace Rochas.DapperRepository.Builders
             return ToListAsync().GetAwaiter();
         }
 
-        private Task<PaginatedResult<T>> ToListAsync()
+        private async Task<PaginatedResult<T>> ToListAsync()
         {
-            return Task.FromResult(Paginate(_page, _pageSize));
+            var repo = (GenericRepository<T>)_repository;
+
+            if (_aggregates != null && _groupAttributes != null)
+            {
+                return await repo.QueryPaginatedWithBuilder(
+                    _filter, _page, _pageSize, _loadComposition, _filterConjunction,
+                    _sortAttributes, _orderDescending, _groupAttributes, _aggregates).ConfigureAwait(false);
+            }
+
+            return await repo.QueryPaginatedWithBuilder(
+                _filter, _page, _pageSize, _loadComposition, _filterConjunction,
+                _sortAttributes, _orderDescending, _groupAttributes).ConfigureAwait(false);
         }
     }
 }

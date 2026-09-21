@@ -32,8 +32,8 @@ namespace Rochas.DapperRepository
 		bool _readUncommied;
 		ICacheProvider _cacheProvider;
 		bool _snakeCaseNaming;
-		[ThreadStatic]
-		static Dictionary<Type, int> _visitedTypes;
+		static readonly AsyncLocal<Stack<string>> _visitedTypes = new AsyncLocal<Stack<string>>();
+		private const int MaxCompositionDepth = 8;
 
 		#endregion
 
@@ -242,7 +242,7 @@ namespace Rochas.DapperRepository
 			if (filter == null)
 				return null;
 
-			var queryResult = await QueryObjects(filter, PersistenceAction.Get, loadComposition);
+			var queryResult = await QueryObjects(filter, PersistenceAction.Get, loadComposition).ConfigureAwait(false);
 			return queryResult?.FirstOrDefault();
 		}
 
@@ -274,7 +274,46 @@ namespace Rochas.DapperRepository
 
 				if (((connection != null) && keepConnection) || base.Connect())
 				{
-					returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction, sqlParameters);
+					returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction, sqlParameters).ConfigureAwait(false);
+				}
+
+				if (!keepConnection) base.Disconnect();
+
+				if (loadComposition && (returnList != null) && returnList.Any())
+				{
+					var itemProps = returnList.First().GetType().GetProperties();
+					foreach (var item in returnList)
+						await FillCompositionAsync(item, itemProps).ConfigureAwait(false);
+				}
+
+				if ((returnList != null) && IsCacheable(filterEntity))
+					_cacheProvider.Put(filterEntity, returnList);
+			}
+
+			return returnList;
+		}
+
+		internal IEnumerable<object> QueryObjectsSync(object filterEntity, PersistenceAction action,
+			bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false,
+			bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null,
+			string sortAttributes = null, bool orderDescending = false,
+			Dictionary<string, DataAggregationType> aggregates = null)
+		{
+			IEnumerable<object> returnList = null;
+
+			if (IsCacheable(filterEntity))
+				returnList = _cacheProvider.Get(filterEntity) as IEnumerable<object>;
+
+			if (returnList == null)
+			{
+				var sqlParameters = new Dictionary<string, object>();
+				var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, action, filterEntity,
+					recordLimit, filterConjunction, onlyListableAttributes, showAttributes, groupAttributes,
+					sortAttributes, orderDescending, _readUncommied, sqlParameters, aggregates);
+
+				if (((connection != null) && keepConnection) || base.Connect())
+				{
+					returnList = ExecuteQuery(filterEntity.GetType(), sqlInstruction, sqlParameters);
 				}
 
 				if (!keepConnection) base.Disconnect();
@@ -293,18 +332,7 @@ namespace Rochas.DapperRepository
 			return returnList;
 		}
 
-		internal IEnumerable<object> QueryObjectsSync(object filterEntity, PersistenceAction action,
-			bool loadComposition = false, int recordLimit = 0, bool filterConjunction = false,
-			bool onlyListableAttributes = false, string showAttributes = null, string groupAttributes = null,
-			string sortAttributes = null, bool orderDescending = false,
-			Dictionary<string, DataAggregationType> aggregates = null)
-		{
-			return QueryObjects(filterEntity, action, loadComposition, recordLimit, filterConjunction,
-				onlyListableAttributes, showAttributes, groupAttributes, sortAttributes, orderDescending,
-				aggregates).GetAwaiter().GetResult();
-		}
-
-		internal async Task<int> QueryCountObjects(T filterEntity, bool filterConjunction = false)
+		internal int QueryCountObjects(T filterEntity, bool filterConjunction = false)
 		{
 			var sqlParameters = new Dictionary<string, object>();
 			var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, PersistenceAction.Query,
@@ -325,7 +353,7 @@ namespace Rochas.DapperRepository
 			if (connection == null || connection.State != ConnectionState.Open)
 				Connect();
 
-			var result = await ExecuteCountAsync(sqlInstruction, sqlParameters);
+			var result = ExecuteCount(sqlInstruction, sqlParameters);
 
 			if (!keepConnection) base.Disconnect();
 
@@ -347,10 +375,47 @@ namespace Rochas.DapperRepository
 
 			if (((connection != null) && keepConnection) || base.Connect())
 			{
-				returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction, sqlParameters);
+				returnList = await ExecuteQueryAsync(filterEntity.GetType(), sqlInstruction, sqlParameters).ConfigureAwait(false);
 			}
 
 			if (!keepConnection) base.Disconnect();
+
+			if (loadComposition && (returnList != null) && returnList.Any())
+			{
+				var itemProps = returnList.First().GetType().GetProperties();
+				foreach (var item in returnList)
+					await FillCompositionAsync(item, itemProps).ConfigureAwait(false);
+			}
+
+			return returnList ?? new List<object>();
+		}
+
+		internal IEnumerable<object> QueryObjectsPagedSync(object filterEntity, PersistenceAction action,
+			bool loadComposition = false, int totalCount = 0, int offset = 0, int pageSize = 20,
+			bool filterConjunction = false, string groupAttributes = null, string sortAttributes = null,
+			bool orderDescending = false, Dictionary<string, DataAggregationType> aggregates = null)
+		{
+			var sqlParameters = new Dictionary<string, object>();
+			var sqlInstruction = EntitySqlParser.ParseEntityPaged(filterEntity, engine, action, filterEntity,
+				offset, pageSize, filterConjunction, groupAttributes: groupAttributes,
+				sortAttributes: sortAttributes, orderDescending: orderDescending,
+				readUncommited: _readUncommied, sqlParameters: sqlParameters, aggregates: aggregates);
+
+			IEnumerable<object> returnList = null;
+
+			if (((connection != null) && keepConnection) || base.Connect())
+			{
+				returnList = ExecuteQuery(filterEntity.GetType(), sqlInstruction, sqlParameters);
+			}
+
+			if (!keepConnection) base.Disconnect();
+
+			if (loadComposition && (returnList != null) && returnList.Any())
+			{
+				var itemProps = returnList.First().GetType().GetProperties();
+				foreach (var item in returnList)
+					FillComposition(item, itemProps);
+			}
 
 			return returnList ?? new List<object>();
 		}
@@ -365,7 +430,7 @@ namespace Rochas.DapperRepository
 			if (keepConnection || Connect())
 			{
 				var dapperParams = sqlParameters.ToDictionary(k => (object)k.Key, v => v.Value);
-				result = await ExecuteCommandAsync(sqlInstruction, dapperParams);
+				result = await ExecuteCommandAsync(sqlInstruction, dapperParams).ConfigureAwait(false);
 			}
 
 			if (!keepConnection) Disconnect();
@@ -374,7 +439,22 @@ namespace Rochas.DapperRepository
 		}
 
 		internal int CountObjectSync(object filterEntity)
-			=> CountObject(filterEntity).Result;
+		{
+			int result = 0;
+			var sqlParameters = new Dictionary<string, object>();
+			var sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, PersistenceAction.Count,
+				filterEntity, sqlParameters: sqlParameters);
+
+			if (keepConnection || Connect())
+			{
+				var dapperParams = sqlParameters.ToDictionary(k => (object)k.Key, v => v.Value);
+				result = ExecuteCommand(sqlInstruction, dapperParams);
+			}
+
+			if (!keepConnection) Disconnect();
+
+			return result;
+		}
 
 		#endregion
 
@@ -403,7 +483,49 @@ namespace Rochas.DapperRepository
 				if (persistComposition)
 					base.StartTransaction();
 
-				lastInsertedId = await ExecuteCommandAsync(sqlInstruction);
+				lastInsertedId = await ExecuteCommandAsync(sqlInstruction).ConfigureAwait(false);
+
+				if (entityKeyProp != null && entityKeyProp.PropertyType != typeof(Guid) && lastInsertedId > 0)
+					entityKeyProp.SetValue(entity, lastInsertedId);
+
+				if (persistComposition)
+					await PersistCompositionAsync(entity, PersistenceAction.Add).ConfigureAwait(false);
+				else
+					if (!keepConnection) base.Disconnect();
+			}
+
+			CleanCacheableData(entity);
+
+			if (replicationEnabled && !isReplicating)
+				AddReplicas(entity, entityProps, lastInsertedId, persistComposition);
+
+			return lastInsertedId;
+		}
+
+		private int AddObjectSync(object entity, bool persistComposition,
+			string optionalConnConfig = "", bool isReplicating = false)
+		{
+			string sqlInstruction;
+			int lastInsertedId = 0;
+
+			var entityType = entity.GetType();
+			var entityProps = entityType.GetProperties();
+
+			if (keepConnection || base.Connect(optionalConnConfig))
+			{
+				var entityKeyProp = EntityReflector.GetKeyColumn(entityProps);
+				if (entityKeyProp != null && entityKeyProp.PropertyType == typeof(Guid)
+					&& EntityReflector.IsAutoGenerated(entityKeyProp))
+				{
+					entityKeyProp.SetValue(entity, Guid.NewGuid());
+				}
+
+				sqlInstruction = EntitySqlParser.ParseEntity(entity, engine, PersistenceAction.Add);
+
+				if (persistComposition)
+					base.StartTransaction();
+
+				lastInsertedId = ExecuteCommand(sqlInstruction);
 
 				if (entityKeyProp != null && entityKeyProp.PropertyType != typeof(Guid) && lastInsertedId > 0)
 					entityKeyProp.SetValue(entity, lastInsertedId);
@@ -422,10 +544,6 @@ namespace Rochas.DapperRepository
 			return lastInsertedId;
 		}
 
-		private int AddObjectSync(object entity, bool persistComposition,
-			string optionalConnConfig = "", bool isReplicating = false)
-			=> AddObject(entity, persistComposition, optionalConnConfig, isReplicating).GetAwaiter().GetResult();
-
 		private async Task<int> UpdateObject(object entity, object filterEntity, bool persistComposition,
 			string optionalConnConfig = "", bool isReplicating = false)
 		{
@@ -442,7 +560,39 @@ namespace Rochas.DapperRepository
 				if (persistComposition)
 					base.StartTransaction();
 
-				recordsAffected = await ExecuteCommandAsync(sqlInstruction);
+				recordsAffected = await ExecuteCommandAsync(sqlInstruction).ConfigureAwait(false);
+
+				if (persistComposition)
+					await PersistCompositionAsync(entity, PersistenceAction.Update, filterEntity).ConfigureAwait(false);
+				else
+				if (!keepConnection) base.Disconnect();
+			}
+
+			CleanCacheableData(entity);
+
+			if (base.replicationEnabled && !isReplicating)
+				UpdateReplicas(entity, filterEntity, entityProps, persistComposition);
+
+			return recordsAffected;
+		}
+
+		private int UpdateObjectSync(object entity, object filterEntity, bool persistComposition,
+			string optionalConnConfig = "", bool isReplicating = false)
+		{
+			int recordsAffected = 0;
+			string sqlInstruction;
+
+			var entityType = entity.GetType();
+			var entityProps = entityType.GetProperties();
+
+			if (keepConnection || base.Connect(optionalConnConfig))
+			{
+				sqlInstruction = EntitySqlParser.ParseEntity(entity, engine, PersistenceAction.Update, filterEntity);
+
+				if (persistComposition)
+					base.StartTransaction();
+
+				recordsAffected = ExecuteCommand(sqlInstruction);
 
 				if (persistComposition)
 					PersistComposition(entity, PersistenceAction.Update, filterEntity);
@@ -458,10 +608,6 @@ namespace Rochas.DapperRepository
 			return recordsAffected;
 		}
 
-		private int UpdateObjectSync(object entity, object filterEntity, bool persistComposition,
-			string optionalConnConfig = "", bool isReplicating = false)
-			=> UpdateObject(entity, filterEntity, persistComposition, optionalConnConfig, isReplicating).GetAwaiter().GetResult();
-
 		private async Task<int> RemoveObjects(object filterEntity,
 			string optionalConnConfig = "", bool isReplicating = false)
 		{
@@ -475,9 +621,9 @@ namespace Rochas.DapperRepository
 			{
 				sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, PersistenceAction.Remove, filterEntity);
 
-				recordsAffected = await ExecuteCommandAsync(sqlInstruction);
+				recordsAffected = await ExecuteCommandAsync(sqlInstruction).ConfigureAwait(false);
 
-				PersistComposition(filterEntity, PersistenceAction.Remove);
+				await PersistCompositionAsync(filterEntity, PersistenceAction.Remove).ConfigureAwait(false);
 
 				if (!keepConnection) base.Disconnect();
 			}
@@ -492,7 +638,31 @@ namespace Rochas.DapperRepository
 
 		private int RemoveObjectsSync(object filterEntity,
 			string optionalConnConfig = "", bool isReplicating = false)
-			=> RemoveObjects(filterEntity, optionalConnConfig, isReplicating).GetAwaiter().GetResult();
+		{
+			string sqlInstruction;
+			int recordsAffected = 0;
+
+			var entityType = filterEntity.GetType();
+			var entityProps = entityType.GetProperties();
+
+			if (keepConnection || base.Connect(optionalConnConfig))
+			{
+				sqlInstruction = EntitySqlParser.ParseEntity(filterEntity, engine, PersistenceAction.Remove, filterEntity);
+
+				recordsAffected = ExecuteCommand(sqlInstruction);
+
+				PersistComposition(filterEntity, PersistenceAction.Remove);
+
+				if (!keepConnection) base.Disconnect();
+			}
+
+			CleanCacheableData(filterEntity);
+
+			if (base.replicationEnabled && !isReplicating)
+				RemoveReplicas(filterEntity, entityProps);
+
+			return recordsAffected;
+		}
 
 		#endregion
 
@@ -500,15 +670,23 @@ namespace Rochas.DapperRepository
 
 		private void FillComposition(object loadedEntity, PropertyInfo[] entityProps)
 		{
-			var entityType = loadedEntity.GetType();
+			var compositionPath = _visitedTypes.Value;
 
-			if (_visitedTypes == null)
-				_visitedTypes = new Dictionary<Type, int>();
+			if (compositionPath == null)
+			{
+				compositionPath = new Stack<string>();
+				_visitedTypes.Value = compositionPath;
+			}
 
-			if (_visitedTypes.TryGetValue(entityType, out int count) && count >= 2)
+			if (compositionPath.Count >= MaxCompositionDepth)
 				return;
 
-			_visitedTypes[entityType] = count + 1;
+			var compositionKey = GetCompositionKey(loadedEntity, entityProps);
+
+			if (compositionPath.Contains(compositionKey))
+				return;
+
+			compositionPath.Push(compositionKey);
 
 			try
 			{
@@ -516,11 +694,50 @@ namespace Rochas.DapperRepository
 			}
 			finally
 			{
-				if (_visitedTypes[entityType] <= 1)
-					_visitedTypes.Remove(entityType);
-				else
-					_visitedTypes[entityType]--;
+				compositionPath.Pop();
 			}
+		}
+
+		private async Task FillCompositionAsync(object loadedEntity, PropertyInfo[] entityProps)
+		{
+			var compositionPath = _visitedTypes.Value;
+
+			if (compositionPath == null)
+			{
+				compositionPath = new Stack<string>();
+				_visitedTypes.Value = compositionPath;
+			}
+
+			if (compositionPath.Count >= MaxCompositionDepth)
+				return;
+
+			var compositionKey = GetCompositionKey(loadedEntity, entityProps);
+
+			if (compositionPath.Contains(compositionKey))
+				return;
+
+			compositionPath.Push(compositionKey);
+
+			try
+			{
+				await FillCompositionInternalAsync(loadedEntity, entityProps).ConfigureAwait(false);
+			}
+			finally
+			{
+				compositionPath.Pop();
+			}
+		}
+
+		private string GetCompositionKey(object loadedEntity, PropertyInfo[] entityProps)
+		{
+			var entityType = loadedEntity.GetType();
+			var keyColumn = EntityReflector.GetKeyColumn(entityProps);
+			var keyValue = keyColumn?.GetValue(loadedEntity)?.ToString();
+
+			if (string.IsNullOrEmpty(keyValue))
+				keyValue = loadedEntity.GetHashCode().ToString();
+
+			return entityType.FullName + "#" + keyValue;
 		}
 
 		private void FillCompositionInternal(object loadedEntity, PropertyInfo[] entityProps)
@@ -581,6 +798,79 @@ namespace Rochas.DapperRepository
 																				 relationAttrib.ForeignKeyAttribute))
 									{
 										var childRelationInstance = GetObjectSync(childEntityInstance);
+										manyToManyResultList.Add(childRelationInstance);
+									}
+								}
+
+								childEntityInstance = manyToManyResultList;
+								childEntityIsList = false;
+							}
+						}
+						break;
+				}
+
+				SetParentChildEntity(loadedEntity, child, childEntityInstance, childEntityIsList);
+			}
+		}
+
+		private async Task FillCompositionInternalAsync(object loadedEntity, PropertyInfo[] entityProps)
+		{
+			var childEntities = EntityReflector.GetRelatedEntities(entityProps);
+
+			foreach (var child in childEntities)
+			{
+				Type childEntityType = child.PropertyType;
+				bool childEntityIsList = typeof(IEnumerable).IsAssignableFrom(childEntityType) && childEntityType != typeof(string);
+				if (childEntityIsList && childEntityType.IsGenericType)
+					childEntityType = child.PropertyType.GetGenericArguments()[0];
+
+				PropertyInfo[] childProps = childEntityType.GetProperties();
+				object childEntityInstance = Activator.CreateInstance(childEntityType, true);
+				RelatedEntityAttribute relationAttrib = EntityReflector.GetRelatedEntityAttribute(child);
+				var keyColumn = EntityReflector.GetKeyColumn(entityProps);
+
+				switch (relationAttrib.Cardinality)
+				{
+					case RelationCardinality.OneToOne:
+						if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance,
+																	childProps, relationAttrib.ForeignKeyAttribute))
+							childEntityInstance = await GetObject(childEntityInstance, true).ConfigureAwait(false);
+						break;
+
+					case RelationCardinality.ManyToOne:
+						if (EntityReflector.SetParentForeignKeyValue(loadedEntity, entityProps, childEntityInstance,
+																	 childProps, relationAttrib.ForeignKeyAttribute))
+							childEntityInstance = await GetObject(childEntityInstance, true).ConfigureAwait(false);
+						break;
+
+					case RelationCardinality.OneToMany:
+						childProps = childEntityType.GetProperties();
+						if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, childEntityInstance,
+																	childProps, relationAttrib.ForeignKeyAttribute))
+							childEntityInstance = await QueryObjects(childEntityInstance, PersistenceAction.Query, true).ConfigureAwait(false);
+						else
+							childEntityInstance = null;
+						break;
+
+					case RelationCardinality.ManyToMany:
+						var intermedyEntityInstance = Activator.CreateInstance(relationAttrib.IntermediaryEntity, true);
+						var intermedyEntityProps = intermedyEntityInstance.GetType().GetProperties();
+
+						if (intermedyEntityInstance != null)
+						{
+							if (EntityReflector.SetChildForeignKeyValue(loadedEntity, entityProps, intermedyEntityInstance,
+																		intermedyEntityProps, relationAttrib.IntermediaryKeyAttribute))
+							{
+								var manyToManyRelations = await QueryObjects(intermedyEntityInstance, PersistenceAction.Get).ConfigureAwait(false);
+								var manyToManyResultList = EntityReflector.CreateTypedList(child);
+
+								foreach (var relationInstance in manyToManyRelations)
+								{
+									if (EntityReflector.SetParentForeignKeyValue(relationInstance, intermedyEntityProps,
+																				 childEntityInstance, childProps,
+																				 relationAttrib.ForeignKeyAttribute))
+									{
+										var childRelationInstance = await GetObject(childEntityInstance).ConfigureAwait(false);
 										manyToManyResultList.Add(childRelationInstance);
 									}
 								}
@@ -712,6 +1002,101 @@ namespace Rochas.DapperRepository
 			return result;
 		}
 
+		private async Task<List<string>> ParseCompositionAsync(object entity, PersistenceAction action, object filterEntity)
+		{
+			List<string> result = new List<string>();
+			var childEntities = EntityReflector.GetRelatedEntities(entityProps);
+
+			foreach (PropertyInfo child in childEntities)
+			{
+				object childEntityInstance;
+				object childEntityFilter = null;
+
+				var relationAttrib = EntityReflector.GetRelatedEntityAttribute(child);
+				childEntityInstance = child.GetValue(entity, null);
+				var entityParent = entity;
+
+				if (childEntityInstance != null)
+				{
+					var childEntityType = childEntityInstance.GetType();
+					if (!(childEntityInstance is IList) && !childEntityType.Name.Contains("List") && !childEntityType.Name.Contains("ReadOnlyCollection"))
+					{
+						var childProps = childEntityType.GetProperties();
+						action = EntitySqlParser.SetPersistenceAction(childEntityInstance, EntityReflector.GetKeyColumn(childProps));
+
+						if (action == PersistenceAction.Update)
+						{
+							childEntityFilter = Activator.CreateInstance(childEntityInstance.GetType());
+							EntityReflector.SetFilterPrimaryKey(childEntityInstance, childProps, childEntityFilter);
+						}
+
+						if (relationAttrib.Cardinality == RelationCardinality.OneToOne)
+							EntityReflector.SetChildForeignKeyValue(entityParent, entityProps, childEntityInstance,
+															   childProps, relationAttrib.ForeignKeyAttribute);
+						else
+							EntityReflector.SetChildForeignKeyValue(childEntityInstance, childProps, entityParent,
+															   entityProps, relationAttrib.ForeignKeyAttribute);
+
+						result.Add(EntitySqlParser.ParseEntity(childEntityInstance, engine, action));
+					}
+					else
+					{
+						var childListInstance = (IList)childEntityInstance;
+						List<object> childFiltersList = new List<object>();
+
+						if (childListInstance.Count > 0)
+						{
+							foreach (var listItem in childListInstance)
+							{
+								var listItemType = listItem.GetType();
+								var listItemProps = listItemType.GetProperties();
+
+								if (relationAttrib.Cardinality == RelationCardinality.OneToMany)
+								{
+									EntitySqlParser.ParseOneToManyRelation(childEntityFilter, listItem, listItemType,
+																		   listItemProps, ref action, childFiltersList);
+									EntityReflector.SetChildForeignKeyValue(entityParent, entityProps, listItem, listItemProps, relationAttrib.ForeignKeyAttribute);
+									result.Add(EntitySqlParser.ParseEntity(listItem, engine, action));
+								}
+								else
+								{
+									var manyToEntity = EntitySqlParser.ParseManyToRelation(listItem, relationAttrib);
+									EntityReflector.SetChildForeignKeyValue(entityParent, entityProps, manyToEntity, listItemProps, relationAttrib.ForeignKeyAttribute);
+									var existRelation = await GetObject(manyToEntity).ConfigureAwait(false);
+									if (existRelation != null) manyToEntity = existRelation;
+									var manyToEntityProps = manyToEntity.GetType().GetProperties();
+									action = EntitySqlParser.SetPersistenceAction(manyToEntity, EntityReflector.GetKeyColumn(manyToEntityProps));
+									object existFilter = null;
+									if (action == PersistenceAction.Update)
+									{
+										existFilter = Activator.CreateInstance(manyToEntity.GetType());
+										EntityReflector.SetFilterPrimaryKey(manyToEntity, manyToEntityProps, existFilter);
+										childFiltersList.Add(existFilter);
+									}
+									result.Add(EntitySqlParser.ParseEntity(manyToEntity, engine, action));
+								}
+							}
+						}
+						else
+						{
+							var childInstance = Activator.CreateInstance(childListInstance.GetType().GetGenericArguments()[0]);
+							object childEntity;
+							if (relationAttrib.Cardinality == RelationCardinality.ManyToMany)
+								childEntity = EntitySqlParser.ParseManyToRelation(childInstance, relationAttrib);
+							else
+								childEntity = childInstance;
+
+							var childProps = childEntity.GetType().GetProperties();
+							EntityReflector.SetChildForeignKeyValue(entityParent, entityProps, childEntity, childProps, relationAttrib.ForeignKeyAttribute);
+							childFiltersList.Add(childEntity);
+						}
+					}
+				}
+			}
+
+			return result;
+		}
+
 		private void PersistComposition(object entity, PersistenceAction action, object filterEntity = null)
 		{
 			try
@@ -720,6 +1105,29 @@ namespace Rochas.DapperRepository
 
 				foreach (var cmd in childEntityCommands)
 					ExecuteCommand(cmd);
+
+				if (base.transactionControl != null)
+					base.CommitTransaction();
+
+				base.Disconnect();
+				CleanCacheableData(entity);
+			}
+			catch (Exception)
+			{
+				if (base.transactionControl != null)
+					base.CancelTransaction();
+				base.Disconnect();
+			}
+		}
+
+		private async Task PersistCompositionAsync(object entity, PersistenceAction action, object filterEntity = null)
+		{
+			try
+			{
+				List<string> childEntityCommands = await ParseCompositionAsync(entity, action, filterEntity).ConfigureAwait(false);
+
+				foreach (var cmd in childEntityCommands)
+					await ExecuteCommandAsync(cmd).ConfigureAwait(false);
 
 				if (base.transactionControl != null)
 					base.CommitTransaction();

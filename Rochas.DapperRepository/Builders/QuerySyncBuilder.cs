@@ -65,10 +65,9 @@ namespace Rochas.DapperRepository.Builders
 
         public ICollection<T> ToList()
         {
-            return ((GenericRepository<T>)_repository).QueryWithBuilder(
+            return ((GenericRepository<T>)_repository).QueryWithBuilderSync(
                 _filter, _loadComposition, _filterConjunction,
-                _sortAttributes, _orderDescending, _groupAttributes, _aggregates)
-                .GetAwaiter().GetResult();
+                _sortAttributes, _orderDescending, _groupAttributes, _aggregates);
         }
     }
 }

@@ -2199,5 +2199,95 @@ namespace Rochas.DapperRepository.Test
         }
 
         #endregion
+
+        #region Composition Async Regression Tests
+
+        [Fact]
+        public async Task Test106_FillCompositionAsync_TwoCycleVolume_DoesNotHang()
+        {
+            // Two-cycle SampleEntity <-> SampleManyForeignEntity with volume:
+            // the async composer must load every child without blocking threads.
+            // The cyclic back-reference resolves to the parent, whose own
+            // composition is cut (no infinite recursion).
+            var children = new List<SampleManyForeignEntity>();
+            for (int i = 1; i <= 30; i++)
+                children.Add(new SampleManyForeignEntity { Code = i, Title = "Volume Child " + i, CreationDate = DateTime.Now, Active = true });
+
+            var entity = new SampleEntity()
+            {
+                DocNumber = 99996,
+                CreationDate = DateTime.Now,
+                Name = "Volume Cycle Entity",
+                Active = true,
+                OneToManyForeignEntities = children
+            };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var rowsAffected = repos.AddSync(entity, persistComposition: true);
+
+                Assert.True(rowsAffected > 0);
+
+                var result = await repos.Get(new SampleEntity { Id = entity.Id }, true);
+
+                Assert.NotNull(result);
+                Assert.NotNull(result.OneToManyForeignEntities);
+                Assert.Equal(30, result.OneToManyForeignEntities.Count);
+
+                foreach (var child in result.OneToManyForeignEntities)
+                {
+                    Assert.NotNull(child);
+                    Assert.True(child.ParentId == result.Id);
+                    Assert.NotNull(child.ParentEntity);
+                    Assert.Equal(result.Id, child.ParentEntity.Id);
+                    Assert.Null(child.ParentEntity.OneToManyForeignEntities);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task Test107_PaginatedComposition_AsyncAndSync()
+        {
+            var entity = new SampleEntity()
+            {
+                DocNumber = 99995,
+                CreationDate = DateTime.Now,
+                Name = "Paginated Composition Entity",
+                Active = true,
+                OneToManyForeignEntities = new List<SampleManyForeignEntity>
+                {
+                    new SampleManyForeignEntity { Code = 1, Title = "Paged Child 1", CreationDate = DateTime.Now, Active = true },
+                    new SampleManyForeignEntity { Code = 2, Title = "Paged Child 2", CreationDate = DateTime.Now, Active = true },
+                    new SampleManyForeignEntity { Code = 3, Title = "Paged Child 3", CreationDate = DateTime.Now, Active = true }
+                }
+            };
+
+            using (var repos = new GenericRepository<SampleEntity>(DatabaseEngine.SQLite, connString))
+            {
+                var rowsAffected = repos.AddSync(entity, persistComposition: true);
+
+                Assert.True(rowsAffected > 0);
+
+                var filter = new SampleEntity { DocNumber = 99995 };
+
+                var pagedAsync = await repos.Query(filter, 1, 10, loadComposition: true, filterConjunction: true);
+
+                Assert.NotNull(pagedAsync);
+                Assert.True(pagedAsync.TotalCount >= 1);
+                var asyncItem = pagedAsync.Items.First(i => i.DocNumber == 99995);
+                Assert.NotNull(asyncItem.OneToManyForeignEntities);
+                Assert.Equal(3, asyncItem.OneToManyForeignEntities.Count);
+
+                var pagedSync = repos.QuerySync(filter, 1, 10, loadComposition: true, filterConjunction: true).ToList();
+
+                Assert.NotNull(pagedSync);
+                Assert.True(pagedSync.TotalCount >= 1);
+                var syncItem = pagedSync.Items.First(i => i.DocNumber == 99995);
+                Assert.NotNull(syncItem.OneToManyForeignEntities);
+                Assert.Equal(3, syncItem.OneToManyForeignEntities.Count);
+            }
+        }
+
+        #endregion
     }
 }
