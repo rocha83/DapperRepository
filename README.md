@@ -235,24 +235,88 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 in-memory + L2 distribute
 
 ### Benchmark — DapperRepository vs EF Core
 
-**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5,000 rows**
+**Linux, .NET 9.0.20, SQLite, 5,000 rows (+ composition: 21 parents), ORM 2.0.4 + Wrapper 1.5.0 — 80 cols ≈ 152 ms**
 
-| Scenario | EF Core | DapperRepository | Winner |
-|----------|---------|------------------|--------|
-| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
-| BulkInsert_100 | 32.8 ms | 33.5 ms | Tie |
-| GetById | 526 μs | 409 μs | ORM 1.3x |
-| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
-| Delete_Individual | 3.2 ms | 3.5 ms | Tie |
-| CountSync | 508 μs | 536 μs | Tie |
-| Search_Filterable | 1.0 ms | 1.2 ms | Tie |
-| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
-| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
-| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
-| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
-| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
-| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
-| SearchPaginated | 2.5 ms | 3.1 ms | Tie* |
+```benchmark
+Insert          EF ####### (13.26 ms) Tie
+                ORM ======= (13.44 ms)
+GetById         EF # (1.00 ms)
+                ORM = (0.40 ms) ORM 2.5x
+QueryFiltered   EF # (0.87 ms)
+                ORM = (0.27 ms) ORM 3.2x
+Search2F-COUNT  EF # (2.03 ms)
+                ORM = (1.54 ms) ORM 1.3x
+Search2F-LISTA  EF ############################################# (86.12 ms)
+                ORM ======================================= (73.84 ms) ORM 1.2x
+Search8F-COUNT  EF # (2.21 ms)
+                ORM = (1.53 ms) ORM 1.4x
+SortAsc-5000    EF ################################################ (91.92 ms)
+                ORM ============================================== (87.08 ms) ORM 1.1x
+SortAscFirst    EF ## (4.70 ms)
+                ORM == (3.52 ms) ORM 1.3x
+SortDesc-5000   EF ############################################################################ (145.08 ms)
+                ORM ============================================================== (117.30 ms) ORM 1.2x
+SortFiltFirst   EF ### (5.48 ms)
+                ORM === (6.07 ms) EF 1.1x
+SortMulti       EF ################################################# (93.94 ms)
+                ORM ============================================== (87.91 ms) ORM 1.1x
+SortFilt-4500   EF ############################################################ (113.81 ms)
+                ORM ========================================== (80.00 ms) ORM 1.4x
+GroupBy-1col    EF ############## (26.52 ms)
+                ORM = (1.29 ms) ORM 20.6x
+GroupBy-2col    EF #################### (37.21 ms)
+                ORM ====== (11.82 ms) ORM 3.1x
+GroupBy-AGG     EF ####### (12.41 ms)
+                ORM == (3.38 ms) ORM 3.7x
+GroupBy-ORDER   EF ## (4.26 ms)
+                ORM == (2.95 ms) ORM 1.4x
+GroupBy-MULTIAG EF ###### (11.75 ms)
+                ORM === (5.84 ms) ORM 2.0x
+GroupBy-HAVING* EF # (1.15 ms)
+                ORM = (1.29 ms) EF 1.1x
+BulkInsert-100  EF ################################# (61.99 ms)
+                ORM ============= (24.58 ms) ORM 2.5x
+QueryRaw-50     EF ### (5.40 ms)
+                ORM == (4.69 ms) ORM 1.2x
+QueryBuildSort  EF ############################################## (88.02 ms) Tie
+                ORM =============================================== (89.90 ms)
+Update          EF ####################### (43.40 ms) Tie
+                ORM ====================== (42.44 ms)
+Delete          EF ################ (30.27 ms)
+                ORM =============== (28.36 ms) ORM 1.1x
+CountSync       EF # (1.00 ms)
+                ORM = (0.63 ms) ORM 1.6x
+SearchPag-20    EF ### (6.04 ms)
+                ORM === (5.38 ms) ORM 1.1x
+Search2F-async  ORM = (1.35 ms) ref. no pair **
+PersistComp-10  EF ######### (16.20 ms)
+                ORM ======= (12.70 ms) ORM 1.3x
+PersistComp-50  EF ########## (19.86 ms)
+                ORM ========= (16.22 ms) ORM 1.2x
+PersistComp-10a EF ######## (15.65 ms)
+                ORM ======= (13.68 ms) ORM 1.1x
+PersistComp-50a EF ########## (19.13 ms)
+                ORM ======== (15.95 ms) ORM 1.2x
+LoadComp-10     EF ## (2.88 ms)
+                ORM = (0.38 ms) ORM 7.6x
+LoadComp-50     EF ### (5.05 ms)
+                ORM = (0.74 ms) ORM 6.9x
+LoadComp-10a    EF # (2.20 ms)
+                ORM = (0.40 ms) ORM 5.5x
+LoadComp-50a    EF ### (5.85 ms)
+                ORM = (0.74 ms) ORM 7.9x
+QueryComp-21    EF ################ (30.40 ms)
+                ORM == (4.28 ms) ORM 7.1x
+QueryComp-21a   EF ########## (18.58 ms)
+                ORM == (4.02 ms) ORM 4.6x
+PaginateComp    EF #### (8.08 ms)
+                ORM = (2.17 ms) ORM 3.7x
+PaginateComp-a  EF ##### (9.16 ms)
+                ORM = (2.36 ms) ORM 3.9x
+```
+
+Score: ORM 32 × EF 2 × Tie 3 × ref 1.
+* GroupBy HAVING: ORM 2.0.4 emits no HAVING (capability gap, not a bug). ** ORM-only reference (no symmetric pair).
 
 ### Benchmark — Channel vs Replica (Cluster Replication)
 
@@ -503,24 +567,88 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 in-memory + L2 distribuí
 
 ### 📊 Benchmark — DapperRepository vs EF Core
 
-**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5.000 linhas**
+**Linux, .NET 9.0.20, SQLite, 5.000 linhas (+ composição: 21 pais), ORM 2.0.4 + Wrapper 1.5.0 — 80 col ≈ 152 ms**
 
-| Cenário | EF Core | DapperRepository | Vitória |
-|---------|---------|------------------|---------|
-| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
-| BulkInsert_100 | 32.8 ms | 33.5 ms | Empate |
-| GetById | 526 μs | 409 μs | ORM 1.3x |
-| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
-| Delete_Individual | 3.2 ms | 3.5 ms | Empate |
-| CountSync | 508 μs | 536 μs | Empate |
-| Search_Filterable | 1.0 ms | 1.2 ms | Empate |
-| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
-| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
-| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
-| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
-| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
-| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
-| SearchPaginated | 2.5 ms | 3.1 ms | Empate* |
+```benchmark
+Insert          EF ####### (13,26 ms) Empate
+                ORM ======= (13,44 ms)
+GetById         EF # (1,00 ms)
+                ORM = (0,40 ms) ORM 2.5x
+QueryFiltered   EF # (0,87 ms)
+                ORM = (0,27 ms) ORM 3.2x
+Search2F-COUNT  EF # (2,03 ms)
+                ORM = (1,54 ms) ORM 1.3x
+Search2F-LISTA  EF ############################################# (86,12 ms)
+                ORM ======================================= (73,84 ms) ORM 1.2x
+Search8F-COUNT  EF # (2,21 ms)
+                ORM = (1,53 ms) ORM 1.4x
+SortAsc-5000    EF ################################################ (91,92 ms)
+                ORM ============================================== (87,08 ms) ORM 1.1x
+SortAscFirst    EF ## (4,70 ms)
+                ORM == (3,52 ms) ORM 1.3x
+SortDesc-5000   EF ############################################################################ (145,08 ms)
+                ORM ============================================================== (117,30 ms) ORM 1.2x
+SortFiltFirst   EF ### (5,48 ms)
+                ORM === (6,07 ms) EF 1.1x
+SortMulti       EF ################################################# (93,94 ms)
+                ORM ============================================== (87,91 ms) ORM 1.1x
+SortFilt-4500   EF ############################################################ (113,81 ms)
+                ORM ========================================== (80,00 ms) ORM 1.4x
+GroupBy-1col    EF ############## (26,52 ms)
+                ORM = (1,29 ms) ORM 20.6x
+GroupBy-2col    EF #################### (37,21 ms)
+                ORM ====== (11,82 ms) ORM 3.1x
+GroupBy-AGG     EF ####### (12,41 ms)
+                ORM == (3,38 ms) ORM 3.7x
+GroupBy-ORDER   EF ## (4,26 ms)
+                ORM == (2,95 ms) ORM 1.4x
+GroupBy-MULTIAG EF ###### (11,75 ms)
+                ORM === (5,84 ms) ORM 2.0x
+GroupBy-HAVING* EF # (1,15 ms)
+                ORM = (1,29 ms) EF 1.1x
+BulkInsert-100  EF ################################# (61,99 ms)
+                ORM ============= (24,58 ms) ORM 2.5x
+QueryRaw-50     EF ### (5,40 ms)
+                ORM == (4,69 ms) ORM 1.2x
+QueryBuildSort  EF ############################################## (88,02 ms) Empate
+                ORM =============================================== (89,90 ms)
+Update          EF ####################### (43,40 ms) Empate
+                ORM ====================== (42,44 ms)
+Delete          EF ################ (30,27 ms)
+                ORM =============== (28,36 ms) ORM 1.1x
+CountSync       EF # (1,00 ms)
+                ORM = (0,63 ms) ORM 1.6x
+SearchPag-20    EF ### (6,04 ms)
+                ORM === (5,38 ms) ORM 1.1x
+Search2F-async  ORM = (1,35 ms) ref. sem par **
+PersistComp-10  EF ######### (16,20 ms)
+                ORM ======= (12,70 ms) ORM 1.3x
+PersistComp-50  EF ########## (19,86 ms)
+                ORM ========= (16,22 ms) ORM 1.2x
+PersistComp-10a EF ######## (15,65 ms)
+                ORM ======= (13,68 ms) ORM 1.1x
+PersistComp-50a EF ########## (19,13 ms)
+                ORM ======== (15,95 ms) ORM 1.2x
+LoadComp-10     EF ## (2,88 ms)
+                ORM = (0,38 ms) ORM 7.6x
+LoadComp-50     EF ### (5,05 ms)
+                ORM = (0,74 ms) ORM 6.9x
+LoadComp-10a    EF # (2,20 ms)
+                ORM = (0,40 ms) ORM 5.5x
+LoadComp-50a    EF ### (5,85 ms)
+                ORM = (0,74 ms) ORM 7.9x
+QueryComp-21    EF ################ (30,40 ms)
+                ORM == (4,28 ms) ORM 7.1x
+QueryComp-21a   EF ########## (18,58 ms)
+                ORM == (4,02 ms) ORM 4.6x
+PaginateComp    EF #### (8,08 ms)
+                ORM = (2,17 ms) ORM 3.7x
+PaginateComp-a  EF ##### (9,16 ms)
+                ORM = (2,36 ms) ORM 3.9x
+```
+
+Placar: ORM 32 × EF 2 × Empate 3 × ref 1.
+* GroupBy HAVING: a ORM 2.0.4 não emite HAVING (gap, não erro). ** Referência só-ORM (sem par simétrico).
 
 ### Benchmark — Channel vs Replica (Replicação em Cluster)
 
@@ -771,24 +899,88 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 en memoria + L2 distribui
 
 ### Benchmark — DapperRepository vs EF Core
 
-**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5.000 filas**
+**Linux, .NET 9.0.20, SQLite, 5.000 filas (+ composición: 21 padres), ORM 2.0.4 + Wrapper 1.5.0 — 80 col ≈ 152 ms**
 
-| Escenario | EF Core | DapperRepository | Ganador |
-|-----------|---------|------------------|---------|
-| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
-| BulkInsert_100 | 32.8 ms | 33.5 ms | Empate |
-| GetById | 526 μs | 409 μs | ORM 1.3x |
-| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
-| Delete_Individual | 3.2 ms | 3.5 ms | Empate |
-| CountSync | 508 μs | 536 μs | Empate |
-| Search_Filterable | 1.0 ms | 1.2 ms | Empate |
-| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
-| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
-| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
-| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
-| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
-| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
-| SearchPaginated | 2.5 ms | 3.1 ms | Empate* |
+```benchmark
+Insert          EF ####### (13.26 ms) Empate
+                ORM ======= (13.44 ms)
+GetById         EF # (1.00 ms)
+                ORM = (0.40 ms) ORM 2.5x
+QueryFiltered   EF # (0.87 ms)
+                ORM = (0.27 ms) ORM 3.2x
+Search2F-COUNT  EF # (2.03 ms)
+                ORM = (1.54 ms) ORM 1.3x
+Search2F-LISTA  EF ############################################# (86.12 ms)
+                ORM ======================================= (73.84 ms) ORM 1.2x
+Search8F-COUNT  EF # (2.21 ms)
+                ORM = (1.53 ms) ORM 1.4x
+SortAsc-5000    EF ################################################ (91.92 ms)
+                ORM ============================================== (87.08 ms) ORM 1.1x
+SortAscFirst    EF ## (4.70 ms)
+                ORM == (3.52 ms) ORM 1.3x
+SortDesc-5000   EF ############################################################################ (145.08 ms)
+                ORM ============================================================== (117.30 ms) ORM 1.2x
+SortFiltFirst   EF ### (5.48 ms)
+                ORM === (6.07 ms) EF 1.1x
+SortMulti       EF ################################################# (93.94 ms)
+                ORM ============================================== (87.91 ms) ORM 1.1x
+SortFilt-4500   EF ############################################################ (113.81 ms)
+                ORM ========================================== (80.00 ms) ORM 1.4x
+GroupBy-1col    EF ############## (26.52 ms)
+                ORM = (1.29 ms) ORM 20.6x
+GroupBy-2col    EF #################### (37.21 ms)
+                ORM ====== (11.82 ms) ORM 3.1x
+GroupBy-AGG     EF ####### (12.41 ms)
+                ORM == (3.38 ms) ORM 3.7x
+GroupBy-ORDER   EF ## (4.26 ms)
+                ORM == (2.95 ms) ORM 1.4x
+GroupBy-MULTIAG EF ###### (11.75 ms)
+                ORM === (5.84 ms) ORM 2.0x
+GroupBy-HAVING* EF # (1.15 ms)
+                ORM = (1.29 ms) EF 1.1x
+BulkInsert-100  EF ################################# (61.99 ms)
+                ORM ============= (24.58 ms) ORM 2.5x
+QueryRaw-50     EF ### (5.40 ms)
+                ORM == (4.69 ms) ORM 1.2x
+QueryBuildSort  EF ############################################## (88.02 ms) Empate
+                ORM =============================================== (89.90 ms)
+Update          EF ####################### (43.40 ms) Empate
+                ORM ====================== (42.44 ms)
+Delete          EF ################ (30.27 ms)
+                ORM =============== (28.36 ms) ORM 1.1x
+CountSync       EF # (1.00 ms)
+                ORM = (0.63 ms) ORM 1.6x
+SearchPag-20    EF ### (6.04 ms)
+                ORM === (5.38 ms) ORM 1.1x
+Search2F-async  ORM = (1.35 ms) ref. sin par **
+PersistComp-10  EF ######### (16.20 ms)
+                ORM ======= (12.70 ms) ORM 1.3x
+PersistComp-50  EF ########## (19.86 ms)
+                ORM ========= (16.22 ms) ORM 1.2x
+PersistComp-10a EF ######## (15.65 ms)
+                ORM ======= (13.68 ms) ORM 1.1x
+PersistComp-50a EF ########## (19.13 ms)
+                ORM ======== (15.95 ms) ORM 1.2x
+LoadComp-10     EF ## (2.88 ms)
+                ORM = (0.38 ms) ORM 7.6x
+LoadComp-50     EF ### (5.05 ms)
+                ORM = (0.74 ms) ORM 6.9x
+LoadComp-10a    EF # (2.20 ms)
+                ORM = (0.40 ms) ORM 5.5x
+LoadComp-50a    EF ### (5.85 ms)
+                ORM = (0.74 ms) ORM 7.9x
+QueryComp-21    EF ################ (30.40 ms)
+                ORM == (4.28 ms) ORM 7.1x
+QueryComp-21a   EF ########## (18.58 ms)
+                ORM == (4.02 ms) ORM 4.6x
+PaginateComp    EF #### (8.08 ms)
+                ORM = (2.17 ms) ORM 3.7x
+PaginateComp-a  EF ##### (9.16 ms)
+                ORM = (2.36 ms) ORM 3.9x
+```
+
+Marcador: ORM 32 × EF 2 × Empate 3 × ref 1.
+* GroupBy HAVING: el ORM no emite HAVING (brecha, no error). ** Referencia solo-ORM (sin par simétrico).
 
 ### Benchmark — Channel vs Replica (Replicación en Cluster)
 
@@ -1039,24 +1231,88 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 en mémoire + L2 distribu
 
 ### Benchmark — DapperRepository vs EF Core
 
-**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5 000 lignes**
+**Linux, .NET 9.0.20, SQLite, 5 000 lignes (+ composition : 21 parents), ORM 2.0.4 + Wrapper 1.5.0 — 80 col ≈ 152 ms**
 
-| Scénario | EF Core | DapperRepository | Gagnant |
-|----------|---------|------------------|---------|
-| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
-| BulkInsert_100 | 32.8 ms | 33.5 ms | Égalité |
-| GetById | 526 μs | 409 μs | ORM 1.3x |
-| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
-| Delete_Individual | 3.2 ms | 3.5 ms | Égalité |
-| CountSync | 508 μs | 536 μs | Égalité |
-| Search_Filterable | 1.0 ms | 1.2 ms | Égalité |
-| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
-| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
-| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
-| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
-| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
-| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
-| SearchPaginated | 2.5 ms | 3.1 ms | Égalité* |
+```benchmark
+Insert          EF ####### (13,26 ms) Égalité
+                ORM ======= (13,44 ms)
+GetById         EF # (1,00 ms)
+                ORM = (0,40 ms) ORM 2.5x
+QueryFiltered   EF # (0,87 ms)
+                ORM = (0,27 ms) ORM 3.2x
+Search2F-COUNT  EF # (2,03 ms)
+                ORM = (1,54 ms) ORM 1.3x
+Search2F-LISTA  EF ############################################# (86,12 ms)
+                ORM ======================================= (73,84 ms) ORM 1.2x
+Search8F-COUNT  EF # (2,21 ms)
+                ORM = (1,53 ms) ORM 1.4x
+SortAsc-5000    EF ################################################ (91,92 ms)
+                ORM ============================================== (87,08 ms) ORM 1.1x
+SortAscFirst    EF ## (4,70 ms)
+                ORM == (3,52 ms) ORM 1.3x
+SortDesc-5000   EF ############################################################################ (145,08 ms)
+                ORM ============================================================== (117,30 ms) ORM 1.2x
+SortFiltFirst   EF ### (5,48 ms)
+                ORM === (6,07 ms) EF 1.1x
+SortMulti       EF ################################################# (93,94 ms)
+                ORM ============================================== (87,91 ms) ORM 1.1x
+SortFilt-4500   EF ############################################################ (113,81 ms)
+                ORM ========================================== (80,00 ms) ORM 1.4x
+GroupBy-1col    EF ############## (26,52 ms)
+                ORM = (1,29 ms) ORM 20.6x
+GroupBy-2col    EF #################### (37,21 ms)
+                ORM ====== (11,82 ms) ORM 3.1x
+GroupBy-AGG     EF ####### (12,41 ms)
+                ORM == (3,38 ms) ORM 3.7x
+GroupBy-ORDER   EF ## (4,26 ms)
+                ORM == (2,95 ms) ORM 1.4x
+GroupBy-MULTIAG EF ###### (11,75 ms)
+                ORM === (5,84 ms) ORM 2.0x
+GroupBy-HAVING* EF # (1,15 ms)
+                ORM = (1,29 ms) EF 1.1x
+BulkInsert-100  EF ################################# (61,99 ms)
+                ORM ============= (24,58 ms) ORM 2.5x
+QueryRaw-50     EF ### (5,40 ms)
+                ORM == (4,69 ms) ORM 1.2x
+QueryBuildSort  EF ############################################## (88,02 ms) Égalité
+                ORM =============================================== (89,90 ms)
+Update          EF ####################### (43,40 ms) Égalité
+                ORM ====================== (42,44 ms)
+Delete          EF ################ (30,27 ms)
+                ORM =============== (28,36 ms) ORM 1.1x
+CountSync       EF # (1,00 ms)
+                ORM = (0,63 ms) ORM 1.6x
+SearchPag-20    EF ### (6,04 ms)
+                ORM === (5,38 ms) ORM 1.1x
+Search2F-async  ORM = (1,35 ms) réf. sans paire **
+PersistComp-10  EF ######### (16,20 ms)
+                ORM ======= (12,70 ms) ORM 1.3x
+PersistComp-50  EF ########## (19,86 ms)
+                ORM ========= (16,22 ms) ORM 1.2x
+PersistComp-10a EF ######## (15,65 ms)
+                ORM ======= (13,68 ms) ORM 1.1x
+PersistComp-50a EF ########## (19,13 ms)
+                ORM ======== (15,95 ms) ORM 1.2x
+LoadComp-10     EF ## (2,88 ms)
+                ORM = (0,38 ms) ORM 7.6x
+LoadComp-50     EF ### (5,05 ms)
+                ORM = (0,74 ms) ORM 6.9x
+LoadComp-10a    EF # (2,20 ms)
+                ORM = (0,40 ms) ORM 5.5x
+LoadComp-50a    EF ### (5,85 ms)
+                ORM = (0,74 ms) ORM 7.9x
+QueryComp-21    EF ################ (30,40 ms)
+                ORM == (4,28 ms) ORM 7.1x
+QueryComp-21a   EF ########## (18,58 ms)
+                ORM == (4,02 ms) ORM 4.6x
+PaginateComp    EF #### (8,08 ms)
+                ORM = (2,17 ms) ORM 3.7x
+PaginateComp-a  EF ##### (9,16 ms)
+                ORM = (2,36 ms) ORM 3.9x
+```
+
+Score : ORM 32 × EF 2 × Égalité 3 × réf 1.
+* GroupBy HAVING : l'ORM n'émet pas de HAVING (écart, pas une erreur). ** Référence ORM uniquement (sans paire symétrique).
 
 ### Benchmark — Channel vs Replica (Réplication en Cluster)
 
@@ -1307,24 +1563,88 @@ DataCache.Initialize(new CompositeCacheProvider( // L1 in-memory + L2 verteilt
 
 ### Benchmark — DapperRepository vs EF Core
 
-**Windows 11, Intel i5-7500T, .NET 9.0, SQLite, 5.000 Zeilen**
+**Linux, .NET 9.0.20, SQLite, 5.000 Zeilen (+ Komposition: 21 Parents), ORM 2.0.4 + Wrapper 1.5.0 — 80 Spalten ≈ 152 ms**
 
-| Szenario | EF Core | DapperRepository | Sieger |
-|----------|---------|------------------|--------|
-| InsertIndividual | 3.2 ms | 3.1 ms | ORM 1.1x |
-| BulkInsert_100 | 32.8 ms | 33.5 ms | Unentschieden |
-| GetById | 526 μs | 409 μs | ORM 1.3x |
-| Update_Individual | 2.9 ms | 2.7 ms | ORM 1.1x |
-| Delete_Individual | 3.2 ms | 3.5 ms | Unentschieden |
-| CountSync | 508 μs | 536 μs | Unentschieden |
-| Search_Filterable | 1.0 ms | 1.2 ms | Unentschieden |
-| Sort_5000_rows_ORDER_BY | 61.6 ms | 38.6 ms | ORM 1.6x |
-| Sort_MultiColumn | 61 ms | 41 ms | ORM 1.5x |
-| GroupBy_Simple | 7.3 ms | 1.0 ms | ORM 7.3x |
-| GroupBy_AggAll | 3.1 ms | 1.0 ms | ORM 3.1x |
-| GroupBy_Having | 2.5 ms | 1.1 ms | ORM 2.3x |
-| QueryRaw_Select | 3.5 ms | 3.2 ms | ORM 1.1x |
-| SearchPaginated | 2.5 ms | 3.1 ms | Unentschieden* |
+```benchmark
+Insert          EF ####### (13,26 ms) Unentschieden
+                ORM ======= (13,44 ms)
+GetById         EF # (1,00 ms)
+                ORM = (0,40 ms) ORM 2.5x
+QueryFiltered   EF # (0,87 ms)
+                ORM = (0,27 ms) ORM 3.2x
+Search2F-COUNT  EF # (2,03 ms)
+                ORM = (1,54 ms) ORM 1.3x
+Search2F-LISTA  EF ############################################# (86,12 ms)
+                ORM ======================================= (73,84 ms) ORM 1.2x
+Search8F-COUNT  EF # (2,21 ms)
+                ORM = (1,53 ms) ORM 1.4x
+SortAsc-5000    EF ################################################ (91,92 ms)
+                ORM ============================================== (87,08 ms) ORM 1.1x
+SortAscFirst    EF ## (4,70 ms)
+                ORM == (3,52 ms) ORM 1.3x
+SortDesc-5000   EF ############################################################################ (145,08 ms)
+                ORM ============================================================== (117,30 ms) ORM 1.2x
+SortFiltFirst   EF ### (5,48 ms)
+                ORM === (6,07 ms) EF 1.1x
+SortMulti       EF ################################################# (93,94 ms)
+                ORM ============================================== (87,91 ms) ORM 1.1x
+SortFilt-4500   EF ############################################################ (113,81 ms)
+                ORM ========================================== (80,00 ms) ORM 1.4x
+GroupBy-1col    EF ############## (26,52 ms)
+                ORM = (1,29 ms) ORM 20.6x
+GroupBy-2col    EF #################### (37,21 ms)
+                ORM ====== (11,82 ms) ORM 3.1x
+GroupBy-AGG     EF ####### (12,41 ms)
+                ORM == (3,38 ms) ORM 3.7x
+GroupBy-ORDER   EF ## (4,26 ms)
+                ORM == (2,95 ms) ORM 1.4x
+GroupBy-MULTIAG EF ###### (11,75 ms)
+                ORM === (5,84 ms) ORM 2.0x
+GroupBy-HAVING* EF # (1,15 ms)
+                ORM = (1,29 ms) EF 1.1x
+BulkInsert-100  EF ################################# (61,99 ms)
+                ORM ============= (24,58 ms) ORM 2.5x
+QueryRaw-50     EF ### (5,40 ms)
+                ORM == (4,69 ms) ORM 1.2x
+QueryBuildSort  EF ############################################## (88,02 ms) Unentschieden
+                ORM =============================================== (89,90 ms)
+Update          EF ####################### (43,40 ms) Unentschieden
+                ORM ====================== (42,44 ms)
+Delete          EF ################ (30,27 ms)
+                ORM =============== (28,36 ms) ORM 1.1x
+CountSync       EF # (1,00 ms)
+                ORM = (0,63 ms) ORM 1.6x
+SearchPag-20    EF ### (6,04 ms)
+                ORM === (5,38 ms) ORM 1.1x
+Search2F-async  ORM = (1,35 ms) Ref. ohne Paar **
+PersistComp-10  EF ######### (16,20 ms)
+                ORM ======= (12,70 ms) ORM 1.3x
+PersistComp-50  EF ########## (19,86 ms)
+                ORM ========= (16,22 ms) ORM 1.2x
+PersistComp-10a EF ######## (15,65 ms)
+                ORM ======= (13,68 ms) ORM 1.1x
+PersistComp-50a EF ########## (19,13 ms)
+                ORM ======== (15,95 ms) ORM 1.2x
+LoadComp-10     EF ## (2,88 ms)
+                ORM = (0,38 ms) ORM 7.6x
+LoadComp-50     EF ### (5,05 ms)
+                ORM = (0,74 ms) ORM 6.9x
+LoadComp-10a    EF # (2,20 ms)
+                ORM = (0,40 ms) ORM 5.5x
+LoadComp-50a    EF ### (5,85 ms)
+                ORM = (0,74 ms) ORM 7.9x
+QueryComp-21    EF ################ (30,40 ms)
+                ORM == (4,28 ms) ORM 7.1x
+QueryComp-21a   EF ########## (18,58 ms)
+                ORM == (4,02 ms) ORM 4.6x
+PaginateComp    EF #### (8,08 ms)
+                ORM = (2,17 ms) ORM 3.7x
+PaginateComp-a  EF ##### (9,16 ms)
+                ORM = (2,36 ms) ORM 3.9x
+```
+
+Stand: ORM 32 × EF 2 × Unentschieden 3 × Ref 1.
+* GroupBy HAVING: Das ORM gibt kein HAVING aus (Lücke, kein Fehler). ** Nur-ORM-Referenz (ohne symmetrisches Paar).
 
 ### Benchmark — Channel vs Replica (Cluster-Replikation)
 

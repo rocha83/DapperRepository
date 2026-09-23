@@ -100,7 +100,6 @@ namespace Rochas.DapperRepository.Base
                 transactionControl.Commit();
                 transactionControl.Dispose();
                 transactionControl = null;
-                keepConnection = false;
             }
         }
 
@@ -112,7 +111,6 @@ namespace Rochas.DapperRepository.Base
                 transactionControl.Rollback();
                 transactionControl.Dispose();
                 transactionControl = null;
-                keepConnection = false;
             }
         }
 
@@ -387,7 +385,8 @@ namespace Rochas.DapperRepository.Base
                 }
             }
 
-            if (transactionControl != null)
+            if ((transactionControl != null)
+                    && (transactionControl.Connection != null))
                 sqlCommand.Transaction = transactionControl;
 
             return sqlCommand;

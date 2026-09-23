@@ -150,11 +150,10 @@ namespace Rochas.DapperRepository
 
 						CleanCacheableData(entity);
 					}
-
-					if (!keepConnection) base.Disconnect();
 				}
 
 				CommitTransaction();
+				if (!keepConnection) base.Disconnect();
 			}
 			catch (Exception ex)
 			{
@@ -1109,14 +1108,14 @@ namespace Rochas.DapperRepository
 				if (base.transactionControl != null)
 					base.CommitTransaction();
 
-				base.Disconnect();
+				if (!keepConnection) base.Disconnect();
 				CleanCacheableData(entity);
 			}
 			catch (Exception)
 			{
 				if (base.transactionControl != null)
 					base.CancelTransaction();
-				base.Disconnect();
+				if (!keepConnection) base.Disconnect();
 			}
 		}
 
@@ -1132,14 +1131,14 @@ namespace Rochas.DapperRepository
 				if (base.transactionControl != null)
 					base.CommitTransaction();
 
-				base.Disconnect();
+				if (!keepConnection) base.Disconnect();
 				CleanCacheableData(entity);
 			}
 			catch (Exception)
 			{
 				if (base.transactionControl != null)
 					base.CancelTransaction();
-				base.Disconnect();
+				if (!keepConnection) base.Disconnect();
 			}
 		}
 
