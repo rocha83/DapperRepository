@@ -385,6 +385,38 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         Console.WriteLine("═══════════════════════════════════════════════════════════");
     }
 
+    // ── Drain real (v2.0.4): poll do COUNT nos 3 nós em slices de 20ms.
+    // Substitui os Delay fixos: sem piso artificial, sem perda silenciosa
+    // (timeout falha alto com as contagens). Mede end-to-end de verdade:
+    // enqueue (burst) + drain (workers limpando o backlog).
+    // IMPORTANTE: poll em repos PRÓPRIOS — nunca nos _repo1/2/3 dos workers
+    // (Connect/Disconnect interleavado corrompe as escritas em voo).
+    private (int n1, int n2, int n3) PollChannelCounts()
+    {
+        var filter = new ClusterSaleInvoice();
+        using var r1 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, $"Data Source={Path.Combine(_dir1, _dbFile)}");
+        using var r2 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, $"Data Source={Path.Combine(_dir2, _dbFile)}");
+        using var r3 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, $"Data Source={Path.Combine(_dir3, _dbFile)}");
+        return (r1.CountSync(filter), r2.CountSync(filter), r3.CountSync(filter));
+    }
+
+    private async Task<long> WaitForChannelDrainAsync(int expectedPerNode, int timeoutMs = 60000)
+    {
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            var (n1, n2, n3) = PollChannelCounts();
+            if (n1 >= expectedPerNode && n2 >= expectedPerNode && n3 >= expectedPerNode)
+                return sw.ElapsedMilliseconds;
+            await Task.Delay(20);
+        }
+        var f = PollChannelCounts();
+        throw new TimeoutException(
+            $"Channel drain timeout: esperado {expectedPerNode}/nó após {timeoutMs}ms ({f.n1}/{f.n2}/{f.n3}).");
+    }
+
+    private (int n1, int n2, int n3) ChannelCounts() => PollChannelCounts();
+
     [Fact]
     public async Task Channel_SingleInvoice_Granular()
     {
@@ -400,23 +432,27 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         var opSw = Stopwatch.StartNew();
         await _p1.ExecuteTimed("SerializeAndWriteLocal", () => { _channelProvider.Put("k1", inv); return Task.CompletedTask; });
         phase1Times.Add(opSw.ElapsedMilliseconds);
-        await Task.Delay(100);
+        var drainMs = await WaitForChannelDrainAsync(1);
         sw.Stop();
 
         var gc1 = CaptureGc();
         var th1 = CaptureThreads();
         var snap1 = _svcObs.ExportObserverHistory().LastOrDefault();
         var m1 = BuildPhaseMetric("SerializeAndWriteLocal", phase1Times);
+        var mDrain = BuildPhaseMetric("Drain_Workers", new List<long> { drainMs });
         var result = new BenchmarkResult
         {
             TestName = "Channel_SingleInvoice", Mode = "Channel", Invoices = 1, Nodes = 3,
             RecordsPerNode = 1, ElapsedMs = sw.ElapsedMilliseconds,
             Throughput = 1000.0 / Math.Max(sw.ElapsedMilliseconds, 1),
-            Phases = new() { m1 }, Errors = ComponentObserver._errors,
+            Phases = new() { m1, mDrain }, Errors = ComponentObserver._errors,
             GcStart = gc0, GcEnd = gc1, ThreadsStart = th0, ThreadsEnd = th1,
             SnapStart = snap0, SnapEnd = snap1
         };
         PrintReport(result);
+        var cc = ChannelCounts();
+        Console.WriteLine($" Delivery: nós={cc.n1}/{cc.n2}/{cc.n3} (esp. 1/1/1)");
+        Assert.Equal((1, 1, 1), cc);
         Assert.True(sw.ElapsedMilliseconds > 0);
     }
 
@@ -438,7 +474,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             await _p1.ExecuteTimed("BulkSerialize", () => { _channelProvider.Put($"k{i}", inv); return Task.CompletedTask; });
             phase1Times.Add(opSw.ElapsedMilliseconds);
         }
-        await Task.Delay(200);
+        var drainMs100 = await WaitForChannelDrainAsync(100);
         sw.Stop();
 
         var gc1 = CaptureGc();
@@ -450,12 +486,13 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             TestName = "Channel_Bulk100", Mode = "Channel", Invoices = 100, Nodes = 3,
             RecordsPerNode = 100, ElapsedMs = sw.ElapsedMilliseconds,
             Throughput = 100 * 1000.0 / Math.Max(sw.ElapsedMilliseconds, 1),
-            Phases = new() { m1 }, Errors = ComponentObserver._errors,
+            Phases = new() { m1, BuildPhaseMetric("Drain_Workers", new List<long> { drainMs100 }) }, Errors = ComponentObserver._errors,
             GcStart = gc0, GcEnd = gc1, ThreadsStart = th0, ThreadsEnd = th1,
             SnapStart = snap0, SnapEnd = snap1
         };
         PrintReport(result);
         Assert.Equal(100, m1.TotalOps);
+        Assert.Equal((100, 100, 100), ChannelCounts());
     }
 
     [Fact]
@@ -490,7 +527,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             // Phase 1c: Broadcast (fan-out to channel subscribers)
             // Broadcast is synchronous inside Put(), measured as delta
         }
-        await Task.Delay(1000);
+        var drainMsSub = await WaitForChannelDrainAsync(100);
         sw.Stop();
 
         long createAllocAfter = GC.GetTotalAllocatedBytes(false);
@@ -515,6 +552,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         Console.WriteLine($" {"1c_Broadcast (inside Put)",-42} {"sync",7}");
         Console.WriteLine($" {"Total Circuit",-42} {sw.ElapsedMilliseconds,7}ms");
         Console.WriteLine($" {"Throughput",-42} {100 * 1000.0 / Math.Max(sw.ElapsedMilliseconds, 1),7:F2} inv/sec");
+        Console.WriteLine($" {"Drain_Workers (real, ex-delay 1000ms)",-42} {drainMsSub,7}ms");
         Console.WriteLine();
         Console.WriteLine(" ─── Allocation Analysis ───");
         Console.WriteLine($" Entity create alloc: {allocDeltaMB:F2}MB for 100 invoices ({allocDeltaMB / 100 * 1024:F1}KB/invoice)");
@@ -537,6 +575,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
 
         Assert.Equal(100, mCreate.TotalOps);
         Assert.Equal(100, mCache.TotalOps);
+        Assert.Equal((100, 100, 100), ChannelCounts());
     }
 
     [Fact]
@@ -568,7 +607,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         }
         var sendDone = sw.ElapsedMilliseconds;
 
-        await Task.Delay(1500);
+        var drainMsBatch = await WaitForChannelDrainAsync(100);
 
         sw.Stop();
         long createAllocAfter = GC.GetTotalAllocatedBytes(false);
@@ -589,7 +628,8 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         Console.WriteLine(" ─── Broadcast Timing (Put only, no creation) ───");
         Console.WriteLine($" {mBroadcast.PhaseName,-42} Avg:{mBroadcast.AvgMs,7:F3}ms  P95:{mBroadcast.P95Ms,7:F3}ms  P99:{mBroadcast.P99Ms,7:F3}ms  Max:{mBroadcast.MaxMs,7:F3}ms");
         Console.WriteLine($" {"Send Total (Put loop)",-42} {sendDone,7}ms");
-        Console.WriteLine($" {"Total Circuit (incl. wait)",-42} {sw.ElapsedMilliseconds,7}ms");
+        Console.WriteLine($" {"Total Circuit (incl. drain)",-42} {sw.ElapsedMilliseconds,7}ms");
+        Console.WriteLine($" {"Drain_Workers (real, ex-delay 1500ms)",-42} {drainMsBatch,7}ms");
         Console.WriteLine($" {"Throughput (Put/s)",-42} {100 * 1000.0 / Math.Max(sendDone, 1),7:F0} ops/sec");
         Console.WriteLine();
         Console.WriteLine(" ─── Allocation Analysis ───");
@@ -604,6 +644,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         Console.WriteLine("═══════════════════════════════════════════════════════════");
 
         Assert.Equal(100, mBroadcast.TotalOps);
+        Assert.Equal((100, 100, 100), ChannelCounts());
     }
 
     [Fact]
@@ -632,7 +673,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         var gc2 = CaptureGc();
         var alloc2 = GC.GetTotalAllocatedBytes(false);
 
-        await Task.Delay(1500);
+        var drainMsGc = await WaitForChannelDrainAsync(100);
 
         var gc3 = CaptureGc();
         var alloc3 = GC.GetTotalAllocatedBytes(false);
@@ -651,10 +692,11 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         Console.WriteLine();
         Console.WriteLine(" ─── Phase Timing ───");
         Console.WriteLine($" Put+Broadcast (100x):  {putTimes.Sum()}ms  Avg:{putTimes.Average():F3}ms  Max:{putTimes.Max()}ms");
-        Console.WriteLine($" Wait+Dispatch:         ~{1500}ms (delay for worker pickup)");
+        Console.WriteLine($" Drain_Workers (real, ex-delay 1500ms): {drainMsGc}ms");
         Console.WriteLine("═══════════════════════════════════════════════════════════");
 
         Assert.Equal(100, putTimes.Count);
+        Assert.Equal((100, 100, 100), ChannelCounts());
     }
 
     [Fact]
@@ -675,7 +717,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             _channelProvider.Put($"k{i}", shared);
             putTimes.Add(sw2.ElapsedMilliseconds);
         }
-        await Task.Delay(1000);
+        var drainMsReuse = await WaitForChannelDrainAsync(100);
         sw.Stop();
 
         var gc1 = CaptureGc();
@@ -690,6 +732,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         Console.WriteLine(" ─── Put Timing ───");
         Console.WriteLine($" Put+Broadcast (100x):  {putTimes.Sum()}ms  Avg:{putTimes.Average():F3}ms  Max:{putTimes.Max()}ms");
         Console.WriteLine($" Throughput (Put/s):    {100 * 1000.0 / Math.Max(putTimes.Sum(), 1):F0} ops/sec");
+        Console.WriteLine($" Drain_Workers (real, ex-delay 1000ms): {drainMsReuse}ms");
         Console.WriteLine();
         Console.WriteLine(" ─── Allocation (pure channel overhead) ───");
         Console.WriteLine($" Total alloc: {(alloc1 - alloc0) / 1024.0:F1}KB  Gen0: +{gc1.Gen0 - gc0.Gen0}");
@@ -700,6 +743,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         Console.WriteLine("═══════════════════════════════════════════════════════════");
 
         Assert.Equal(100, putTimes.Count);
+        Assert.Equal((100, 100, 100), ChannelCounts());
     }
 
     [Fact]
@@ -720,7 +764,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             await _p1.ExecuteTimed("StressSerialize", () => { _channelProvider.Put($"k{i}", inv); return Task.CompletedTask; });
             phase1Times.Add(opSw.ElapsedMilliseconds);
         }
-        await Task.Delay(500);
+        var drainMsStress = await WaitForChannelDrainAsync(1000, 120000);
         sw.Stop();
 
         var gc1 = CaptureGc();
@@ -732,12 +776,13 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             TestName = "Channel_Bulk1000_Stress", Mode = "Channel", Invoices = 1000, Nodes = 3,
             RecordsPerNode = 1000, ElapsedMs = sw.ElapsedMilliseconds,
             Throughput = 1000 * 1000.0 / Math.Max(sw.ElapsedMilliseconds, 1),
-            Phases = new() { m1 }, Errors = ComponentObserver._errors,
+            Phases = new() { m1, BuildPhaseMetric("Drain_Workers", new List<long> { drainMsStress }) }, Errors = ComponentObserver._errors,
             GcStart = gc0, GcEnd = gc1, ThreadsStart = th0, ThreadsEnd = th1,
             SnapStart = snap0, SnapEnd = snap1
         };
         PrintReport(result);
         Assert.Equal(1000, m1.TotalOps);
+        Assert.Equal((1000, 1000, 1000), ChannelCounts());
         Assert.True(result.Errors == 0);
     }
 
@@ -915,6 +960,40 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
         Console.WriteLine("═══════════════════════════════════════════════════════════");
     }
 
+    // ── Drain real síncrono (réplicas via Parallelizer, fire-and-forget).
+    // Substitui os Thread.Sleep de teardown: espera as réplicas persistirem
+    // de verdade e falha alto em timeout — sem perda silenciosa no Dispose.
+    private long WaitForReplicaDrain(int expectedPerNode, int timeoutMs = 120000)
+    {
+        var sw = Stopwatch.StartNew();
+        var filter = new ClusterSaleInvoice();
+        var cs1 = $"Data Source={Path.Combine(_dir2, "replica1.db")}";
+        var cs2 = $"Data Source={Path.Combine(_dir3, "replica2.db")}";
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            int c1, c2;
+            using (var r1 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, cs1))
+                c1 = r1.CountSync(filter);
+            using (var r2 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, cs2))
+                c2 = r2.CountSync(filter);
+            if (c1 >= expectedPerNode && c2 >= expectedPerNode)
+                return sw.ElapsedMilliseconds;
+            Thread.Sleep(50);
+        }
+        throw new TimeoutException(
+            $"Replica drain timeout: esperado {expectedPerNode}/réplica após {timeoutMs}ms.");
+    }
+
+    private (int r1, int r2) ReplicaCounts()
+    {
+        var filter = new ClusterSaleInvoice();
+        var cs1 = $"Data Source={Path.Combine(_dir2, "replica1.db")}";
+        var cs2 = $"Data Source={Path.Combine(_dir3, "replica2.db")}";
+        using var r1 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, cs1);
+        using var r2 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, cs2);
+        return (r1.CountSync(filter), r2.CountSync(filter));
+    }
+
     [Fact]
     public void Replica_SingleInvoice_Sync()
     {
@@ -931,7 +1010,8 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
         _p1.ExecuteTimed("AddSync_WithReplicas", () => { _masterRepo.AddSync(inv); return Task.CompletedTask; }).Wait();
         phase1Times.Add(opSw.ElapsedMilliseconds);
         sw.Stop();
-        Thread.Sleep(200);
+        var replicaDrainMs = WaitForReplicaDrain(1, 30000);
+        var replicaCounts = ReplicaCounts();
 
         var gc1 = CaptureGc();
         var th1 = CaptureThreads();
@@ -947,7 +1027,10 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
             SnapStart = snap0, SnapEnd = snap1
         };
         PrintReport(result);
+        Console.WriteLine($" ReplicaDrain (barreira teardown, fora do Total): {replicaDrainMs}ms  réplicas={replicaCounts.r1}/{replicaCounts.r2} (esp. 1/1)");
         Assert.True(sw.ElapsedMilliseconds > 0);
+        Assert.Equal(1, replicaCounts.r1);
+        Assert.Equal(1, replicaCounts.r2);
     }
 
     [Fact]
@@ -969,7 +1052,8 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
             phase1Times.Add(opSw.ElapsedMilliseconds);
         }
         sw.Stop();
-        Thread.Sleep(200);
+        var replicaDrainMs100 = WaitForReplicaDrain(100, 120000);
+        var replicaCounts100 = ReplicaCounts();
 
         var gc1 = CaptureGc();
         var th1 = CaptureThreads();
@@ -985,7 +1069,10 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
             SnapStart = snap0, SnapEnd = snap1
         };
         PrintReport(result);
+        Console.WriteLine($" ReplicaDrain (barreira teardown, fora do Total): {replicaDrainMs100}ms  réplicas={replicaCounts100.r1}/{replicaCounts100.r2} (esp. 100/100)");
         Assert.Equal(100, m1.TotalOps);
+        Assert.Equal(100, replicaCounts100.r1);
+        Assert.Equal(100, replicaCounts100.r2);
     }
 
     [Fact]
@@ -1007,7 +1094,8 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
             phase1Times.Add(opSw.ElapsedMilliseconds);
         }
         sw.Stop();
-        Thread.Sleep(500);
+        var replicaDrainMs1000 = WaitForReplicaDrain(1000, 600000);
+        var replicaCounts1000 = ReplicaCounts();
 
         var gc1 = CaptureGc();
         var th1 = CaptureThreads();
@@ -1023,7 +1111,10 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
             SnapStart = snap0, SnapEnd = snap1
         };
         PrintReport(result);
+        Console.WriteLine($" ReplicaDrain (barreira teardown, fora do Total): {replicaDrainMs1000}ms  réplicas={replicaCounts1000.r1}/{replicaCounts1000.r2} (esp. 1000/1000)");
         Assert.Equal(1000, m1.TotalOps);
+        Assert.Equal(1000, replicaCounts1000.r1);
+        Assert.Equal(1000, replicaCounts1000.r2);
         Assert.True(result.Errors == 0);
     }
 

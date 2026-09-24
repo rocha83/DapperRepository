@@ -1208,7 +1208,7 @@ namespace Rochas.DapperRepository
 					if (parallelParam.Param4 != null)
 						filterEntity = parallelParam.Param4;
 
-					using (var repos = new GenericRepository<T>(engine, _connString))
+					using (var repos = new GenericRepository<T>(engine, connString))
 					{
 						switch (action)
 						{
