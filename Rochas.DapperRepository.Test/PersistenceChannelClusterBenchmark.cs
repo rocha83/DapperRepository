@@ -400,21 +400,6 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         return (r1.CountSync(filter), r2.CountSync(filter), r3.CountSync(filter));
     }
 
-    private async Task<long> WaitForChannelDrainAsync(int expectedPerNode, int timeoutMs = 60000)
-    {
-        var sw = Stopwatch.StartNew();
-        while (sw.ElapsedMilliseconds < timeoutMs)
-        {
-            var (n1, n2, n3) = PollChannelCounts();
-            if (n1 >= expectedPerNode && n2 >= expectedPerNode && n3 >= expectedPerNode)
-                return sw.ElapsedMilliseconds;
-            await Task.Delay(20);
-        }
-        var f = PollChannelCounts();
-        throw new TimeoutException(
-            $"Channel drain timeout: esperado {expectedPerNode}/nó após {timeoutMs}ms ({f.n1}/{f.n2}/{f.n3}).");
-    }
-
     private (int n1, int n2, int n3) ChannelCounts() => PollChannelCounts();
 
     [Fact]
@@ -432,7 +417,9 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         var opSw = Stopwatch.StartNew();
         await _p1.ExecuteTimed("SerializeAndWriteLocal", () => { _channelProvider.Put("k1", inv); return Task.CompletedTask; });
         phase1Times.Add(opSw.ElapsedMilliseconds);
-        var drainMs = await WaitForChannelDrainAsync(1);
+        var flushSw = Stopwatch.StartNew();
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(30));
+        var drainMs = flushSw.ElapsedMilliseconds;
         sw.Stop();
 
         var gc1 = CaptureGc();
@@ -450,6 +437,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             SnapStart = snap0, SnapEnd = snap1
         };
         PrintReport(result);
+        Console.WriteLine($" Burst(enqueue): {m1.TotalMs}ms | Settle(drain-await até último nó): {drainMs}ms | End-to-end: {sw.ElapsedMilliseconds}ms");
         var cc = ChannelCounts();
         Console.WriteLine($" Delivery: nós={cc.n1}/{cc.n2}/{cc.n3} (esp. 1/1/1)");
         Assert.Equal((1, 1, 1), cc);
@@ -474,7 +462,9 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             await _p1.ExecuteTimed("BulkSerialize", () => { _channelProvider.Put($"k{i}", inv); return Task.CompletedTask; });
             phase1Times.Add(opSw.ElapsedMilliseconds);
         }
-        var drainMs100 = await WaitForChannelDrainAsync(100);
+        var flushSw100 = Stopwatch.StartNew();
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+        var drainMs100 = flushSw100.ElapsedMilliseconds;
         sw.Stop();
 
         var gc1 = CaptureGc();
@@ -491,6 +481,7 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             SnapStart = snap0, SnapEnd = snap1
         };
         PrintReport(result);
+        Console.WriteLine($" Burst(enqueue 100): {m1.TotalMs}ms | Settle(drain-await até último nó): {drainMs100}ms | End-to-end: {sw.ElapsedMilliseconds}ms");
         Assert.Equal(100, m1.TotalOps);
         Assert.Equal((100, 100, 100), ChannelCounts());
     }
@@ -527,7 +518,9 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             // Phase 1c: Broadcast (fan-out to channel subscribers)
             // Broadcast is synchronous inside Put(), measured as delta
         }
-        var drainMsSub = await WaitForChannelDrainAsync(100);
+        var flushSwSub = Stopwatch.StartNew();
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+        var drainMsSub = flushSwSub.ElapsedMilliseconds;
         sw.Stop();
 
         long createAllocAfter = GC.GetTotalAllocatedBytes(false);
@@ -607,7 +600,9 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         }
         var sendDone = sw.ElapsedMilliseconds;
 
-        var drainMsBatch = await WaitForChannelDrainAsync(100);
+        var flushSwBatch = Stopwatch.StartNew();
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+        var drainMsBatch = flushSwBatch.ElapsedMilliseconds;
 
         sw.Stop();
         long createAllocAfter = GC.GetTotalAllocatedBytes(false);
@@ -673,7 +668,9 @@ public class PersistenceChannelClusterBenchmark : IDisposable
         var gc2 = CaptureGc();
         var alloc2 = GC.GetTotalAllocatedBytes(false);
 
-        var drainMsGc = await WaitForChannelDrainAsync(100);
+        var flushSwGc = Stopwatch.StartNew();
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+        var drainMsGc = flushSwGc.ElapsedMilliseconds;
 
         var gc3 = CaptureGc();
         var alloc3 = GC.GetTotalAllocatedBytes(false);
@@ -717,7 +714,9 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             _channelProvider.Put($"k{i}", shared);
             putTimes.Add(sw2.ElapsedMilliseconds);
         }
-        var drainMsReuse = await WaitForChannelDrainAsync(100);
+        var flushSwReuse = Stopwatch.StartNew();
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+        var drainMsReuse = flushSwReuse.ElapsedMilliseconds;
         sw.Stop();
 
         var gc1 = CaptureGc();
@@ -764,7 +763,9 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             await _p1.ExecuteTimed("StressSerialize", () => { _channelProvider.Put($"k{i}", inv); return Task.CompletedTask; });
             phase1Times.Add(opSw.ElapsedMilliseconds);
         }
-        var drainMsStress = await WaitForChannelDrainAsync(1000, 120000);
+        var flushSwStress = Stopwatch.StartNew();
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromMinutes(3));
+        var drainMsStress = flushSwStress.ElapsedMilliseconds;
         sw.Stop();
 
         var gc1 = CaptureGc();
@@ -781,9 +782,50 @@ public class PersistenceChannelClusterBenchmark : IDisposable
             SnapStart = snap0, SnapEnd = snap1
         };
         PrintReport(result);
+        Console.WriteLine($" Burst(enqueue 1000): {m1.TotalMs}ms | Settle(drain-await até último nó): {drainMsStress}ms | End-to-end: {sw.ElapsedMilliseconds}ms");
         Assert.Equal(1000, m1.TotalOps);
         Assert.Equal((1000, 1000, 1000), ChannelCounts());
         Assert.True(result.Errors == 0);
+    }
+
+    [Fact]
+    public async Task Channel_Reput_AppendsDuplicate_Documented()
+    {
+        // Semântica atual do bus: re-Put NÃO atualiza — anexa (Add sempre).
+        // Update de verdade existe só na via réplica nativa (UpdateSync).
+        ComponentObserver._errors = 0;
+        var inv = CreateInvoice(1);
+        _channelProvider.Put("kdup", inv);
+        _channelProvider.Put("kdup", inv);
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+
+        var cc = ChannelCounts();
+        Console.WriteLine($" Channel_RePut: mesma key 2x, nós={cc.n1}/{cc.n2}/{cc.n3} (append-only: esp. 2/2/2)");
+        Assert.Equal((2, 2, 2), cc);
+    }
+
+    [Fact]
+    public async Task Channel_Del_Propagation()
+    {
+        ComponentObserver._errors = 0;
+        for (var i = 1; i <= 10; i++)
+            _channelProvider.Put($"kdel{i}", CreateInvoice(i));
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+
+        List<int> ids;
+        using (var qr = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, $"Data Source={Path.Combine(_dir1, _dbFile)}"))
+            ids = qr.QuerySync(new ClusterSaleInvoice()).ToList().Select(x => x.Id).ToList();
+        Assert.Equal(10, ids.Count);
+
+        var sw = Stopwatch.StartNew();
+        foreach (var id in ids)
+            _channelProvider.Del(new ClusterSaleInvoice { Id = id });
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+        sw.Stop();
+
+        var cc = ChannelCounts();
+        Console.WriteLine($" Channel_Del: 10 dels em {sw.ElapsedMilliseconds}ms, nós={cc.n1}/{cc.n2}/{cc.n3} (esp. 0/0/0)");
+        Assert.Equal((0, 0, 0), cc);
     }
 
     public void Dispose()
@@ -969,6 +1011,7 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
         var filter = new ClusterSaleInvoice();
         var cs1 = $"Data Source={Path.Combine(_dir2, "replica1.db")}";
         var cs2 = $"Data Source={Path.Combine(_dir3, "replica2.db")}";
+        var lastBeat = 0L;
         while (sw.ElapsedMilliseconds < timeoutMs)
         {
             int c1, c2;
@@ -976,8 +1019,13 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
                 c1 = r1.CountSync(filter);
             using (var r2 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, cs2))
                 c2 = r2.CountSync(filter);
-            if (c1 >= expectedPerNode && c2 >= expectedPerNode)
+            if (c1 == expectedPerNode && c2 == expectedPerNode)
                 return sw.ElapsedMilliseconds;
+            if (sw.ElapsedMilliseconds - lastBeat > 5000)
+            {
+                lastBeat = sw.ElapsedMilliseconds;
+                Console.WriteLine($" [drain-beat {sw.ElapsedMilliseconds}ms] réplicas={c1}/{c2} (esp. {expectedPerNode})");
+            }
             Thread.Sleep(50);
         }
         throw new TimeoutException(
@@ -1116,6 +1164,80 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
         Assert.Equal(1000, replicaCounts1000.r1);
         Assert.Equal(1000, replicaCounts1000.r2);
         Assert.True(result.Errors == 0);
+    }
+
+    // ── Spin genérico (valores, não só contagens): poll até predicado ou timeout alto.
+    private static void SpinUntil(Func<bool> condition, int timeoutMs, string what)
+    {
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            if (condition())
+                return;
+            Thread.Sleep(50);
+        }
+        throw new TimeoutException($"Replica spin timeout ({what}) após {timeoutMs}ms.");
+    }
+
+    private string ReplicaStatus(int id)
+    {
+        var cs1 = $"Data Source={Path.Combine(_dir2, "replica1.db")}";
+        using var r1 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, cs1);
+        return r1.GetSync(id)?.Status;
+    }
+
+    [Fact]
+    public void Replica_Update_Propagation()
+    {
+        var ids = new List<int>();
+        for (var i = 1; i <= 5; i++)
+        {
+            var inv = CreateInvoice(i);
+            _masterRepo.AddSync(inv);
+            ids.Add(inv.Id);
+        }
+        WaitForReplicaDrain(5, 120000);
+
+        var sw = Stopwatch.StartNew();
+        foreach (var id in ids)
+        {
+            var current = _masterRepo.GetSync(id);
+            current.Status = "Paid";
+            _masterRepo.UpdateSync(current, new ClusterSaleInvoice { Id = id });
+        }
+        SpinUntil(() => ids.All(id => ReplicaStatus(id) == "Paid"), 120000, "update pago nas réplicas");
+        sw.Stop();
+
+        using var check = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite,
+            $"Data Source={Path.Combine(_dir3, "replica2.db")}");
+        var paid = check.QuerySync(new ClusterSaleInvoice { Status = "Paid" }).ToList().Count;
+        Console.WriteLine($" Replica_Update: 5 updates em {sw.ElapsedMilliseconds}ms, pagos na réplica2={paid} (esp. 5)");
+        Assert.Equal(5, paid);
+    }
+
+    [Fact]
+    public void Replica_Remove_Propagation()
+    {
+        var ids = new List<int>();
+        for (var i = 1; i <= 10; i++)
+        {
+            var inv = CreateInvoice(i);
+            _masterRepo.AddSync(inv);
+            ids.Add(inv.Id);
+        }
+        WaitForReplicaDrain(10, 120000);
+
+        var sw = Stopwatch.StartNew();
+        foreach (var id in ids)
+            _masterRepo.RemoveSync(new ClusterSaleInvoice { Id = id });
+        Console.WriteLine($" [master-after-remove] master={_masterRepo.CountSync(new ClusterSaleInvoice())} (esp. 0)");
+        var drainMs = WaitForReplicaDrain(0, 60000);
+        sw.Stop();
+
+        var (r1, r2) = ReplicaCounts();
+        Console.WriteLine($" Replica_Remove: 10 removes em {sw.ElapsedMilliseconds}ms (drain {drainMs}ms), réplicas={r1}/{r2} (esp. 0/0)");
+        Assert.Equal(0, r1);
+        Assert.Equal(0, r2);
     }
 
     public void Dispose()

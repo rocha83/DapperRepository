@@ -1182,7 +1182,8 @@ namespace Rochas.DapperRepository
 			ParallelParam parallelParam = new ParallelParam()
 			{
 				Param1 = filterEntity,
-				Param2 = PersistenceAction.Remove
+				Param2 = PersistenceAction.Remove,
+				Param4 = filterEntity
 			};
 
 			var replicationParallelDelegate = new ParameterizedThreadStart(PersistReplicasAsync);
@@ -1254,9 +1255,23 @@ namespace Rochas.DapperRepository
 
 		private void RegisterException(string operationName, Exception exception, object content)
 		{
-			var logFileName = string.Format("{0}\\{1}_{2}_{3}.log", _logPath, operationName, content.GetHashCode(), DateTime.Now.Ticks);
-			var exceptionContent = string.Format("Exception : {0}{1}{2} Content : {3}", JsonSerializer.Serialize(exception), Environment.NewLine, Environment.NewLine, JsonSerializer.Serialize(content));
-			File.WriteAllText(logFileName, exceptionContent);
+			// Logging nunca pode lançar (threads cruas de replicação morrem sem aviso).
+			try
+			{
+				var logFileName = string.Format("{0}\\{1}_{2}_{3}.log", _logPath, operationName, content?.GetHashCode() ?? 0, DateTime.Now.Ticks);
+				string contentText;
+				try
+				{
+					contentText = content == null ? "null" : JsonSerializer.Serialize(content);
+				}
+				catch
+				{
+					contentText = content?.ToString();
+				}
+				var exceptionContent = string.Format("Exception : {0}{1}{2} Content : {3}", exception?.ToString(), Environment.NewLine, Environment.NewLine, contentText);
+				File.WriteAllText(logFileName, exceptionContent);
+			}
+			catch { }
 		}
 
 		#endregion

@@ -324,11 +324,13 @@ Score: ORM 32 × EF 2 × Tie 3 × ref 1.
 
 | Scenario | Channel | Replica | Speedup |
 |----------|---------|---------|---------|
-| Single Invoice | 115 ms (8.7 inv/s) | 19 ms (52.6 inv/s) | Replica 6x faster* |
-| Bulk 100 | 585 ms (171 inv/s) | 9,479 ms (10.5 inv/s) | **Channel 16.2x** |
-| Bulk 1,000 | 6,679 ms (150 inv/s) | 70,835 ms (14.1 inv/s) | **Channel 10.6x** |
+| Single Invoice | 211 ms (4.7 inv/s) | 63 ms (15.9 inv/s) | Replica 3.3x |
+| Bulk 100 | 305 ms (328 inv/s) | 238 ms (420 inv/s) | Replica 1.3x |
+| Bulk 1,000 | 1,132 ms (883 inv/s) | 1,698 ms (589 inv/s) | **Channel 1.5x** |
+| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
+| Update 5 | — (append-only) | 104 ms | Replica only |
 
-> **\*Single Invoice**: Replica wins because there is no contention; the `AddSync` path hits one DB directly without lock overhead. **Bulk**: Channel wins because the PersistenceChannel decouples serialization from persistence via fan-out, while Replica's `Parallel.ForEach` + `Mutex` lock creates severe contention under load (P99 638 ms, Max 2,822 ms).
+> Total = burst (enqueue) + drain-await to the last node; delivery asserted per node (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). The old table measured broken replication (writes went back to master) with no delivery checks. Bus re-Put appends (no upsert); update exists only on the native replica path.
 
 ### Tests and coverage
 
@@ -656,11 +658,13 @@ Placar: ORM 32 × EF 2 × Empate 3 × ref 1.
 
 | Cenário | Channel | Replica | Aceleração |
 |---------|---------|---------|------------|
-| Invoice Única | 115 ms (8,7 inv/s) | 19 ms (52,6 inv/s) | Replica 6x mais rápido* |
-| Bulk 100 | 585 ms (171 inv/s) | 9.479 ms (10,5 inv/s) | **Channel 16,2x** |
-| Bulk 1.000 | 6.679 ms (150 inv/s) | 70.835 ms (14,1 inv/s) | **Channel 10,6x** |
+| Invoice Única | 211 ms (4,7 inv/s) | 63 ms (15,9 inv/s) | Replica 3.3x |
+| Bulk 100 | 305 ms (328 inv/s) | 238 ms (420 inv/s) | Replica 1.3x |
+| Bulk 1.000 | 1.132 ms (883 inv/s) | 1.698 ms (589 inv/s) | **Channel 1.5x** |
+| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
+| Update 5 | — (append-only) | 104 ms | Só réplica |
 
-> **\*Invoice Única**: Replica vence porque não há contenção; o caminho `AddSync` atinge um DB diretamente sem overhead de lock. **Bulk**: Channel vence porque o PersistenceChannel desacopla serialização de persistência via fan-out, enquanto o `Parallel.ForEach` + `Mutex` do Replica cria contenção severa sob carga (P99 638 ms, Max 2.822 ms).
+> Total = burst + drain-await até o último nó; entrega assertiva por nó (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). A tabela antiga media replicação quebrada (escritas voltavam ao master) sem checar entrega. Re-Put no bus anexa (sem upsert); update existe só na via réplica nativa.
 
 ### Testes e cobertura
 
@@ -988,11 +992,13 @@ Marcador: ORM 32 × EF 2 × Empate 3 × ref 1.
 
 | Escenario | Channel | Replica | Aceleración |
 |-----------|---------|---------|-------------|
-| Factura Individual | 115 ms (8,7 inv/s) | 19 ms (52,6 inv/s) | Replica 6x más rápido* |
-| Bulk 100 | 585 ms (171 inv/s) | 9.479 ms (10,5 inv/s) | **Channel 16,2x** |
-| Bulk 1.000 | 6.679 ms (150 inv/s) | 70.835 ms (14,1 inv/s) | **Channel 10,6x** |
+| Factura Individual | 211 ms (4,7 inv/s) | 63 ms (15,9 inv/s) | Replica 3.3x |
+| Bulk 100 | 305 ms (328 inv/s) | 238 ms (420 inv/s) | Replica 1.3x |
+| Bulk 1.000 | 1.132 ms (883 inv/s) | 1.698 ms (589 inv/s) | **Channel 1.5x** |
+| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
+| Update 5 | — (append-only) | 104 ms | Solo réplica |
 
-> **\*Factura Individual**: Replica gana porque no hay contención; la ruta `AddSync` accede a un DB directamente sin overhead de lock. **Bulk**: Channel gana porque el PersistenceChannel desacopla serialización de persistencia vía fan-out, mientras que el `Parallel.ForEach` + `Mutex` de Replica crea contención severa bajo carga (P99 638 ms, Max 2.822 ms).
+> Total = burst + drain-await hasta el último nodo; entrega verificada por nodo (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). La tabla anterior medía replicación rota (escrituras volvían al master) sin comprobar entrega. Re-Put en el bus anexa (sin upsert); update existe solo en la vía réplica nativa.
 
 ### Pruebas y cobertura
 
@@ -1320,11 +1326,13 @@ Score : ORM 32 × EF 2 × Égalité 3 × réf 1.
 
 | Scénario | Channel | Replica | Accélération |
 |----------|---------|---------|-------------|
-| Facture Individuelle | 115 ms (8,7 inv/s) | 19 ms (52,6 inv/s) | Replica 6x plus rapide* |
-| Bulk 100 | 585 ms (171 inv/s) | 9 479 ms (10,5 inv/s) | **Channel 16,2x** |
-| Bulk 1 000 | 6 679 ms (150 inv/s) | 70 835 ms (14,1 inv/s) | **Channel 10,6x** |
+| Facture Individuelle | 211 ms (4,7 inv/s) | 63 ms (15,9 inv/s) | Replica 3.3x |
+| Bulk 100 | 305 ms (328 inv/s) | 238 ms (420 inv/s) | Replica 1.3x |
+| Bulk 1 000 | 1 132 ms (883 inv/s) | 1 698 ms (589 inv/s) | **Channel 1.5x** |
+| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
+| Update 5 | — (append-only) | 104 ms | Réplica uniquement |
 
-> **\*Facture Individuelle**: Replica gagne car il n'y a pas de contention ; le chemin `AddSync` accède directement à une DB sans surcharge de lock. **Bulk**: Channel gagne car le PersistenceChannel découple sérialisation et persistance via fan-out, tandis que le `Parallel.ForEach` + `Mutex` de Replica crée une contention sévère sous charge (P99 638 ms, Max 2 822 ms).
+> Total = burst + drain-await jusqu'au dernier nœud ; livraison vérifiée par nœud (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). L'ancien tableau mesurait une réplication cassée (écritures renvoyées au master) sans vérifier la livraison. Re-Put sur le bus ajoute (sans upsert) ; update existe uniquement sur la voie réplica native.
 
 ### Tests et couverture
 
@@ -1652,11 +1660,13 @@ Stand: ORM 32 × EF 2 × Unentschieden 3 × Ref 1.
 
 | Szenario | Channel | Replica | Beschleunigung |
 |----------|---------|---------|----------------|
-| Einzelrechnung | 115 ms (8,7 Inv/s) | 19 ms (52,6 Inv/s) | Replica 6x schneller* |
-| Bulk 100 | 585 ms (171 Inv/s) | 9.479 ms (10,5 Inv/s) | **Channel 16,2x** |
-| Bulk 1.000 | 6.679 ms (150 Inv/s) | 70.835 ms (14,1 Inv/s) | **Channel 10,6x** |
+| Einzelrechnung | 211 ms (4,7 Inv/s) | 63 ms (15,9 Inv/s) | Replica 3.3x |
+| Bulk 100 | 305 ms (328 Inv/s) | 238 ms (420 Inv/s) | Replica 1.3x |
+| Bulk 1.000 | 1.132 ms (883 Inv/s) | 1.698 ms (589 Inv/s) | **Channel 1.5x** |
+| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
+| Update 5 | — (append-only) | 104 ms | Nur Replica |
 
-> **\*Einzelrechnung**: Replica gewinnt, da es keine Kontention gibt; der `AddSync`-Pfad erreicht eine DB direkt ohne Lock-Overhead. **Bulk**: Channel gewinnt, da PersistenceChannel Serialisierung und Persistenz über Fan-Out entkoppelt, während `Parallel.ForEach` + `Mutex` von Replica schwere Kontention unter Last erzeugt (P99 638 ms, Max 2.822 ms).
+> Total = Burst + Drain-Await bis zum letzten Knoten; Zustellung pro Knoten verifiziert (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). Die alte Tabelle maß defekte Replikation (Schreibvorgänge gingen zurück zum Master) ohne Zustellprüfung. Re-Put im Bus hängt an (kein Upsert); Update existiert nur im nativen Replica-Pfad.
 
 ### Tests und Abdeckung
 
