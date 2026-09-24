@@ -805,6 +805,41 @@ public class PersistenceChannelClusterBenchmark : IDisposable
     }
 
     [Fact]
+    public async Task Channel_Update_Propagation()
+    {
+        ComponentObserver._errors = 0;
+        for (var i = 1; i <= 5; i++)
+            _channelProvider.Put($"kupd{i}", CreateInvoice(i));
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+
+        List<ClusterSaleInvoice> full;
+        using (var qr = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, $"Data Source={Path.Combine(_dir1, _dbFile)}"))
+            full = qr.QuerySync(new ClusterSaleInvoice()).ToList().ToList();
+        Assert.Equal(5, full.Count);
+
+        var sw = Stopwatch.StartNew();
+        foreach (var e in full)
+        {
+            e.Status = "Paid";
+            _channelProvider.Update(new ClusterSaleInvoice { Id = e.Id }, e);
+        }
+        await ((IChannelCacheProvider)_channelProvider).FlushAsync(TimeSpan.FromSeconds(60));
+        sw.Stop();
+
+        int paid = 0, total = 0;
+        foreach (var d in new[] { _dir1, _dir2, _dir3 })
+        {
+            using var qr = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite, $"Data Source={Path.Combine(d, _dbFile)}");
+            var rows = qr.QuerySync(new ClusterSaleInvoice()).ToList();
+            total += rows.Count;
+            paid += rows.Count(x => x.Status == "Paid");
+        }
+        Console.WriteLine($" Channel_Update: 5 updates em {sw.ElapsedMilliseconds}ms, pagos={paid}/{total} (esp. 15/15)");
+        Assert.Equal(15, total);
+        Assert.Equal(15, paid);
+    }
+
+    [Fact]
     public async Task Channel_Del_Propagation()
     {
         ComponentObserver._errors = 0;
@@ -1211,8 +1246,15 @@ public class DapperRepositoryReplicaBenchmark : IDisposable
         using var check = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite,
             $"Data Source={Path.Combine(_dir3, "replica2.db")}");
         var paid = check.QuerySync(new ClusterSaleInvoice { Status = "Paid" }).ToList().Count;
-        Console.WriteLine($" Replica_Update: 5 updates em {sw.ElapsedMilliseconds}ms, pagos na réplica2={paid} (esp. 5)");
-        Assert.Equal(5, paid);
+        using var checkMaster = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite,
+            $"Data Source={Path.Combine(_dir1, "master.db")}");
+        var paidMaster = checkMaster.QuerySync(new ClusterSaleInvoice { Status = "Paid" }).ToList().Count;
+        using var checkR1 = new GenericRepository<ClusterSaleInvoice>(DatabaseEngine.SQLite,
+            $"Data Source={Path.Combine(_dir2, "replica1.db")}");
+        var paidR1 = checkR1.QuerySync(new ClusterSaleInvoice { Status = "Paid" }).ToList().Count;
+        var paidTotal = paid + paidMaster + paidR1;
+        Console.WriteLine($" Replica_Update: 5 updates em {sw.ElapsedMilliseconds}ms, pagos={paidTotal}/15 (esp. 15)");
+        Assert.Equal(15, paidTotal);
     }
 
     [Fact]

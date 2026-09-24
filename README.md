@@ -324,13 +324,13 @@ Score: ORM 32 × EF 2 × Tie 3 × ref 1.
 
 | Scenario | Channel | Replica | Speedup |
 |----------|---------|---------|---------|
-| Single Invoice | 211 ms (4.7 inv/s) | 63 ms (15.9 inv/s) | Replica 3.3x |
-| Bulk 100 | 305 ms (328 inv/s) | 238 ms (420 inv/s) | Replica 1.3x |
-| Bulk 1,000 | 1,132 ms (883 inv/s) | 1,698 ms (589 inv/s) | **Channel 1.5x** |
-| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
-| Update 5 | — (append-only) | 104 ms | Replica only |
+| Single Invoice | 2 ms (500 inv/s) | 1 ms (1000 inv/s) | Replica 2.0x |
+| Bulk 100 | 41 ms (2439 inv/s) | 287 ms (348 inv/s) | **Channel 7.0x** |
+| Bulk 1,000 | 783 ms (1277 inv/s) | 1,697 ms (589 inv/s) | **Channel 2.2x** |
+| Delete 10 | 17 ms | 176 ms | Channel 10.4x |
+| Update 5 | 30 ms (15 rows) | 62 ms (15 rows) | Channel 2.1x |
 
-> Total = burst (enqueue) + drain-await to the last node; delivery asserted per node (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). The old table measured broken replication (writes went back to master) with no delivery checks. Bus re-Put appends (no upsert); update exists only on the native replica path.
+> Median of 3 rounds (1st warms up); Total = burst (enqueue) + drain to the last node (`FlushAsync`/barrier); delivery asserted per node (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). Bus re-Put appends (no upsert); bus update is full-entity + filter.
 
 ### Tests and coverage
 
@@ -658,13 +658,13 @@ Placar: ORM 32 × EF 2 × Empate 3 × ref 1.
 
 | Cenário | Channel | Replica | Aceleração |
 |---------|---------|---------|------------|
-| Invoice Única | 211 ms (4,7 inv/s) | 63 ms (15,9 inv/s) | Replica 3.3x |
-| Bulk 100 | 305 ms (328 inv/s) | 238 ms (420 inv/s) | Replica 1.3x |
-| Bulk 1.000 | 1.132 ms (883 inv/s) | 1.698 ms (589 inv/s) | **Channel 1.5x** |
-| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
-| Update 5 | — (append-only) | 104 ms | Só réplica |
+| Invoice Única | 2 ms (500 inv/s) | 1 ms (1000 inv/s) | Replica 2.0x |
+| Bulk 100 | 41 ms (2439 inv/s) | 287 ms (348 inv/s) | **Channel 7.0x** |
+| Bulk 1.000 | 783 ms (1277 inv/s) | 1.697 ms (589 inv/s) | **Channel 2.2x** |
+| Delete 10 | 17 ms | 176 ms | Channel 10.4x |
+| Update 5 | 30 ms (15 linhas) | 62 ms (15 linhas) | Channel 2.1x |
 
-> Total = burst + drain-await até o último nó; entrega assertiva por nó (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). A tabela antiga media replicação quebrada (escritas voltavam ao master) sem checar entrega. Re-Put no bus anexa (sem upsert); update existe só na via réplica nativa.
+> Mediana de 3 rodadas (a 1ª aquece); Total = burst + drain até o último nó (`FlushAsync`/barreira); entrega assertiva por nó (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). Re-Put no bus anexa (sem upsert); update no bus é entidade cheia + filtro.
 
 ### Testes e cobertura
 
@@ -992,13 +992,13 @@ Marcador: ORM 32 × EF 2 × Empate 3 × ref 1.
 
 | Escenario | Channel | Replica | Aceleración |
 |-----------|---------|---------|-------------|
-| Factura Individual | 211 ms (4,7 inv/s) | 63 ms (15,9 inv/s) | Replica 3.3x |
-| Bulk 100 | 305 ms (328 inv/s) | 238 ms (420 inv/s) | Replica 1.3x |
-| Bulk 1.000 | 1.132 ms (883 inv/s) | 1.698 ms (589 inv/s) | **Channel 1.5x** |
-| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
-| Update 5 | — (append-only) | 104 ms | Solo réplica |
+| Factura Individual | 2 ms (500 inv/s) | 1 ms (1000 inv/s) | Replica 2.0x |
+| Bulk 100 | 41 ms (2439 inv/s) | 287 ms (348 inv/s) | **Channel 7.0x** |
+| Bulk 1.000 | 783 ms (1277 inv/s) | 1.697 ms (589 inv/s) | **Channel 2.2x** |
+| Delete 10 | 17 ms | 176 ms | Channel 10.4x |
+| Update 5 | 30 ms (15 filas) | 62 ms (15 filas) | Channel 2.1x |
 
-> Total = burst + drain-await hasta el último nodo; entrega verificada por nodo (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). La tabla anterior medía replicación rota (escrituras volvían al master) sin comprobar entrega. Re-Put en el bus anexa (sin upsert); update existe solo en la vía réplica nativa.
+> Mediana de 3 rondas (la 1ª calienta); Total = burst + drain hasta el último nodo (`FlushAsync`/barrera); entrega verificada por nodo (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). Re-Put en el bus anexa (sin upsert); update en el bus es entidad completa + filtro.
 
 ### Pruebas y cobertura
 
@@ -1326,13 +1326,13 @@ Score : ORM 32 × EF 2 × Égalité 3 × réf 1.
 
 | Scénario | Channel | Replica | Accélération |
 |----------|---------|---------|-------------|
-| Facture Individuelle | 211 ms (4,7 inv/s) | 63 ms (15,9 inv/s) | Replica 3.3x |
-| Bulk 100 | 305 ms (328 inv/s) | 238 ms (420 inv/s) | Replica 1.3x |
-| Bulk 1 000 | 1 132 ms (883 inv/s) | 1 698 ms (589 inv/s) | **Channel 1.5x** |
-| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
-| Update 5 | — (append-only) | 104 ms | Réplica uniquement |
+| Facture Individuelle | 2 ms (500 inv/s) | 1 ms (1000 inv/s) | Replica 2.0x |
+| Bulk 100 | 41 ms (2439 inv/s) | 287 ms (348 inv/s) | **Channel 7.0x** |
+| Bulk 1 000 | 783 ms (1277 inv/s) | 1 697 ms (589 inv/s) | **Channel 2.2x** |
+| Delete 10 | 17 ms | 176 ms | Channel 10.4x |
+| Update 5 | 30 ms (15 lignes) | 62 ms (15 lignes) | Channel 2.1x |
 
-> Total = burst + drain-await jusqu'au dernier nœud ; livraison vérifiée par nœud (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). L'ancien tableau mesurait une réplication cassée (écritures renvoyées au master) sans vérifier la livraison. Re-Put sur le bus ajoute (sans upsert) ; update existe uniquement sur la voie réplica native.
+> Médiane de 3 rondes (la 1re chauffe) ; Total = burst + drain jusqu'au dernier nœud (`FlushAsync`/barrière) ; livraison vérifiée par nœud (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). Re-Put sur le bus ajoute (sans upsert) ; update sur le bus = entité complète + filtre.
 
 ### Tests et couverture
 
@@ -1660,13 +1660,13 @@ Stand: ORM 32 × EF 2 × Unentschieden 3 × Ref 1.
 
 | Szenario | Channel | Replica | Beschleunigung |
 |----------|---------|---------|----------------|
-| Einzelrechnung | 211 ms (4,7 Inv/s) | 63 ms (15,9 Inv/s) | Replica 3.3x |
-| Bulk 100 | 305 ms (328 Inv/s) | 238 ms (420 Inv/s) | Replica 1.3x |
-| Bulk 1.000 | 1.132 ms (883 Inv/s) | 1.698 ms (589 Inv/s) | **Channel 1.5x** |
-| Delete 10 | 50 ms | 96 ms | Channel 1.9x |
-| Update 5 | — (append-only) | 104 ms | Nur Replica |
+| Einzelrechnung | 2 ms (500 Inv/s) | 1 ms (1000 Inv/s) | Replica 2.0x |
+| Bulk 100 | 41 ms (2439 Inv/s) | 287 ms (348 Inv/s) | **Channel 7.0x** |
+| Bulk 1.000 | 783 ms (1277 Inv/s) | 1.697 ms (589 Inv/s) | **Channel 2.2x** |
+| Delete 10 | 17 ms | 176 ms | Channel 10.4x |
+| Update 5 | 30 ms (15 Zeilen) | 62 ms (15 Zeilen) | Channel 2.1x |
 
-> Total = Burst + Drain-Await bis zum letzten Knoten; Zustellung pro Knoten verifiziert (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). Die alte Tabelle maß defekte Replikation (Schreibvorgänge gingen zurück zum Master) ohne Zustellprüfung. Re-Put im Bus hängt an (kein Upsert); Update existiert nur im nativen Replica-Pfad.
+> Median aus 3 Runden (1. wärmt auf); Total = Burst + Drain bis zum letzten Knoten (`FlushAsync`/Barrier); Zustellung pro Knoten verifiziert (1/1/1, 100/100/100, 1000/1000/1000, 0/0/0). Re-Put im Bus hängt an (kein Upsert); Update im Bus = vollständige Entity + Filter.
 
 ### Tests und Abdeckung
 
